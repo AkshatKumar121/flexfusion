@@ -1,3 +1,4 @@
+//FlexFusion - A Flutter Fitness App
 
 import 'package:flutter/material.dart';
 
