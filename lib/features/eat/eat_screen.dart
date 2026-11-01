@@ -6,12 +6,16 @@ import '../../data/local/app_database.dart';
 class EatScreen extends StatefulWidget {
   const EatScreen({super.key});
   @override
-  State<EatScreen> createState() => _EatScreenState();
+  State<EatScreen> createState() => EatScreenState();
 }
 
-class _EatScreenState extends State<EatScreen> {
+class EatScreenState extends State<EatScreen> {
   late final String _date;
   bool _isLoading = true;
+  double calorieTarget = 2200;
+  double proteinTarget = 180;
+  double carbsTarget = 190;
+  double fatTarget = 65;
 
   final Map<String, List<LoggedFood>> meals = {
     'BREAKFAST': [], 'LUNCH': [], 'SNACKS': [], 'DINNER': [],
@@ -22,12 +26,23 @@ class _EatScreenState extends State<EatScreen> {
     super.initState();
     final now = DateTime.now();
     _date = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    _loadMeals();
+    _loadData();
   }
 
-  Future<void> _loadMeals() async {
+  Future<void> refreshEatScreen() => _loadData();
+
+  Future<void> _loadData() async {
+    if (mounted) setState(() => _isLoading = true);
     try {
-      final rows = await AppDatabase.instance.getFoodLogsForDate(_date);
+      final db = AppDatabase.instance;
+      final rows = await db.getFoodLogsForDate(_date);
+      final targets = await db.getNutritionTargets();
+      if (targets != null) {
+        calorieTarget = (targets['calorie_target'] as num).toDouble();
+        proteinTarget = (targets['protein_target_g'] as num).toDouble();
+        carbsTarget = (targets['carbs_target_g'] as num).toDouble();
+        fatTarget = (targets['fat_target_g'] as num).toDouble();
+      }
       for (final meal in meals.keys) {
         meals[meal] = rows
             .where((row) => row['meal_type'] == meal)
@@ -78,7 +93,7 @@ class _EatScreenState extends State<EatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final remaining = (2200 - kcal).clamp(0, 2200).toDouble();
+    final remaining = (calorieTarget - kcal).clamp(0, calorieTarget).toDouble();
     return Scaffold(
       backgroundColor: AppColors.background,
       body: _isLoading
@@ -140,12 +155,12 @@ class _EatScreenState extends State<EatScreen> {
       Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Text(kcal.round().toString(), style: GoogleFonts.inter(color: AppColors.white, fontSize: 36, fontWeight: FontWeight.w800, height: 1)),
         const SizedBox(width: 8),
-        Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('/ 2,200 kcal', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12))),
+        Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('/ ${calorieTarget.round()} kcal', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12))),
         const Spacer(),
         Text('${remaining.round()} LEFT', style: GoogleFonts.inter(color: AppColors.green, fontSize: 9, fontWeight: FontWeight.w800)),
       ]),
       const SizedBox(height: 15),
-      ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: (kcal / 2200).clamp(0.0, 1.0), minHeight: 7, backgroundColor: AppColors.surface, valueColor: const AlwaysStoppedAnimation(AppColors.green))),
+      ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: (kcal / calorieTarget).clamp(0.0, 1.0), minHeight: 7, backgroundColor: AppColors.surface, valueColor: const AlwaysStoppedAnimation(AppColors.green))),
       const SizedBox(height: 12),
       Text('Daily calorie goal', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10)),
     ]),
@@ -158,9 +173,9 @@ class _EatScreenState extends State<EatScreen> {
       Text('DAILY MACROS', style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: .8)),
       const SizedBox(height: 17),
       Row(children: [
-        Expanded(child: _MacroItem(label: 'PROTEIN', value: protein, target: 180, color: AppColors.red)),
-        Expanded(child: _MacroItem(label: 'CARBS', value: carbs, target: 190, color: AppColors.green)),
-        Expanded(child: _MacroItem(label: 'FATS', value: fat, target: 65, color: const Color(0xFFE8B45B))),
+        Expanded(child: _MacroItem(label: 'PROTEIN', value: protein, target: proteinTarget, color: AppColors.red)),
+        Expanded(child: _MacroItem(label: 'CARBS', value: carbs, target: carbsTarget, color: AppColors.green)),
+        Expanded(child: _MacroItem(label: 'FATS', value: fat, target: fatTarget, color: const Color(0xFFE8B45B))),
       ]),
     ]),
   );
