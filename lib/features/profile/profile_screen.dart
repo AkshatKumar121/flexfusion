@@ -508,12 +508,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     await _loadProfile();
   }
-
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature editing will be added next')),
-    );
-  }
 }
 
 class _ProfileCard extends StatelessWidget {
