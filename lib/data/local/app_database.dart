@@ -354,15 +354,20 @@ class AppDatabase {
 
   Future<List<Map<String, Object?>>> getRecentBodyWeights({int limit = 7}) async {
     final db = await database;
+    final since = DateTime.now().subtract(const Duration(days: 6));
+    final date = '${since.year}-${since.month.toString().padLeft(2, '0')}-${since.day.toString().padLeft(2, '0')}';
     return db.query(
       'body_weights',
+      where: 'log_date >= ?',
+      whereArgs: [date],
       orderBy: 'log_date DESC',
       limit: limit,
     );
   }
 
   Future<Map<String, Object?>?> getLatestBodyWeight() async {
-    final rows = await getRecentBodyWeights(limit: 1);
+    final db = await database;
+    final rows = await db.query('body_weights', orderBy: 'log_date DESC', limit: 1);
     return rows.isEmpty ? null : rows.first;
   }
 }
