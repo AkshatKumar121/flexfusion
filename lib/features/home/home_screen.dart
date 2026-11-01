@@ -10,10 +10,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   late Future<_DashboardData> _dashboardFuture;
 
   String _dateKey(DateTime date) =>
@@ -35,6 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _dashboardFuture = _loadDashboard();
+  }
+
+  void refreshDashboard() {
+    setState(() {
+      _dashboardFuture = _loadDashboard();
+    });
   }
 
   @override
