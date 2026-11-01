@@ -17,6 +17,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, Object?>? _profile;
   Map<String, Object?>? _targets;
   double? _weight;
+  String _weightUnit = 'kg';
+  String _heightUnit = 'cm';
+  String _energyUnit = 'kcal';
   bool _isLoading = true;
 
   @override
@@ -30,11 +33,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final profile = await db.getUserProfile();
     final targets = await db.getNutritionTargets();
     final weight = await db.getLatestBodyWeight();
+    final units = await Future.wait([
+      db.getAppSetting('weight_unit', defaultValue: 'kg'),
+      db.getAppSetting('height_unit', defaultValue: 'cm'),
+      db.getAppSetting('energy_unit', defaultValue: 'kcal'),
+    ]);
     if (!mounted) return;
     setState(() {
       _profile = profile;
       _targets = targets;
       _weight = (weight?['weight_value'] as num?)?.toDouble();
+      _weightUnit = units[0];
+      _heightUnit = units[1];
+      _energyUnit = units[2];
       _fitnessGoal = profile?['current_goal'] as String?;
       _isLoading = false;
     });
@@ -43,8 +54,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _editPersonalDetails() async {
     final name = TextEditingController(text: _profile?['display_name'] as String? ?? '');
     final age = TextEditingController(text: (_profile?['age'] ?? '').toString() == 'null' ? '' : (_profile?['age'] ?? '').toString());
-    final height = TextEditingController(text: (_profile?['height_value'] ?? '').toString() == 'null' ? '' : (_profile?['height_value'] ?? '').toString());
-    final weight = TextEditingController(text: _weight?.toString() ?? '');
+    final heightCm = (_profile?['height_value'] as num?)?.toDouble();
+    final heightDisplay = heightCm == null ? null : (_heightUnit == 'cm' ? heightCm : heightCm / 30.48);
+    final weightDisplay = _weight == null ? null : (_weightUnit == 'kg' ? _weight! : _weight! * 2.2046226218);
+    final height = TextEditingController(text: heightDisplay?.toStringAsFixed(_heightUnit == 'cm' ? 1 : 2) ?? '');
+    final weight = TextEditingController(text: weightDisplay?.toStringAsFixed(1) ?? '');
 
     final saved = await showDialog<bool>(
       context: context,
@@ -55,8 +69,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             _editField(name, 'Display name'),
             _editField(age, 'Age (years)', numeric: true),
-            _editField(height, 'Height (cm)', numeric: true),
-            _editField(weight, 'Current weight (kg)', numeric: true),
+            _editField(height, 'Height (${_heightUnit == 'cm' ? 'cm' : 'decimal ft'})', numeric: true),
+            _editField(weight, 'Current weight ($_weightUnit)', numeric: true),
           ]),
         ),
         actions: [
@@ -65,8 +79,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: Colors.black),
             onPressed: () async {
               final ageValue = double.tryParse(age.text.trim());
-              final heightValue = double.tryParse(height.text.trim());
-              final weightValue = double.tryParse(weight.text.trim());
+              final heightInput = double.tryParse(height.text.trim());
+              final weightInput = double.tryParse(weight.text.trim());
+              final heightValue = heightInput == null ? null : (_heightUnit == 'cm' ? heightInput : heightInput * 30.48);
+              final weightValue = weightInput == null ? null : (_weightUnit == 'kg' ? weightInput : weightInput / 2.2046226218);
               if (name.text.trim().isEmpty || ageValue == null || ageValue <= 0 || ageValue > 120 ||
                   heightValue == null || heightValue <= 0 || heightValue > 250 ||
                   weightValue == null || weightValue <= 0 || weightValue > 500) {
@@ -402,7 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: _DetailTile(
                   icon: Icons.height,
                   label: 'HEIGHT',
-                  value: _profile?['height_value'] == null ? 'Not set' : '${(_profile!['height_value'] as num).round()} cm',
+                  value: _profile?['height_value'] == null ? 'Not set' : _heightUnit == 'cm' ? '${(_profile!['height_value'] as num).round()} cm' : _formatFeet((_profile!['height_value'] as num).toDouble()),
                 ),
               ),
               SizedBox(width: 10),
@@ -410,7 +426,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: _DetailTile(
                   icon: Icons.monitor_weight_outlined,
                   label: 'WEIGHT',
-                  value: _weight == null ? 'Not set' : '${_weight!.toStringAsFixed(1)} kg',
+                  value: _weight == null ? 'Not set' : '${(_weightUnit == 'kg' ? _weight! : _weight! * 2.2046226218).toStringAsFixed(1)} $_weightUnit',
                 ),
               ),
             ],
@@ -474,7 +490,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               children: [
                 Text(
-                  (_targets?['calorie_target'] as num?) == null ? 'Not set' : '${(_targets!['calorie_target'] as num).round()} kcal',
+                  (_targets?['calorie_target'] as num?) == null ? 'Not set' : '${(_energyUnit == 'kcal' ? (_targets!['calorie_target'] as num).toDouble() : (_targets!['calorie_target'] as num).toDouble() * 4.184).round()} $_energyUnit',
                   style: GoogleFonts.inter(
                     color: AppColors.green,
                     fontSize: 28,
@@ -524,6 +540,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  String _formatFeet(double cm) {
+    final totalInches = cm / 2.54;
+    final feet = totalInches ~/ 12;
+    final inches = (totalInches - feet * 12).round();
+    return inches == 12 ? '${feet + 1} ft 0 in' : '$feet ft $inches in';
   }
 
   Future<void> _saveGoal(String goal) async {
