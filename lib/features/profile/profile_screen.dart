@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../data/local/app_database.dart';
 import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -13,12 +14,118 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String? _fitnessGoal;
+  Map<String, Object?>? _profile;
+  Map<String, Object?>? _targets;
+  double? _weight;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final db = AppDatabase.instance;
+    final profile = await db.getUserProfile();
+    final targets = await db.getNutritionTargets();
+    final weight = await db.getLatestBodyWeight();
+    if (!mounted) return;
+    setState(() {
+      _profile = profile;
+      _targets = targets;
+      _weight = (weight?['weight_value'] as num?)?.toDouble();
+      _fitnessGoal = profile?['current_goal'] as String?;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _editProfile() async {
+    final name = TextEditingController(text: _profile?['display_name'] as String? ?? '');
+    final age = TextEditingController(text: (_profile?['age'] ?? '').toString() == 'null' ? '' : (_profile?['age'] ?? '').toString());
+    final height = TextEditingController(text: (_profile?['height_value'] ?? '').toString() == 'null' ? '' : (_profile?['height_value'] ?? '').toString());
+    final weight = TextEditingController(text: _weight?.toString() ?? '');
+    final calories = TextEditingController(text: (_targets?['calorie_target'] ?? 2200).toString());
+    final protein = TextEditingController(text: (_targets?['protein_target_g'] ?? 180).toString());
+    final carbs = TextEditingController(text: (_targets?['carbs_target_g'] ?? 190).toString());
+    final fat = TextEditingController(text: (_targets?['fat_target_g'] ?? 65).toString());
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text('Edit profile', style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _editField(name, 'Display name'),
+            _editField(age, 'Age (years)', numeric: true),
+            _editField(height, 'Height (cm)', numeric: true),
+            _editField(weight, 'Current weight (kg)', numeric: true),
+            const SizedBox(height: 8),
+            _editField(calories, 'Daily calories (kcal)', numeric: true),
+            _editField(protein, 'Protein target (g)', numeric: true),
+            _editField(carbs, 'Carbs target (g)', numeric: true),
+            _editField(fat, 'Fat target (g)', numeric: true),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('CANCEL')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: Colors.black),
+            onPressed: () async {
+              final values = [age, height, weight, calories, protein, carbs, fat].map((c) => double.tryParse(c.text.trim())).toList();
+              if (name.text.trim().isEmpty || values.any((v) => v == null || v <= 0) || values[0]! > 120 || values[1]! > 250) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid profile values.')));
+                return;
+              }
+              await AppDatabase.instance.saveProfileAndTargets(
+                displayName: name.text,
+                age: values[0]!.round(),
+                heightCm: values[1]!,
+                weightKg: values[2]!,
+                goal: _fitnessGoal ?? 'Recomposition',
+                calories: values[3]!,
+                protein: values[4]!,
+                carbs: values[5]!,
+                fat: values[6]!,
+              );
+              if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+    for (final controller in [name, age, height, weight, calories, protein, carbs, fat]) {
+      controller.dispose();
+    }
+    if (saved == true) await _loadProfile();
+  }
+
+  Widget _editField(TextEditingController controller, String label, {bool numeric = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextField(
+        controller: controller,
+        keyboardType: numeric ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+        style: GoogleFonts.inter(color: AppColors.white, fontSize: 13),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.inter(color: AppColors.grey, fontSize: 11),
+          enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
+          focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.green)),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.green))
+          : SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
           child: Column(
@@ -183,7 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Akshat Kumar',
+                  (_profile?['display_name'] as String?)?.isNotEmpty == true ? _profile!['display_name'] as String : 'Your profile',
                   style: GoogleFonts.inter(
                     color: AppColors.white,
                     fontSize: 19,
@@ -222,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           IconButton(
-            onPressed: () => _showComingSoon('Edit profile'),
+            onPressed: _editProfile,
             icon: const Icon(Icons.edit_outlined, color: AppColors.grey),
             tooltip: 'Edit profile',
           ),
@@ -239,7 +346,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _SectionHeading(
             icon: Icons.person_outline,
             title: 'PERSONAL DETAILS',
-            onEdit: () => _showComingSoon('Personal details'),
+            onEdit: _editProfile,
           ),
           const SizedBox(height: 16),
           Row(
@@ -248,7 +355,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: _DetailTile(
                   icon: Icons.cake_outlined,
                   label: 'AGE',
-                  value: 'Not set',
+                  value: (_profile?['age'] ?? 'Not set').toString(),
                 ),
               ),
               SizedBox(width: 10),
@@ -256,7 +363,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: _DetailTile(
                   icon: Icons.height,
                   label: 'HEIGHT',
-                  value: 'Not set',
+                  value: _profile?['height_value'] == null ? 'Not set' : '${(_profile!['height_value'] as num).round()} cm',
                 ),
               ),
               SizedBox(width: 10),
@@ -264,7 +371,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: _DetailTile(
                   icon: Icons.monitor_weight_outlined,
                   label: 'WEIGHT',
-                  value: 'Not set',
+                  value: _weight == null ? 'Not set' : '${_weight!.toStringAsFixed(1)} kg',
                 ),
               ),
             ],
@@ -279,9 +386,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeading(
+          _SectionHeading(
             icon: Icons.track_changes,
             title: 'FITNESS GOAL',
+            onEdit: _editProfile,
           ),
           const SizedBox(height: 16),
           Row(
@@ -290,21 +398,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: 'Fat Loss',
                 icon: Icons.local_fire_department_outlined,
                 selected: _fitnessGoal == 'Fat Loss',
-                onTap: () => setState(() => _fitnessGoal = 'Fat Loss'),
+                onTap: () => _saveGoal('Fat Loss'),
               ),
               const SizedBox(width: 9),
               _GoalOption(
                 title: 'Muscle Gain',
                 icon: Icons.fitness_center,
                 selected: _fitnessGoal == 'Muscle Gain',
-                onTap: () => setState(() => _fitnessGoal = 'Muscle Gain'),
+                onTap: () => _saveGoal('Muscle Gain'),
               ),
               const SizedBox(width: 9),
               _GoalOption(
                 title: 'Recomposition',
                 icon: Icons.autorenew,
                 selected: _fitnessGoal == 'Recomposition',
-                onTap: () => setState(() => _fitnessGoal = 'Recomposition'),
+                onTap: () => _saveGoal('Recomposition'),
               ),
             ],
           ),
@@ -321,14 +429,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _SectionHeading(
             icon: Icons.bar_chart_rounded,
             title: 'DAILY TARGETS',
-            onEdit: () => _showComingSoon('Daily targets'),
+            onEdit: _editProfile,
           ),
           const SizedBox(height: 18),
           Center(
             child: Column(
               children: [
                 Text(
-                  'Not set',
+                  (_targets?['calorie_target'] as num?) == null ? 'Not set' : '${(_targets!['calorie_target'] as num).round()} kcal',
                   style: GoogleFonts.inter(
                     color: AppColors.green,
                     fontSize: 28,
@@ -350,26 +458,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 18),
           Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 14),
-          const Row(
+          Row(
             children: [
               Expanded(
                 child: _MacroTarget(
                   color: AppColors.red,
-                  amount: '—',
+                  amount: (_targets?['protein_target_g'] as num?)?.round().toString() ?? '—',
                   label: 'Protein',
                 ),
               ),
               Expanded(
                 child: _MacroTarget(
                   color: AppColors.green,
-                  amount: '—',
+                  amount: (_targets?['carbs_target_g'] as num?)?.round().toString() ?? '—',
                   label: 'Carbs',
                 ),
               ),
               Expanded(
                 child: _MacroTarget(
                   color: Color(0xFFE8BD3D),
-                  amount: '—',
+                  amount: (_targets?['fat_target_g'] as num?)?.round().toString() ?? '—',
                   label: 'Fats',
                 ),
               ),
@@ -378,6 +486,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _saveGoal(String goal) async {
+    setState(() => _fitnessGoal = goal);
+    final profile = _profile;
+    if (profile == null || _weight == null || _targets == null) {
+      await _editProfile();
+      return;
+    }
+    await AppDatabase.instance.saveProfileAndTargets(
+      displayName: profile['display_name'] as String? ?? '',
+      age: (profile['age'] as num).round(),
+      heightCm: (profile['height_value'] as num).toDouble(),
+      weightKg: _weight!,
+      goal: goal,
+      calories: (_targets!['calorie_target'] as num).toDouble(),
+      protein: (_targets!['protein_target_g'] as num).toDouble(),
+      carbs: (_targets!['carbs_target_g'] as num).toDouble(),
+      fat: (_targets!['fat_target_g'] as num).toDouble(),
+    );
+    await _loadProfile();
   }
 
   void _showComingSoon(String feature) {
