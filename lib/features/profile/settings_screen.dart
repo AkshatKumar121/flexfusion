@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../data/local/app_database.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,12 +18,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _reminders = true;
   bool _weeklySummary = true;
   bool _dailyCheckIn = true;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final db = AppDatabase.instance;
+    final values = await Future.wait([
+      db.getAppSetting('weight_unit', defaultValue: 'kg'),
+      db.getAppSetting('height_unit', defaultValue: 'cm'),
+      db.getAppSetting('energy_unit', defaultValue: 'kcal'),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _weightUnit = values[0];
+      _heightUnit = values[1];
+      _energyUnit = values[2];
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _changeUnit(String key, String value) async {
+    setState(() {
+      if (key == 'weight_unit') _weightUnit = value;
+      if (key == 'height_unit') _heightUnit = value;
+      if (key == 'energy_unit') _energyUnit = value;
+    });
+    await AppDatabase.instance.saveAppSetting(key, value);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.green))
+          : SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
           child: Column(
@@ -143,19 +178,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             label: 'Weight Unit',
             options: const ['kg', 'lb'],
             value: _weightUnit,
-            onChanged: (value) => setState(() => _weightUnit = value),
+            onChanged: (value) => _changeUnit('weight_unit', value),
           ),
           _UnitRow(
             label: 'Height Unit',
             options: const ['cm', 'ft/in'],
             value: _heightUnit,
-            onChanged: (value) => setState(() => _heightUnit = value),
+            onChanged: (value) => _changeUnit('height_unit', value),
           ),
           _UnitRow(
             label: 'Energy Unit',
             options: const ['kcal', 'kJ'],
             value: _energyUnit,
-            onChanged: (value) => setState(() => _energyUnit = value),
+            onChanged: (value) => _changeUnit('energy_unit', value),
             showDivider: false,
           ),
         ],
