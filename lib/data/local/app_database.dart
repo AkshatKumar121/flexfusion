@@ -327,7 +327,6 @@ class AppDatabase {
     final db = await database;
     return db.delete('food_logs', where: 'id = ?', whereArgs: [id]);
   }
-}
 
   Future<Map<String, double>> getDashboardNutrition(String date) async {
     final db = await database;
