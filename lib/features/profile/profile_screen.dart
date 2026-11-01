@@ -273,12 +273,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           Expanded(
             child: InkWell(
-              onTap: () {
-                Navigator.of(context).push(
+              onTap: () async {
+                await Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (context) => const SettingsScreen(),
                   ),
                 );
+                await _loadProfile();
               },
               child: Center(
                 child: Text(
