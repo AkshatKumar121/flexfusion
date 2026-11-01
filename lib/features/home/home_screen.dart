@@ -111,6 +111,26 @@ class HomeScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+
+                      // Push profile icon to the right
+                      const Spacer(),
+
+                      // Profile icon
+                      IconButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Profile screen coming soon'),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.person_outline_rounded,
+                          color: Colors.white,
+                          size: 25,
+                        ),
+                        tooltip: 'Profile',
+                      ),
                     ],
                   ),
 
