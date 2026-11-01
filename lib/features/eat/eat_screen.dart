@@ -212,7 +212,15 @@ class _EatScreenState extends State<EatScreen> {
                 Text('${entry.value.grams.round()} g • P ${entry.value.protein.round()}g • C ${entry.value.carbs.round()}g • F ${entry.value.fat.round()}g', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
               ])),
               Text('${entry.value.kcal.round()} kcal', style: GoogleFonts.inter(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w700)),
-              IconButton(onPressed: () => setState(() => meals[title]!.removeAt(entry.key)), icon: const Icon(Icons.close, color: AppColors.grey, size: 16), tooltip: 'Remove food', visualDensity: VisualDensity.compact),
+              IconButton(
+                onPressed: () async {
+                  setState(() => meals[title]!.removeAt(entry.key));
+                  await _saveMeals();
+                },
+                icon: const Icon(Icons.close, color: AppColors.grey, size: 16),
+                tooltip: 'Remove food',
+                visualDensity: VisualDensity.compact,
+              ),
             ]),
           )),
           Align(alignment: Alignment.centerRight, child: _addButton(title)),
