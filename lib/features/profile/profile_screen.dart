@@ -510,8 +510,6 @@ class _GoalOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.red : AppColors.border;
-
     return Expanded(
       child: InkWell(
         onTap: onTap,
