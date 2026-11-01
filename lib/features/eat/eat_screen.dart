@@ -1,9 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
+import '../../data/local/app_database.dart';
 
 class EatScreen extends StatefulWidget {
   const EatScreen({super.key});
@@ -12,63 +10,43 @@ class EatScreen extends StatefulWidget {
 }
 
 class _EatScreenState extends State<EatScreen> {
-  late final String _dateKey;
+  late final String _date;
   bool _isLoading = true;
 
   final Map<String, List<LoggedFood>> meals = {
     'BREAKFAST': [], 'LUNCH': [], 'SNACKS': [], 'DINNER': [],
   };
+
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    final date = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    _dateKey = 'flexfusion_meals_$date';
+    _date = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     _loadMeals();
   }
 
   Future<void> _loadMeals() async {
     try {
-      final preferences = await SharedPreferences.getInstance();
-      final saved = preferences.getString(_dateKey);
-      if (saved != null) {
-        final decoded = jsonDecode(saved) as Map<String, dynamic>;
-        for (final meal in meals.keys) {
-          final entries = decoded[meal] as List<dynamic>? ?? [];
-          meals[meal] = entries.map((entry) {
-            final item = entry as Map<String, dynamic>;
-            return LoggedFood(
-              item['name'] as String,
-              (item['grams'] as num).toDouble(),
-              (item['kcal'] as num).toDouble(),
-              (item['protein'] as num).toDouble(),
-              (item['carbs'] as num).toDouble(),
-              (item['fat'] as num).toDouble(),
-            );
-          }).toList();
-        }
+      final rows = await AppDatabase.instance.getFoodLogsForDate(_date);
+      for (final meal in meals.keys) {
+        meals[meal] = rows
+            .where((row) => row['meal_type'] == meal)
+            .map((row) => LoggedFood(
+                  row['food_name_snapshot'] as String,
+                  (row['quantity_g'] as num).toDouble(),
+                  (row['calories'] as num).toDouble(),
+                  (row['protein_g'] as num).toDouble(),
+                  (row['carbs_g'] as num).toDouble(),
+                  (row['fat_g'] as num).toDouble(),
+                  id: row['id'] as int,
+                ))
+            .toList();
       }
     } catch (error) {
-      debugPrint('Could not load saved meal entries: $error');
+      debugPrint('Could not load meal entries from SQLite: $error');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  Future<void> _saveMeals() async {
-    final preferences = await SharedPreferences.getInstance();
-    final data = meals.map((meal, entries) => MapEntry(
-      meal,
-      entries.map((food) => {
-        'name': food.name,
-        'grams': food.grams,
-        'kcal': food.kcal,
-        'protein': food.protein,
-        'carbs': food.carbs,
-        'fat': food.fat,
-      }).toList(),
-    ));
-    await preferences.setString(_dateKey, jsonEncode(data));
   }
 
   List<LoggedFood> get all => meals.values.expand((e) => e).toList();
@@ -83,8 +61,18 @@ class _EatScreenState extends State<EatScreen> {
       builder: (_) => FoodPickerSheet(meal: meal),
     );
     if (result != null && mounted) {
-      setState(() => meals[meal]!.add(result));
-      await _saveMeals();
+      final id = await AppDatabase.instance.insertFoodLog(
+        date: _date,
+        meal: meal,
+        name: result.name,
+        grams: result.grams,
+        calories: result.kcal,
+        protein: result.protein,
+        carbs: result.carbs,
+        fat: result.fat,
+      );
+      if (!mounted) return;
+      setState(() => meals[meal]!.add(result.copyWith(id: id)));
     }
   }
 
@@ -214,8 +202,13 @@ class _EatScreenState extends State<EatScreen> {
               Text('${entry.value.kcal.round()} kcal', style: GoogleFonts.inter(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w700)),
               IconButton(
                 onPressed: () async {
-                  setState(() => meals[title]!.removeAt(entry.key));
-                  await _saveMeals();
+                  final food = entry.value;
+                  if (food.id != null) {
+                    await AppDatabase.instance.deleteFoodLog(food.id!);
+                  }
+                  if (mounted) {
+                    setState(() => meals[title]!.removeAt(entry.key));
+                  }
                 },
                 icon: const Icon(Icons.close, color: AppColors.grey, size: 16),
                 tooltip: 'Remove food',
@@ -261,9 +254,14 @@ class FoodData {
 }
 
 class LoggedFood {
+  final int? id;
   final String name;
   final double grams, kcal, protein, carbs, fat;
-  const LoggedFood(this.name, this.grams, this.kcal, this.protein, this.carbs, this.fat);
+  const LoggedFood(this.name, this.grams, this.kcal, this.protein, this.carbs, this.fat, {this.id});
+
+  LoggedFood copyWith({int? id}) => LoggedFood(
+    name, grams, kcal, protein, carbs, fat, id: id ?? this.id,
+  );
 }
 
 const foods = <FoodData>[
