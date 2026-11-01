@@ -1,0 +1,330 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+import 'package:path/path.dart' as p;
+
+class AppDatabase {
+  AppDatabase._();
+
+  static final AppDatabase instance = AppDatabase._();
+  static const int schemaVersion = 1;
+  Database? _database;
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+    }
+    final dbPath = kIsWeb
+        ? 'flexfusion_v1.db'
+        : p.join(await getDatabasesPath(), 'flexfusion_v1.db');
+
+    _database = await openDatabase(
+      dbPath,
+      version: schemaVersion,
+      onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
+      onCreate: _createSchema,
+      onUpgrade: _upgradeSchema,
+    );
+    await _migrateLegacyMealLogs(_database!);
+    return _database!;
+  }
+
+  Future<void> _createSchema(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE user_profile (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        display_name TEXT NOT NULL DEFAULT '',
+        date_of_birth TEXT,
+        height_value REAL,
+        height_unit TEXT NOT NULL DEFAULT 'cm',
+        current_goal TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE nutrition_targets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        effective_from TEXT NOT NULL,
+        calorie_target REAL NOT NULL DEFAULT 2200,
+        protein_target_g REAL NOT NULL DEFAULT 180,
+        carbs_target_g REAL NOT NULL DEFAULT 190,
+        fat_target_g REAL NOT NULL DEFAULT 65
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE foods (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        brand TEXT,
+        serving_basis_g REAL NOT NULL DEFAULT 100,
+        calories_per_basis REAL NOT NULL,
+        protein_per_basis_g REAL NOT NULL,
+        carbs_per_basis_g REAL NOT NULL,
+        fat_per_basis_g REAL NOT NULL,
+        is_custom INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE food_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        log_date TEXT NOT NULL,
+        meal_type TEXT NOT NULL,
+        food_id INTEGER,
+        food_name_snapshot TEXT NOT NULL,
+        quantity_g REAL NOT NULL,
+        calories REAL NOT NULL,
+        protein_g REAL NOT NULL,
+        carbs_g REAL NOT NULL,
+        fat_g REAL NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE SET NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_food_logs_date ON food_logs(log_date)');
+    await db.execute('CREATE INDEX idx_food_logs_date_meal ON food_logs(log_date, meal_type)');
+    await db.execute('CREATE INDEX idx_foods_name ON foods(name COLLATE NOCASE)');
+
+    await db.execute('''
+      CREATE TABLE food_favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        food_id INTEGER NOT NULL UNIQUE,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE body_weights (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        log_date TEXT NOT NULL UNIQUE,
+        weight_value REAL NOT NULL,
+        weight_unit TEXT NOT NULL DEFAULT 'kg',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE body_measurements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        log_date TEXT NOT NULL,
+        measurement_type TEXT NOT NULL,
+        value REAL NOT NULL,
+        unit TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(log_date, measurement_type)
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE progress_photos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        photo_date TEXT NOT NULL,
+        angle TEXT NOT NULL CHECK(angle IN ('front', 'side', 'back')),
+        local_file_path TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE(photo_date, angle)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE exercises (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        muscle_group TEXT,
+        equipment TEXT,
+        instructions TEXT,
+        is_custom INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE workout_plans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        is_active INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE workout_plan_days (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_id INTEGER NOT NULL,
+        day_order INTEGER NOT NULL,
+        label TEXT NOT NULL,
+        schedule_type TEXT NOT NULL DEFAULT 'sequence',
+        weekday INTEGER,
+        is_rest_day INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (plan_id) REFERENCES workout_plans(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_workout_plan_days_plan ON workout_plan_days(plan_id, day_order)');
+    await db.execute('''
+      CREATE TABLE workout_plan_exercises (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_day_id INTEGER NOT NULL,
+        exercise_id INTEGER,
+        exercise_name_snapshot TEXT NOT NULL,
+        exercise_order INTEGER NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (plan_day_id) REFERENCES workout_plan_days(id) ON DELETE CASCADE,
+        FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE SET NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE workout_plan_sets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_exercise_id INTEGER NOT NULL,
+        set_order INTEGER NOT NULL,
+        target_reps INTEGER NOT NULL,
+        target_weight REAL,
+        target_weight_unit TEXT,
+        rest_seconds INTEGER NOT NULL DEFAULT 60,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (plan_exercise_id) REFERENCES workout_plan_exercises(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE workouts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_id INTEGER,
+        plan_day_id INTEGER,
+        started_at TEXT NOT NULL,
+        completed_at TEXT,
+        session_name TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'in_progress',
+        notes TEXT,
+        FOREIGN KEY (plan_id) REFERENCES workout_plans(id) ON DELETE SET NULL,
+        FOREIGN KEY (plan_day_id) REFERENCES workout_plan_days(id) ON DELETE SET NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE workout_sets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workout_id INTEGER NOT NULL,
+        exercise_id INTEGER,
+        exercise_name_snapshot TEXT NOT NULL,
+        set_order INTEGER NOT NULL,
+        actual_reps INTEGER,
+        actual_weight REAL,
+        weight_unit TEXT,
+        completed INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE,
+        FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE SET NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_workouts_started_at ON workouts(started_at)');
+  }
+
+  Future<void> _upgradeSchema(Database db, int oldVersion, int newVersion) async {
+    // Add forward-only migrations here when the schema version increases.
+  }
+
+  Future<void> _migrateLegacyMealLogs(Database db) async {
+    const migrationKey = 'flexfusion_sqlite_meal_migration_v1_complete';
+    final preferences = await SharedPreferences.getInstance();
+    if (preferences.getBool(migrationKey) == true) return;
+
+    final keys = preferences.getKeys()
+        .where((key) => key.startsWith('flexfusion_meals_'))
+        .toList()
+      ..sort();
+
+    await db.transaction((txn) async {
+      for (final key in keys) {
+        final date = key.substring('flexfusion_meals_'.length);
+        final raw = preferences.getString(key);
+        if (raw == null) continue;
+        try {
+          final decoded = jsonDecode(raw) as Map<String, dynamic>;
+          for (final meal in ['BREAKFAST', 'LUNCH', 'SNACKS', 'DINNER']) {
+            final entries = decoded[meal] as List<dynamic>? ?? [];
+            for (final value in entries) {
+              final item = value as Map<String, dynamic>;
+              await txn.insert('food_logs', {
+                'log_date': date,
+                'meal_type': meal,
+                'food_name_snapshot': item['name'] as String? ?? 'Food',
+                'quantity_g': (item['grams'] as num?)?.toDouble() ?? 0,
+                'calories': (item['kcal'] as num?)?.toDouble() ?? 0,
+                'protein_g': (item['protein'] as num?)?.toDouble() ?? 0,
+                'carbs_g': (item['carbs'] as num?)?.toDouble() ?? 0,
+                'fat_g': (item['fat'] as num?)?.toDouble() ?? 0,
+                'created_at': DateTime.now().toIso8601String(),
+                'updated_at': DateTime.now().toIso8601String(),
+              });
+            }
+          }
+        } catch (error) {
+          debugPrint('Skipped invalid legacy meal data for $date: $error');
+        }
+      }
+    });
+
+    // Mark complete only after the database transaction succeeds.
+    await preferences.setBool(migrationKey, true);
+  }
+
+  Future<List<Map<String, Object?>>> getFoodLogsForDate(String date) async {
+    final db = await database;
+    return db.query(
+      'food_logs',
+      where: 'log_date = ?',
+      whereArgs: [date],
+      orderBy: "CASE meal_type WHEN 'BREAKFAST' THEN 1 WHEN 'LUNCH' THEN 2 WHEN 'SNACKS' THEN 3 WHEN 'DINNER' THEN 4 ELSE 5 END, id",
+    );
+  }
+
+  Future<int> insertFoodLog({
+    required String date,
+    required String meal,
+    required String name,
+    required double grams,
+    required double calories,
+    required double protein,
+    required double carbs,
+    required double fat,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return db.insert('food_logs', {
+      'log_date': date,
+      'meal_type': meal,
+      'food_name_snapshot': name,
+      'quantity_g': grams,
+      'calories': calories,
+      'protein_g': protein,
+      'carbs_g': carbs,
+      'fat_g': fat,
+      'created_at': now,
+      'updated_at': now,
+    });
+  }
+
+  Future<int> deleteFoodLog(int id) async {
+    final db = await database;
+    return db.delete('food_logs', where: 'id = ?', whereArgs: [id]);
+  }
+}
