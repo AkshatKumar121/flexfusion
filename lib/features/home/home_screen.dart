@@ -23,7 +23,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final db = AppDatabase.instance;
     final nutrition = await db.getDashboardNutrition(_dateKey(DateTime.now()));
     final weights = await db.getRecentBodyWeights();
-    return _DashboardData(nutrition: nutrition, weights: weights);
+    final latestWeight = await db.getLatestBodyWeight();
+    return _DashboardData(
+      nutrition: nutrition,
+      weights: weights,
+      latestWeight: latestWeight,
+    );
   }
 
   @override
@@ -82,9 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final data = snapshot.data;
         final kcal = data?.nutrition['calories'] ?? 0.0;
         final protein = data?.nutrition['protein'] ?? 0.0;
-        final currentWeight = data?.weights.isNotEmpty == true
-            ? (data!.weights.first['weight_value'] as num).toDouble()
-            : null;
+        final currentWeight = data?.latestWeight == null
+            ? null
+            : (data!.latestWeight!['weight_value'] as num).toDouble();
         return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -484,8 +489,13 @@ class _HomeScreenState extends State<HomeScreen> {
 class _DashboardData {
   final Map<String, double> nutrition;
   final List<Map<String, Object?>> weights;
+  final Map<String, Object?>? latestWeight;
 
-  const _DashboardData({required this.nutrition, required this.weights});
+  const _DashboardData({
+    required this.nutrition,
+    required this.weights,
+    required this.latestWeight,
+  });
 }
 
 // DASHBOARD CARD
