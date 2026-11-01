@@ -328,3 +328,41 @@ class AppDatabase {
     return db.delete('food_logs', where: 'id = ?', whereArgs: [id]);
   }
 }
+
+  Future<Map<String, double>> getDashboardNutrition(String date) async {
+    final db = await database;
+    final rows = await db.rawQuery(
+      '''
+      SELECT
+        COALESCE(SUM(calories), 0) AS calories,
+        COALESCE(SUM(protein_g), 0) AS protein,
+        COALESCE(SUM(carbs_g), 0) AS carbs,
+        COALESCE(SUM(fat_g), 0) AS fat
+      FROM food_logs
+      WHERE log_date = ?
+      ''',
+      [date],
+    );
+    final row = rows.first;
+    return {
+      'calories': (row['calories'] as num).toDouble(),
+      'protein': (row['protein'] as num).toDouble(),
+      'carbs': (row['carbs'] as num).toDouble(),
+      'fat': (row['fat'] as num).toDouble(),
+    };
+  }
+
+  Future<List<Map<String, Object?>>> getRecentBodyWeights({int limit = 7}) async {
+    final db = await database;
+    return db.query(
+      'body_weights',
+      orderBy: 'log_date DESC',
+      limit: limit,
+    );
+  }
+
+  Future<Map<String, Object?>?> getLatestBodyWeight() async {
+    final rows = await getRecentBodyWeights(limit: 1);
+    return rows.isEmpty ? null : rows.first;
+  }
+}
