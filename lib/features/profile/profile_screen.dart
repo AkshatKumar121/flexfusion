@@ -40,11 +40,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Future<void> _editProfile() async {
+  Future<void> _editPersonalDetails() async {
     final name = TextEditingController(text: _profile?['display_name'] as String? ?? '');
     final age = TextEditingController(text: (_profile?['age'] ?? '').toString() == 'null' ? '' : (_profile?['age'] ?? '').toString());
     final height = TextEditingController(text: (_profile?['height_value'] ?? '').toString() == 'null' ? '' : (_profile?['height_value'] ?? '').toString());
     final weight = TextEditingController(text: _weight?.toString() ?? '');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text('Personal details', style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _editField(name, 'Display name'),
+            _editField(age, 'Age (years)', numeric: true),
+            _editField(height, 'Height (cm)', numeric: true),
+            _editField(weight, 'Current weight (kg)', numeric: true),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('CANCEL')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: Colors.black),
+            onPressed: () async {
+              final ageValue = double.tryParse(age.text.trim());
+              final heightValue = double.tryParse(height.text.trim());
+              final weightValue = double.tryParse(weight.text.trim());
+              if (name.text.trim().isEmpty || ageValue == null || ageValue <= 0 || ageValue > 120 ||
+                  heightValue == null || heightValue <= 0 || heightValue > 250 ||
+                  weightValue == null || weightValue <= 0 || weightValue > 500) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid personal details.')));
+                return;
+              }
+              await AppDatabase.instance.savePersonalDetails(
+                displayName: name.text.trim(),
+                age: ageValue.round(),
+                heightCm: heightValue,
+                weightKg: weightValue,
+                goal: _fitnessGoal ?? 'Recomposition',
+              );
+              if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+    for (final controller in [name, age, height, weight]) {
+      controller.dispose();
+    }
+    if (saved == true) await _loadProfile();
+  }
+
+  Future<void> _editDailyTargets() async {
     final calories = TextEditingController(text: (_targets?['calorie_target'] ?? 2200).toString());
     final protein = TextEditingController(text: (_targets?['protein_target_g'] ?? 180).toString());
     final carbs = TextEditingController(text: (_targets?['carbs_target_g'] ?? 190).toString());
@@ -54,14 +103,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.card,
-        title: Text('Edit profile', style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
+        title: Text('Daily nutrition targets', style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            _editField(name, 'Display name'),
-            _editField(age, 'Age (years)', numeric: true),
-            _editField(height, 'Height (cm)', numeric: true),
-            _editField(weight, 'Current weight (kg)', numeric: true),
-            const SizedBox(height: 8),
             _editField(calories, 'Daily calories (kcal)', numeric: true),
             _editField(protein, 'Protein target (g)', numeric: true),
             _editField(carbs, 'Carbs target (g)', numeric: true),
@@ -73,21 +117,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: Colors.black),
             onPressed: () async {
-              final values = [age, height, weight, calories, protein, carbs, fat].map((c) => double.tryParse(c.text.trim())).toList();
-              if (name.text.trim().isEmpty || values.any((v) => v == null || v <= 0) || values[0]! > 120 || values[1]! > 250) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid profile values.')));
+              final values = [calories, protein, carbs, fat].map((c) => double.tryParse(c.text.trim())).toList();
+              if (values.any((v) => v == null || v <= 0)) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid nutrition targets.')));
                 return;
               }
-              await AppDatabase.instance.saveProfileAndTargets(
-                displayName: name.text,
-                age: values[0]!.round(),
-                heightCm: values[1]!,
-                weightKg: values[2]!,
-                goal: _fitnessGoal ?? 'Recomposition',
-                calories: values[3]!,
-                protein: values[4]!,
-                carbs: values[5]!,
-                fat: values[6]!,
+              await AppDatabase.instance.saveNutritionTargets(
+                calories: values[0]!,
+                protein: values[1]!,
+                carbs: values[2]!,
+                fat: values[3]!,
               );
               if (dialogContext.mounted) Navigator.pop(dialogContext, true);
             },
@@ -96,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-    for (final controller in [name, age, height, weight, calories, protein, carbs, fat]) {
+    for (final controller in [calories, protein, carbs, fat]) {
       controller.dispose();
     }
     if (saved == true) await _loadProfile();
@@ -329,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           IconButton(
-            onPressed: _editProfile,
+            onPressed: _editPersonalDetails,
             icon: const Icon(Icons.edit_outlined, color: AppColors.grey),
             tooltip: 'Edit profile',
           ),
@@ -346,7 +385,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _SectionHeading(
             icon: Icons.person_outline,
             title: 'PERSONAL DETAILS',
-            onEdit: _editProfile,
+            onEdit: _editPersonalDetails,
           ),
           const SizedBox(height: 16),
           Row(
@@ -389,7 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _SectionHeading(
             icon: Icons.track_changes,
             title: 'FITNESS GOAL',
-            onEdit: _editProfile,
+            onEdit: _editDailyTargets,
           ),
           const SizedBox(height: 16),
           Row(
@@ -492,7 +531,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _fitnessGoal = goal);
     final profile = _profile;
     if (profile == null || _weight == null || _targets == null) {
-      await _editProfile();
+      await _editPersonalDetails();
       return;
     }
     await AppDatabase.instance.saveProfileAndTargets(
