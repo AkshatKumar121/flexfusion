@@ -428,7 +428,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _SectionHeading(
             icon: Icons.track_changes,
             title: 'FITNESS GOAL',
-            onEdit: _editPersonalDetails,
           ),
           const SizedBox(height: 16),
           Row(
