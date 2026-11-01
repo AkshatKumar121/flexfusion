@@ -30,11 +30,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final values = await Future.wait([
       db.getAppSetting('weight_unit', defaultValue: 'kg'),
       db.getAppSetting('height_unit', defaultValue: 'cm'),
+      db.getAppSetting('reminders_enabled', defaultValue: 'true'),
+      db.getAppSetting('weekly_summary_enabled', defaultValue: 'true'),
+      db.getAppSetting('daily_checkin_enabled', defaultValue: 'true'),
     ]);
     if (!mounted) return;
     setState(() {
       _weightUnit = values[0];
       _heightUnit = values[1];
+      _reminders = values[2] == 'true';
+      _weeklySummary = values[3] == 'true';
+      _dailyCheckIn = values[4] == 'true';
       _isLoading = false;
     });
   }
@@ -45,6 +51,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (key == 'height_unit') _heightUnit = value;
     });
     await AppDatabase.instance.saveAppSetting(key, value);
+  }
+
+  Future<void> _changePreference(String key, bool value) async {
+    setState(() {
+      if (key == 'reminders_enabled') _reminders = value;
+      if (key == 'weekly_summary_enabled') _weeklySummary = value;
+      if (key == 'daily_checkin_enabled') _dailyCheckIn = value;
+    });
+    await AppDatabase.instance.saveAppSetting(key, value.toString());
   }
 
   @override
@@ -219,19 +234,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.notifications_none,
             title: 'Reminders',
             value: _reminders,
-            onChanged: (value) => setState(() => _reminders = value),
+            onChanged: (value) => _changePreference('reminders_enabled', value),
           ),
           _SettingsSwitchRow(
             icon: Icons.bar_chart_rounded,
             title: 'Weekly Progress Summary',
             value: _weeklySummary,
-            onChanged: (value) => setState(() => _weeklySummary = value),
+            onChanged: (value) => _changePreference('weekly_summary_enabled', value),
           ),
           _SettingsSwitchRow(
             icon: Icons.event_available_outlined,
             title: 'End of Day Check-in',
             value: _dailyCheckIn,
-            onChanged: (value) => setState(() => _dailyCheckIn = value),
+            onChanged: (value) => _changePreference('daily_checkin_enabled', value),
             showDivider: false,
           ),
         ],
