@@ -14,14 +14,15 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 1;
+  final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
 
-  final List<Widget> _screens = const [
+  late final List<Widget> _screens = [
     _PlaceholderScreen(
       title: 'Train',
       subtitle: 'Your workouts will appear here.',
       icon: Icons.fitness_center,
     ),
-    HomeScreen(),
+    HomeScreen(key: _homeScreenKey),
     EatScreen(),
   ];
 
@@ -85,6 +86,9 @@ class _AppShellState extends State<AppShell> {
           setState(() {
             _selectedIndex = index;
           });
+          if (index == 1) {
+            _homeScreenKey.currentState?.refreshDashboard();
+          }
         },
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
