@@ -24,10 +24,12 @@ class HomeScreenState extends State<HomeScreen> {
     final nutrition = await db.getDashboardNutrition(_dateKey(DateTime.now()));
     final weights = await db.getRecentBodyWeights();
     final latestWeight = await db.getLatestBodyWeight();
+    final targets = await db.getNutritionTargets();
     return _DashboardData(
       nutrition: nutrition,
       weights: weights,
       latestWeight: latestWeight,
+      targets: targets,
     );
   }
 
@@ -93,6 +95,8 @@ class HomeScreenState extends State<HomeScreen> {
         final data = snapshot.data;
         final kcal = data?.nutrition['calories'] ?? 0.0;
         final protein = data?.nutrition['protein'] ?? 0.0;
+        final calorieTarget = (data?.targets?['calorie_target'] as num?)?.toDouble() ?? 2200.0;
+        final proteinTarget = (data?.targets?['protein_target_g'] as num?)?.toDouble() ?? 180.0;
         final currentWeight = data?.latestWeight == null
             ? null
             : (data!.latestWeight!['weight_value'] as num).toDouble();
@@ -262,7 +266,7 @@ class HomeScreenState extends State<HomeScreen> {
                       title: 'EAT',
                       subtitle: 'Daily nutrition',
                       description: '${kcal.round()} kcal',
-                      detail: 'of 2,200 kcal',
+                      detail: 'of ${calorieTarget.round()} kcal',
                       accentColor: AppColors.green,
                       buttonText: 'LOG MEAL',
                     ),
@@ -293,7 +297,7 @@ class HomeScreenState extends State<HomeScreen> {
                       title: 'PROTEIN',
                       value: protein.round().toString(),
                       unit: 'g',
-                      subtitle: 'of 180 g daily goal',
+                      subtitle: 'of ${proteinTarget.round()} g daily goal',
                       icon: Icons.egg_alt_outlined,
                       accentColor: AppColors.green,
                     ),
@@ -496,11 +500,13 @@ class _DashboardData {
   final Map<String, double> nutrition;
   final List<Map<String, Object?>> weights;
   final Map<String, Object?>? latestWeight;
+  final Map<String, Object?>? targets;
 
   const _DashboardData({
     required this.nutrition,
     required this.weights,
     required this.latestWeight,
+    required this.targets,
   });
 }
 
