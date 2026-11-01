@@ -19,7 +19,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   double? _weight;
   String _weightUnit = 'kg';
   String _heightUnit = 'cm';
-  String _energyUnit = 'kcal';
   bool _isLoading = true;
 
   @override
@@ -36,7 +35,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final units = await Future.wait([
       db.getAppSetting('weight_unit', defaultValue: 'kg'),
       db.getAppSetting('height_unit', defaultValue: 'cm'),
-      db.getAppSetting('energy_unit', defaultValue: 'kcal'),
     ]);
     if (!mounted) return;
     setState(() {
@@ -45,7 +43,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _weight = (weight?['weight_value'] as num?)?.toDouble();
       _weightUnit = units[0];
       _heightUnit = units[1];
-      _energyUnit = units[2];
       _fitnessGoal = profile?['current_goal'] as String?;
       _isLoading = false;
     });
@@ -491,7 +488,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               children: [
                 Text(
-                  (_targets?['calorie_target'] as num?) == null ? 'Not set' : '${(_energyUnit == 'kcal' ? (_targets!['calorie_target'] as num).toDouble() : (_targets!['calorie_target'] as num).toDouble() * 4.184).round()} $_energyUnit',
+                  (_targets?['calorie_target'] as num?) == null ? 'Not set' : '${(_targets!['calorie_target'] as num).round()} kcal',
                   style: GoogleFonts.inter(
                     color: AppColors.green,
                     fontSize: 28,
