@@ -491,6 +491,88 @@ class AppDatabase {
     };
   }
 
+  Future<Map<String, Object?>> getWeeklyProgressSummary() async {
+    final db = await database;
+    final today = DateTime.now();
+    final start = DateTime(today.year, today.month, today.day)
+        .subtract(const Duration(days: 6));
+    final previousStart = start.subtract(const Duration(days: 7));
+    String dateKey(DateTime date) =>
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+    final startDate = dateKey(start);
+    final todayDate = dateKey(today);
+    final previousStartDate = dateKey(previousStart);
+    final previousEndDate = dateKey(start.subtract(const Duration(days: 1)));
+
+    final nutritionRows = await db.rawQuery(
+      '''
+      SELECT
+        COUNT(*) AS logged_days,
+        COALESCE(AVG(day_calories), 0) AS average_calories,
+        COALESCE(AVG(day_protein), 0) AS average_protein
+      FROM (
+        SELECT
+          log_date,
+          SUM(calories) AS day_calories,
+          SUM(protein_g) AS day_protein
+        FROM food_logs
+        WHERE log_date >= ? AND log_date <= ?
+        GROUP BY log_date
+      )
+      ''',
+      [startDate, todayDate],
+    );
+
+    final weightRows = await db.rawQuery(
+      '''
+      SELECT COUNT(*) AS weigh_in_days, COALESCE(AVG(weight_value), 0) AS average_weight
+      FROM body_weights
+      WHERE log_date >= ? AND log_date <= ?
+      ''',
+      [startDate, todayDate],
+    );
+
+    final previousWeightRows = await db.rawQuery(
+      '''
+      SELECT COALESCE(AVG(weight_value), 0) AS average_weight
+      FROM body_weights
+      WHERE log_date >= ? AND log_date <= ?
+      ''',
+      [previousStartDate, previousEndDate],
+    );
+
+    final workoutRows = await db.rawQuery(
+      '''
+      SELECT COUNT(*) AS completed_workouts
+      FROM workouts
+      WHERE status = 'completed'
+        AND substr(completed_at, 1, 10) >= ?
+        AND substr(completed_at, 1, 10) <= ?
+      ''',
+      [startDate, todayDate],
+    );
+
+    final nutrition = nutritionRows.first;
+    final weights = weightRows.first;
+    final previousAverageWeight =
+        (previousWeightRows.first['average_weight'] as num).toDouble();
+
+    return {
+      'start_date': startDate,
+      'end_date': todayDate,
+      'logged_days': (nutrition['logged_days'] as num).toInt(),
+      'average_calories': (nutrition['average_calories'] as num).toDouble(),
+      'average_protein': (nutrition['average_protein'] as num).toDouble(),
+      'weigh_in_days': (weights['weigh_in_days'] as num).toInt(),
+      'average_weight': (weights['average_weight'] as num).toDouble(),
+      'previous_average_weight': previousAverageWeight,
+      'has_previous_weight': previousAverageWeight > 0,
+      'completed_workouts':
+          (workoutRows.first['completed_workouts'] as num).toInt(),
+    };
+  }
+
   Future<List<Map<String, Object?>>> getRecentBodyWeights({int limit = 7}) async {
     final db = await database;
     final since = DateTime.now().subtract(const Duration(days: 6));
