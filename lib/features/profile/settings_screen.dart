@@ -462,33 +462,6 @@ class _SettingsInfoRow extends StatelessWidget {
   }
 }
 
-class _SettingsSwitchRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _SettingsSwitchRow({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingsRowBase(
-      icon: icon,
-      title: title,
-      trailing: Switch.adaptive(
-        value: value,
-        activeThumbColor: AppColors.green,
-        onChanged: onChanged,
-      ),
-    );
-  }
-}
-
 class _SettingsRowBase extends StatelessWidget {
   final IconData icon;
   final String title;
