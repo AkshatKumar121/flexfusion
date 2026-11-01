@@ -665,14 +665,12 @@ class _SettingsSwitchRow extends StatelessWidget {
   final String title;
   final bool value;
   final ValueChanged<bool> onChanged;
-  final bool showDivider;
 
   const _SettingsSwitchRow({
     required this.icon,
     required this.title,
     required this.value,
     required this.onChanged,
-    this.showDivider = true,
   });
 
   @override
@@ -680,7 +678,6 @@ class _SettingsSwitchRow extends StatelessWidget {
     return _SettingsRowBase(
       icon: icon,
       title: title,
-      showDivider: showDivider,
       trailing: Switch.adaptive(
         value: value,
         activeThumbColor: AppColors.green,
