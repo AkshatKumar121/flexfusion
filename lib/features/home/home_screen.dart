@@ -1,0 +1,721 @@
+
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../app/theme/app_colors.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // CURRENT DATE AND TIME
+    final now = DateTime.now();
+
+    const weekdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    // DYNAMIC GREETING
+    final hour = now.hour;
+
+    final greeting = hour < 12
+        ? 'Good morning'
+        : hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
+
+    // TODAY'S DATE
+    final today =
+        '${weekdays[now.weekday - 1]}, '
+        '${now.day} ${months[now.month - 1]} ${now.year}';
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 18,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // FXF LOGO HEADER
+              Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Original FXF logo
+                      SizedBox(
+                        width: 130,
+                        height: 48,
+                        child: Image.asset(
+                          'assets/images/fxf_logo.jpg',
+                          fit: BoxFit.contain,
+                          alignment: Alignment.centerLeft,
+                        ),
+                      ),
+
+                      // Divider and TRAINER group
+                      Transform.translate(
+                        offset: const Offset(-25, 0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Vertical divider
+                            Container(
+                              height: 38,
+                              width: 2,
+                              color: const Color(0xFF555555),
+                            ),
+
+                            const SizedBox(width: 13),
+
+                            // Trainer label
+                            Transform.translate(
+                              offset: const Offset(0, 1),
+                              child: Text(
+                                'TRAINER',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Header bottom border
+                  Container(
+                    height: 1,
+                    color: const Color(0xFF292929),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 32),
+
+              // PERSONALIZED GREETING
+              Text(
+                '$greeting, Akshat!',
+                style: GoogleFonts.inter(
+                  color: AppColors.grey,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              // TODAY'S DAY AND DATE
+              Text(
+                today,
+                style: GoogleFonts.inter(
+                  color: AppColors.green,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.4,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Text(
+                'Ready to get stronger?',
+                style: GoogleFonts.inter(
+                  color: AppColors.white,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                'YOUR FITNESS JOURNEY STARTS HERE',
+                style: GoogleFonts.inter(
+                  color: AppColors.green,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // TRAIN AND EAT SECTION
+              Row(
+                children: [
+                  Expanded(
+                    child: _DashboardCard(
+                      icon: Icons.fitness_center,
+                      title: 'TRAIN',
+                      subtitle: 'Today\'s workout',
+                      description: 'Push Day',
+                      detail: '6 Exercises',
+                      accentColor: AppColors.red,
+                      buttonText: 'START WORKOUT',
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: _DashboardCard(
+                      icon: Icons.restaurant,
+                      title: 'EAT',
+                      subtitle: 'Daily nutrition',
+                      description: '1,484 kcal',
+                      detail: 'of 2,200 kcal',
+                      accentColor: AppColors.green,
+                      buttonText: 'LOG MEAL',
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // WEIGHT AND PROTEIN CARDS
+              Row(
+                children: [
+                  Expanded(
+                    child: _MetricCard(
+                      title: 'WEIGHT',
+                      value: '88.0',
+                      unit: 'kg',
+                      subtitle: 'Current weight',
+                      icon: Icons.monitor_weight_outlined,
+                      accentColor: AppColors.red,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: _MetricCard(
+                      title: 'PROTEIN',
+                      value: '126',
+                      unit: 'g',
+                      subtitle: 'of 180 g daily goal',
+                      icon: Icons.egg_alt_outlined,
+                      accentColor: AppColors.green,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // LOG ACTIVITY CARD
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.border,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Activity icon
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.green.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.directions_walk,
+                        color: AppColors.green,
+                        size: 25,
+                      ),
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    // Activity details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'LOG ACTIVITY',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+
+                          const SizedBox(height: 5),
+
+                          Text(
+                            'Track your daily movement',
+                            style: GoogleFonts.inter(
+                              color: AppColors.grey,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Action icon
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: AppColors.green,
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // PROGRESS ANALYTICS
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.border,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section heading
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'PROGRESS ANALYTICS',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                          ),
+                        ),
+
+                        Icon(
+                          Icons.show_chart,
+                          color: AppColors.red,
+                          size: 21,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Text(
+                      'Your weight journey',
+                      style: GoogleFonts.inter(
+                        color: AppColors.grey,
+                        fontSize: 11,
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // Weight chart
+                    SizedBox(
+                      height: 150,
+                      width: double.infinity,
+                      child: CustomPaint(
+                        painter: _WeightChartPainter(),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    Divider(color: AppColors.border),
+
+                    const SizedBox(height: 14),
+
+                    // Progress metrics
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ProgressMetric(
+                            title: 'CURRENT',
+                            value: '88.0 kg',
+                            color: AppColors.white,
+                          ),
+                        ),
+
+                        Expanded(
+                          child: _ProgressMetric(
+                            title: 'WEEKLY CHANGE',
+                            value: '-0.6 kg',
+                            color: AppColors.green,
+                          ),
+                        ),
+
+                        Expanded(
+                          child: _ProgressMetric(
+                            title: 'AVERAGE',
+                            value: '88.4 kg',
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// DASHBOARD CARD
+class _DashboardCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String description;
+  final String detail;
+  final Color accentColor;
+  final String buttonText;
+
+  const _DashboardCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.description,
+    required this.detail,
+    required this.accentColor,
+    required this.buttonText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            color: accentColor,
+            size: 23,
+          ),
+
+          const SizedBox(height: 15),
+
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            subtitle,
+            style: GoogleFonts.inter(
+              color: AppColors.grey,
+              fontSize: 10,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Text(
+            description,
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            detail,
+            style: GoogleFonts.inter(
+              color: AppColors.grey,
+              fontSize: 11,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              vertical: 11,
+            ),
+            decoration: BoxDecoration(
+              color: accentColor,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              buttonText,
+              style: GoogleFonts.inter(
+                color: Colors.black,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// METRIC CARD
+class _MetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String unit;
+  final String subtitle;
+  final IconData icon;
+  final Color accentColor;
+
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.unit,
+    required this.subtitle,
+    required this.icon,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  color: AppColors.grey,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
+              ),
+
+              Icon(
+                icon,
+                color: accentColor,
+                size: 19,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 27,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              Text(
+                unit,
+                style: GoogleFonts.inter(
+                  color: accentColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 5),
+
+          Text(
+            subtitle,
+            style: GoogleFonts.inter(
+              color: AppColors.grey,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// PROGRESS METRIC
+class _ProgressMetric extends StatelessWidget {
+  final String title;
+  final String value;
+  final Color color;
+
+  const _ProgressMetric({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.inter(
+            color: AppColors.grey,
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+
+        const SizedBox(height: 7),
+
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            color: color,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// WEIGHT CHART
+class _WeightChartPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = AppColors.border
+      ..strokeWidth = 0.7;
+
+    final linePaint = Paint()
+      ..color = AppColors.red
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final points = [
+      Offset(0, size.height * 0.25),
+      Offset(size.width * 0.16, size.height * 0.35),
+      Offset(size.width * 0.32, size.height * 0.30),
+      Offset(size.width * 0.48, size.height * 0.52),
+      Offset(size.width * 0.64, size.height * 0.48),
+      Offset(size.width * 0.82, size.height * 0.68),
+      Offset(size.width, size.height * 0.78),
+    ];
+
+    // Horizontal grid lines
+    for (int i = 0; i < 4; i++) {
+      final y = i * size.height / 3;
+
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        gridPaint,
+      );
+    }
+
+    // Draw chart line
+    final path = Path()
+      ..moveTo(points.first.dx, points.first.dy);
+
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].dx, points[i].dy);
+    }
+
+    canvas.drawPath(path, linePaint);
+
+    // Draw data points
+    final dotPaint = Paint()
+      ..color = AppColors.red
+      ..style = PaintingStyle.fill;
+
+    for (final point in points) {
+      canvas.drawCircle(point, 3.5, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
+  }
+}
