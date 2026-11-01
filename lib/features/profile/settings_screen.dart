@@ -14,9 +14,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String _weightUnit = 'kg';
   String _heightUnit = 'cm';
-  bool _reminders = true;
   bool _weeklySummary = true;
-  bool _dailyCheckIn = true;
   bool _isLoading = true;
 
   @override
@@ -30,17 +28,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final values = await Future.wait([
       db.getAppSetting('weight_unit', defaultValue: 'kg'),
       db.getAppSetting('height_unit', defaultValue: 'cm'),
-      db.getAppSetting('reminders_enabled', defaultValue: 'true'),
       db.getAppSetting('weekly_summary_enabled', defaultValue: 'true'),
-      db.getAppSetting('daily_checkin_enabled', defaultValue: 'true'),
     ]);
     if (!mounted) return;
     setState(() {
       _weightUnit = values[0];
       _heightUnit = values[1];
-      _reminders = values[2] == 'true';
       _weeklySummary = values[3] == 'true';
-      _dailyCheckIn = values[4] == 'true';
       _isLoading = false;
     });
   }
@@ -55,9 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _changePreference(String key, bool value) async {
     setState(() {
-      if (key == 'reminders_enabled') _reminders = value;
       if (key == 'weekly_summary_enabled') _weeklySummary = value;
-      if (key == 'daily_checkin_enabled') _dailyCheckIn = value;
     });
     await AppDatabase.instance.saveAppSetting(key, value.toString());
   }
