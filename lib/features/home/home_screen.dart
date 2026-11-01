@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
 import '../profile/profile_screen.dart';
+import 'weekly_progress_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,11 +26,15 @@ class HomeScreenState extends State<HomeScreen> {
     final weights = await db.getRecentBodyWeights();
     final latestWeight = await db.getLatestBodyWeight();
     final targets = await db.getNutritionTargets();
+    final weekly = await db.getWeeklyProgressDetails();
+    final weightUnit = await db.getAppSetting('weight_unit', defaultValue: 'kg');
     return _DashboardData(
       nutrition: nutrition,
       weights: weights,
       latestWeight: latestWeight,
       targets: targets,
+      weekly: weekly,
+      weightUnit: weightUnit,
     );
   }
 
@@ -486,12 +491,126 @@ class HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 16),
+              if (data != null) _buildWeeklySummaryCard(data),
             ],
           ),
         ),
       ),
     );
       },
+    );
+  }
+
+  Widget _buildWeeklySummaryCard(_DashboardData data) {
+    final weekly = data.weekly;
+    final trackedDays = weekly['tracked_days'] as int;
+    final weightDays = weekly['weight_days'] as int;
+    final workouts = weekly['workouts'] as int;
+    final averageCalories = weekly['average_calories'] as double;
+    final averageWeight = weekly['average_weight'] as double;
+    final averageProtein = weekly['average_protein'] as double;
+    final factor = data.weightUnit == 'lb' ? 2.20462 : 1.0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'THIS WEEK',
+                  style: GoogleFonts.inter(
+                    color: AppColors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.9,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const WeeklyProgressScreen(),
+                    ),
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.green,
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'VIEW DETAILS  →',
+                  style: GoogleFonts.inter(
+                    color: AppColors.green,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _WeeklyMiniMetric(
+                  label: 'AVG. CALORIES',
+                  value: trackedDays == 0 ? '—' : '${averageCalories.round()}',
+                  unit: 'kcal/day',
+                  note: '$trackedDays/7 days logged',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _WeeklyMiniMetric(
+                  label: 'AVG. WEIGHT',
+                  value: weightDays == 0
+                      ? '—'
+                      : (averageWeight * factor).toStringAsFixed(1),
+                  unit: data.weightUnit,
+                  note: '$weightDays weigh-ins',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _WeeklyMiniMetric(
+                  label: 'AVG. PROTEIN',
+                  value: trackedDays == 0 ? '—' : '${averageProtein.round()}',
+                  unit: 'g/day',
+                  note: 'On logged days',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _WeeklyMiniMetric(
+                  label: 'WORKOUTS',
+                  value: '$workouts',
+                  unit: 'completed',
+                  note: 'This week',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -501,13 +620,87 @@ class _DashboardData {
   final List<Map<String, Object?>> weights;
   final Map<String, Object?>? latestWeight;
   final Map<String, Object?>? targets;
+  final Map<String, Object?> weekly;
+  final String weightUnit;
 
   const _DashboardData({
     required this.nutrition,
     required this.weights,
     required this.latestWeight,
     required this.targets,
+    required this.weekly,
+    required this.weightUnit,
   });
+}
+
+class _WeeklyMiniMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+  final String note;
+
+  const _WeeklyMiniMetric({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.note,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              color: AppColors.grey,
+              fontSize: 8,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: AppColors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  unit,
+                  style: GoogleFonts.inter(color: AppColors.grey, fontSize: 8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            note,
+            style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // DASHBOARD CARD
