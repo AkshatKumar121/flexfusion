@@ -326,6 +326,57 @@ class AppDatabase {
     });
   }
 
+  Future<void> savePersonalDetails({
+    required String displayName,
+    required int age,
+    required double heightCm,
+    required double weightKg,
+    required String goal,
+  }) async {
+    final db = await database;
+    final now = DateTime.now();
+    final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final timestamp = now.toIso8601String();
+    await db.transaction((txn) async {
+      final existing = await txn.query('user_profile', where: 'id = 1', limit: 1);
+      await txn.insert('user_profile', {
+        'id': 1,
+        'display_name': displayName,
+        'age': age,
+        'height_value': heightCm,
+        'height_unit': 'cm',
+        'current_goal': goal,
+        'created_at': existing.isEmpty ? timestamp : existing.first['created_at'],
+        'updated_at': timestamp,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert('body_weights', {
+        'log_date': today,
+        'weight_value': weightKg,
+        'weight_unit': 'kg',
+        'created_at': timestamp,
+        'updated_at': timestamp,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+  }
+
+  Future<void> saveNutritionTargets({
+    required double calories,
+    required double protein,
+    required double carbs,
+    required double fat,
+  }) async {
+    final db = await database;
+    final now = DateTime.now();
+    final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    await db.insert('nutrition_targets', {
+      'effective_from': today,
+      'calorie_target': calories,
+      'protein_target_g': protein,
+      'carbs_target_g': carbs,
+      'fat_target_g': fat,
+    });
+  }
+
   Future<Map<String, Object?>?> getUserProfile() async {
     final db = await database;
     final rows = await db.query('user_profile', where: 'id = 1', limit: 1);
