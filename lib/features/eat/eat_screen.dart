@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 
@@ -9,9 +12,65 @@ class EatScreen extends StatefulWidget {
 }
 
 class _EatScreenState extends State<EatScreen> {
+  late final String _dateKey;
+  bool _isLoading = true;
+
   final Map<String, List<LoggedFood>> meals = {
     'BREAKFAST': [], 'LUNCH': [], 'SNACKS': [], 'DINNER': [],
   };
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    final date = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    _dateKey = 'flexfusion_meals_$date';
+    _loadMeals();
+  }
+
+  Future<void> _loadMeals() async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final saved = preferences.getString(_dateKey);
+      if (saved != null) {
+        final decoded = jsonDecode(saved) as Map<String, dynamic>;
+        for (final meal in meals.keys) {
+          final entries = decoded[meal] as List<dynamic>? ?? [];
+          meals[meal] = entries.map((entry) {
+            final item = entry as Map<String, dynamic>;
+            return LoggedFood(
+              item['name'] as String,
+              (item['grams'] as num).toDouble(),
+              (item['kcal'] as num).toDouble(),
+              (item['protein'] as num).toDouble(),
+              (item['carbs'] as num).toDouble(),
+              (item['fat'] as num).toDouble(),
+            );
+          }).toList();
+        }
+      }
+    } catch (error) {
+      debugPrint('Could not load saved meal entries: $error');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _saveMeals() async {
+    final preferences = await SharedPreferences.getInstance();
+    final data = meals.map((meal, entries) => MapEntry(
+      meal,
+      entries.map((food) => {
+        'name': food.name,
+        'grams': food.grams,
+        'kcal': food.kcal,
+        'protein': food.protein,
+        'carbs': food.carbs,
+        'fat': food.fat,
+      }).toList(),
+    ));
+    await preferences.setString(_dateKey, jsonEncode(data));
+  }
+
   List<LoggedFood> get all => meals.values.expand((e) => e).toList();
   double get kcal => all.fold(0, (s, f) => s + f.kcal);
   double get protein => all.fold(0, (s, f) => s + f.protein);
@@ -23,7 +82,10 @@ class _EatScreenState extends State<EatScreen> {
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
       builder: (_) => FoodPickerSheet(meal: meal),
     );
-    if (result != null && mounted) setState(() => meals[meal]!.add(result));
+    if (result != null && mounted) {
+      setState(() => meals[meal]!.add(result));
+      await _saveMeals();
+    }
   }
 
   @override
@@ -31,7 +93,9 @@ class _EatScreenState extends State<EatScreen> {
     final remaining = (2200 - kcal).clamp(0, 2200).toDouble();
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(child: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.green))
+          : SafeArea(child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _header(),
