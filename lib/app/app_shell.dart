@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'theme/app_colors.dart';
 import '../features/home/home_screen.dart';
+import '../features/eat/eat_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -21,11 +22,7 @@ class _AppShellState extends State<AppShell> {
       icon: Icons.fitness_center,
     ),
     HomeScreen(),
-    _PlaceholderScreen(
-      title: 'Eat',
-      subtitle: 'Your nutrition tracker will appear here.',
-      icon: Icons.restaurant,
-    ),
+    EatScreen(),
   ];
 
   @override
