@@ -14,7 +14,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String _weightUnit = 'kg';
   String _heightUnit = 'cm';
-  bool _weeklySummary = true;
   bool _isLoading = true;
 
   @override
@@ -28,13 +27,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final values = await Future.wait([
       db.getAppSetting('weight_unit', defaultValue: 'kg'),
       db.getAppSetting('height_unit', defaultValue: 'cm'),
-      db.getAppSetting('weekly_summary_enabled', defaultValue: 'true'),
     ]);
     if (!mounted) return;
     setState(() {
       _weightUnit = values[0];
       _heightUnit = values[1];
-      _weeklySummary = values[2] == 'true';
       _isLoading = false;
     });
   }
@@ -45,13 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (key == 'height_unit') _heightUnit = value;
     });
     await AppDatabase.instance.saveAppSetting(key, value);
-  }
-
-  Future<void> _changePreference(String key, bool value) async {
-    setState(() {
-      if (key == 'weekly_summary_enabled') _weeklySummary = value;
-    });
-    await AppDatabase.instance.saveAppSetting(key, value.toString());
   }
 
   @override
@@ -73,10 +63,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildUnitsCard(),
               const SizedBox(height: 16),
               _buildPreferencesCard(),
-              if (_weeklySummary) ...[
-                const SizedBox(height: 16),
-                _buildWeeklySummaryCard(),
-              ],
               const SizedBox(height: 16),
               _buildDataCard(),
             ],
@@ -231,13 +217,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Reminders',
             trailing: _comingSoonLabel(),
           ),
-          _SettingsSwitchRow(
-            icon: Icons.bar_chart_rounded,
-            title: 'Weekly Progress Summary',
-            value: _weeklySummary,
-            onChanged: (value) =>
-                _changePreference('weekly_summary_enabled', value),
-          ),
           _SettingsInfoRow(
             icon: Icons.event_available_outlined,
             title: 'End of Day Check-in',
@@ -258,181 +237,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         fontWeight: FontWeight.w700,
         letterSpacing: 0.7,
       ),
-    );
-  }
-
-  Widget _buildWeeklySummaryCard() {
-    return FutureBuilder<Map<String, Object?>>(
-      future: AppDatabase.instance.getWeeklyProgressSummary(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const _SettingsCard(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(18),
-                child: CircularProgressIndicator(color: AppColors.green),
-              ),
-            ),
-          );
-        }
-        if (snapshot.hasError || !snapshot.hasData) {
-          return _SettingsCard(
-            child: Text(
-              'Unable to load this week\'s summary.',
-              style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
-            ),
-          );
-        }
-
-        final data = snapshot.data!;
-        final loggedDays = data['logged_days'] as int;
-        final weighInDays = data['weigh_in_days'] as int;
-        final averageCalories = data['average_calories'] as double;
-        final averageProtein = data['average_protein'] as double;
-        final averageWeight = data['average_weight'] as double;
-        final previousWeight = data['previous_average_weight'] as double;
-        final hasPreviousWeight = data['has_previous_weight'] as bool;
-        final workouts = data['completed_workouts'] as int;
-        final weightFactor = _weightUnit == 'lb' ? 2.20462 : 1.0;
-        final weightChange = (averageWeight - previousWeight) * weightFactor;
-        final weightUnitLabel = _weightUnit;
-
-        String formatDate(String value) {
-          final parts = value.split('-');
-          return '${parts[2]}/${parts[1]}';
-        }
-
-        final period =
-            '${formatDate(data['start_date'] as String)} – '
-            '${formatDate(data['end_date'] as String)}';
-
-        return _SettingsCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _SettingsHeading(
-                icon: Icons.insights_outlined,
-                title: 'WEEKLY PROGRESS SUMMARY',
-              ),
-              const SizedBox(height: 5),
-              Text(
-                'Last 7 days · $period',
-                style: GoogleFonts.inter(
-                  color: AppColors.grey,
-                  fontSize: 10,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _summaryMetric(
-                      'AVG. CALORIES',
-                      loggedDays == 0
-                          ? '—'
-                          : '${averageCalories.round()} kcal',
-                      '$loggedDays of 7 days tracked',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _summaryMetric(
-                      'AVG. WEIGHT',
-                      weighInDays == 0
-                          ? '—'
-                          : '${(averageWeight * weightFactor).toStringAsFixed(1)} $weightUnitLabel',
-                      '$weighInDays weigh-in days',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _summaryMetric(
-                      'AVG. PROTEIN',
-                      loggedDays == 0
-                          ? '—'
-                          : '${averageProtein.round()} g',
-                      'On food-logged days',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _summaryMetric(
-                      'WORKOUTS',
-                      '$workouts',
-                      'Completed sessions',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _summaryMetric(
-                'WEIGHT CHANGE VS PREVIOUS 7 DAYS',
-                !hasPreviousWeight || weighInDays == 0
-                    ? 'Not enough data'
-                    : '${weightChange > 0 ? '+' : ''}${weightChange.toStringAsFixed(1)} $weightUnitLabel',
-                hasPreviousWeight
-                    ? 'Based on weekly average weight'
-                    : 'Log weight in both periods to compare',
-                fullWidth: true,
-              ),
-              if (loggedDays == 0 && weighInDays == 0 && workouts == 0) ...[
-                const SizedBox(height: 12),
-                Text(
-                  'Start logging meals, weight and workouts to build your weekly summary.',
-                  style: GoogleFonts.inter(
-                    color: AppColors.grey,
-                    fontSize: 11,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _summaryMetric(
-    String label,
-    String value,
-    String caption, {
-    bool fullWidth = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            color: AppColors.grey,
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: GoogleFonts.inter(
-            color: AppColors.white,
-            fontSize: fullWidth ? 16 : 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          caption,
-          style: GoogleFonts.inter(
-            color: AppColors.grey,
-            fontSize: 10,
-          ),
-        ),
-      ],
     );
   }
 
