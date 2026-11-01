@@ -701,9 +701,7 @@ class _SettingsRowBase extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 50),
       decoration: BoxDecoration(
-        border: showDivider
-            ? Border(bottom: BorderSide(color: AppColors.border))
-            : null,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
