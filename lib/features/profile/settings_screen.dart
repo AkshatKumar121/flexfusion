@@ -34,7 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _weightUnit = values[0];
       _heightUnit = values[1];
-      _weeklySummary = values[3] == 'true';
+      _weeklySummary = values[2] == 'true';
       _isLoading = false;
     });
   }
@@ -242,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.event_available_outlined,
             title: 'End of Day Check-in',
             trailing: _comingSoonLabel(),
-            ),
+          ),
           const SizedBox(height: 4),
         ],
       ),
