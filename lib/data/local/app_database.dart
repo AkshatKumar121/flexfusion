@@ -10,7 +10,7 @@ class AppDatabase {
   AppDatabase._();
 
   static final AppDatabase instance = AppDatabase._();
-  static const int schemaVersion = 1;
+  static const int schemaVersion = 2;
   Database? _database;
 
   Future<Database> get database async {
@@ -240,7 +240,9 @@ class AppDatabase {
   }
 
   Future<void> _upgradeSchema(Database db, int oldVersion, int newVersion) async {
-    // Add forward-only migrations here when the schema version increases.
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE user_profile ADD COLUMN age INTEGER');
+    }
   }
 
   Future<void> _migrateLegacyMealLogs(Database db) async {
