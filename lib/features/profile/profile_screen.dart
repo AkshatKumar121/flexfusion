@@ -428,7 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _SectionHeading(
             icon: Icons.track_changes,
             title: 'FITNESS GOAL',
-            onEdit: _editDailyTargets,
+            onEdit: _editPersonalDetails,
           ),
           const SizedBox(height: 16),
           Row(
@@ -468,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _SectionHeading(
             icon: Icons.bar_chart_rounded,
             title: 'DAILY TARGETS',
-            onEdit: _editProfile,
+            onEdit: _editDailyTargets,
           ),
           const SizedBox(height: 18),
           Center(
