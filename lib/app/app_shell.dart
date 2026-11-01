@@ -15,6 +15,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 1;
   final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
+  final GlobalKey<EatScreenState> _eatScreenKey = GlobalKey<EatScreenState>();
 
   late final List<Widget> _screens = [
     _PlaceholderScreen(
@@ -23,7 +24,7 @@ class _AppShellState extends State<AppShell> {
       icon: Icons.fitness_center,
     ),
     HomeScreen(key: _homeScreenKey),
-    EatScreen(),
+    EatScreen(key: _eatScreenKey),
   ];
 
   @override
@@ -88,6 +89,8 @@ class _AppShellState extends State<AppShell> {
           });
           if (index == 1) {
             _homeScreenKey.currentState?.refreshDashboard();
+          } else if (index == 2) {
+            _eatScreenKey.currentState?.refreshEatScreen();
           }
         },
         child: Column(
