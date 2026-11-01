@@ -350,7 +350,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           Row(
-            children: const [
+            children: [
               Expanded(
                 child: _DetailTile(
                   icon: Icons.cake_outlined,
