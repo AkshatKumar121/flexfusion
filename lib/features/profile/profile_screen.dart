@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -111,9 +112,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(
             child: InkWell(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Settings screen is coming next'),
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const SettingsScreen(),
                   ),
                 );
               },
