@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
-import 'profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -93,13 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Expanded(
             child: InkWell(
-              onTap: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute<void>(
-                    builder: (context) => const ProfileScreen(),
-                  ),
-                );
-              },
+              onTap: () => Navigator.of(context).pop(),
               child: Center(
                 child: Text(
                   'PROFILE',
