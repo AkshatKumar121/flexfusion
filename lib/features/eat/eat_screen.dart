@@ -28,7 +28,7 @@ class _EatScreenState extends State<EatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final remaining = (2200 - kcal).clamp(0, 2200);
+    final remaining = (2200 - kcal).clamp(0, 2200).toDouble();
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(child: SingleChildScrollView(
@@ -325,7 +325,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
       ? Center(child: Text('No matching foods. Try another search or add a custom food.', textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12)))
       : ListView.separated(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 12), itemCount: list.length,
-        separatorBuilder: (_, __) => const Divider(color: AppColors.border, height: 1),
+        separatorBuilder: (_, _) => const Divider(color: AppColors.border, height: 1),
         itemBuilder: (_, i) {
           final f = list[i]; final active = selected?.name == f.name;
           return ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 2),
@@ -350,7 +350,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
     Text('Enter the nutrition values shown on the food label, per 100 g.', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10)),
   ]);
 
-  Widget _field(TextEditingController c, String hint, bool text) => TextField(
+  Widget _field(TextEditingController c, String hint, [bool text = false]) => TextField(
     controller: c, keyboardType: text ? TextInputType.text : const TextInputType.numberWithOptions(decimal: true),
     style: GoogleFonts.inter(color: AppColors.white, fontSize: 12), decoration: decoration(hint),
   );
