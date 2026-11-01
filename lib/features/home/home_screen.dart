@@ -3,10 +3,34 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../data/local/app_database.dart';
 import '../profile/profile_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<_DashboardData> _dashboardFuture;
+
+  String _dateKey(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  Future<_DashboardData> _loadDashboard() async {
+    final db = AppDatabase.instance;
+    final nutrition = await db.getDashboardNutrition(_dateKey(DateTime.now()));
+    final weights = await db.getRecentBodyWeights();
+    return _DashboardData(nutrition: nutrition, weights: weights);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _dashboardFuture = _loadDashboard();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +76,16 @@ class HomeScreen extends StatelessWidget {
         '${weekdays[now.weekday - 1]}, '
         '${now.day} ${months[now.month - 1]} ${now.year}';
 
-    return Scaffold(
+    return FutureBuilder<_DashboardData>(
+      future: _dashboardFuture,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        final kcal = data?.nutrition['calories'] ?? 0.0;
+        final protein = data?.nutrition['protein'] ?? 0.0;
+        final currentWeight = data?.weights.isNotEmpty == true
+            ? (data!.weights.first['weight_value'] as num).toDouble()
+            : null;
+        return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -217,7 +250,7 @@ class HomeScreen extends StatelessWidget {
                       icon: Icons.restaurant,
                       title: 'EAT',
                       subtitle: 'Daily nutrition',
-                      description: '1,484 kcal',
+                      description: '${kcal.round()} kcal',
                       detail: 'of 2,200 kcal',
                       accentColor: AppColors.green,
                       buttonText: 'LOG MEAL',
@@ -234,9 +267,9 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: _MetricCard(
                       title: 'WEIGHT',
-                      value: '88.0',
-                      unit: 'kg',
-                      subtitle: 'Current weight',
+                      value: currentWeight?.toStringAsFixed(1) ?? '—',
+                      unit: currentWeight == null ? '' : 'kg',
+                      subtitle: currentWeight == null ? 'Log your weight' : 'Latest entry',
                       icon: Icons.monitor_weight_outlined,
                       accentColor: AppColors.red,
                     ),
@@ -247,7 +280,7 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: _MetricCard(
                       title: 'PROTEIN',
-                      value: '126',
+                      value: protein.round().toString(),
                       unit: 'g',
                       subtitle: 'of 180 g daily goal',
                       icon: Icons.egg_alt_outlined,
@@ -380,9 +413,21 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(
                       height: 150,
                       width: double.infinity,
-                      child: CustomPaint(
-                        painter: _WeightChartPainter(),
-                      ),
+                      child: data == null || data.weights.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Log your weight to see your progress here',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11),
+                              ),
+                            )
+                          : CustomPaint(
+                              painter: _WeightChartPainter(
+                                values: data.weights.reversed
+                                    .map((row) => (row['weight_value'] as num).toDouble())
+                                    .toList(),
+                              ),
+                            ),
                     ),
 
                     const SizedBox(height: 20),
@@ -397,7 +442,7 @@ class HomeScreen extends StatelessWidget {
                         Expanded(
                           child: _ProgressMetric(
                             title: 'CURRENT',
-                            value: '88.0 kg',
+                            value: currentWeight == null ? '—' : '${currentWeight.toStringAsFixed(1)} kg',
                             color: AppColors.white,
                           ),
                         ),
@@ -405,7 +450,9 @@ class HomeScreen extends StatelessWidget {
                         Expanded(
                           child: _ProgressMetric(
                             title: 'WEEKLY CHANGE',
-                            value: '-0.6 kg',
+                            value: data == null || data.weights.length < 2
+                                ? '—'
+                                : '${(((data.weights.first['weight_value'] as num).toDouble()) - ((data.weights.last['weight_value'] as num).toDouble())).toStringAsFixed(1)} kg',
                             color: AppColors.green,
                           ),
                         ),
@@ -413,7 +460,9 @@ class HomeScreen extends StatelessWidget {
                         Expanded(
                           child: _ProgressMetric(
                             title: 'AVERAGE',
-                            value: '88.4 kg',
+                            value: data == null || data.weights.isEmpty
+                                ? '—'
+                                : '${(data.weights.map((row) => (row['weight_value'] as num).toDouble()).reduce((a, b) => a + b) / data.weights.length).toStringAsFixed(1)} kg',
                             color: AppColors.white,
                           ),
                         ),
@@ -427,7 +476,16 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+      },
+    );
   }
+}
+
+class _DashboardData {
+  final Map<String, double> nutrition;
+  final List<Map<String, Object?>> weights;
+
+  const _DashboardData({required this.nutrition, required this.weights});
 }
 
 // DASHBOARD CARD
@@ -681,6 +739,10 @@ class _ProgressMetric extends StatelessWidget {
 
 // WEIGHT CHART
 class _WeightChartPainter extends CustomPainter {
+  final List<double> values;
+
+  const _WeightChartPainter({required this.values});
+
   @override
   void paint(Canvas canvas, Size size) {
     final gridPaint = Paint()
@@ -694,15 +756,14 @@ class _WeightChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final points = [
-      Offset(0, size.height * 0.25),
-      Offset(size.width * 0.16, size.height * 0.35),
-      Offset(size.width * 0.32, size.height * 0.30),
-      Offset(size.width * 0.48, size.height * 0.52),
-      Offset(size.width * 0.64, size.height * 0.48),
-      Offset(size.width * 0.82, size.height * 0.68),
-      Offset(size.width, size.height * 0.78),
-    ];
+    final minValue = values.reduce((a, b) => a < b ? a : b);
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final range = (maxValue - minValue).abs() < 0.01 ? 1.0 : maxValue - minValue;
+    final points = List<Offset>.generate(values.length, (index) {
+      final x = values.length == 1 ? size.width / 2 : index * size.width / (values.length - 1);
+      final y = size.height - 12 - ((values[index] - minValue) / range) * (size.height - 24);
+      return Offset(x, y);
+    });
 
     // Horizontal grid lines
     for (int i = 0; i < 4; i++) {
@@ -723,7 +784,7 @@ class _WeightChartPainter extends CustomPainter {
       path.lineTo(points[i].dx, points[i].dy);
     }
 
-    canvas.drawPath(path, linePaint);
+    if (points.length > 1) canvas.drawPath(path, linePaint);
 
     // Draw data points
     final dotPaint = Paint()
@@ -736,7 +797,7 @@ class _WeightChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
+  bool shouldRepaint(covariant _WeightChartPainter oldDelegate) {
+    return oldDelegate.values != values;
   }
 }
