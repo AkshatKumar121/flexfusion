@@ -326,6 +326,21 @@ class AppDatabase {
     });
   }
 
+  Future<String> getAppSetting(String key, {String defaultValue = ''}) async {
+    final db = await database;
+    final rows = await db.query('app_settings', where: 'key = ?', whereArgs: [key], limit: 1);
+    return rows.isEmpty ? defaultValue : rows.first['value'] as String;
+  }
+
+  Future<void> saveAppSetting(String key, String value) async {
+    final db = await database;
+    await db.insert('app_settings', {
+      'key': key,
+      'value': value,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
   Future<void> savePersonalDetails({
     required String displayName,
     required int age,
