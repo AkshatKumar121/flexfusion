@@ -455,7 +455,7 @@ class _SettingsSwitchRow extends StatelessWidget {
       showDivider: showDivider,
       trailing: Switch.adaptive(
         value: value,
-        activeColor: AppColors.green,
+        activeThumbColor: AppColors.green,
         onChanged: onChanged,
       ),
     );
