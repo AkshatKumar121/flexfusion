@@ -14,7 +14,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String _weightUnit = 'kg';
   String _heightUnit = 'cm';
-  String _energyUnit = 'kcal';
   bool _reminders = true;
   bool _weeklySummary = true;
   bool _dailyCheckIn = true;
@@ -31,13 +30,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final values = await Future.wait([
       db.getAppSetting('weight_unit', defaultValue: 'kg'),
       db.getAppSetting('height_unit', defaultValue: 'cm'),
-      db.getAppSetting('energy_unit', defaultValue: 'kcal'),
     ]);
     if (!mounted) return;
     setState(() {
       _weightUnit = values[0];
       _heightUnit = values[1];
-      _energyUnit = values[2];
       _isLoading = false;
     });
   }
@@ -46,7 +43,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       if (key == 'weight_unit') _weightUnit = value;
       if (key == 'height_unit') _heightUnit = value;
-      if (key == 'energy_unit') _energyUnit = value;
     });
     await AppDatabase.instance.saveAppSetting(key, value);
   }
@@ -188,9 +184,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _UnitRow(
             label: 'Energy Unit',
-            options: const ['kcal', 'kJ'],
-            value: _energyUnit,
-            onChanged: (value) => _changeUnit('energy_unit', value),
+            options: const ['kcal'],
+            value: 'kcal',
+            onChanged: (_) {},
             showDivider: false,
           ),
         ],
