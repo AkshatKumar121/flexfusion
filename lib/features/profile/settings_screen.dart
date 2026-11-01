@@ -579,9 +579,7 @@ class _UnitRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        border: showDivider
-            ? Border(bottom: BorderSide(color: AppColors.border))
-            : null,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -691,13 +689,11 @@ class _SettingsRowBase extends StatelessWidget {
   final IconData icon;
   final String title;
   final Widget trailing;
-  final bool showDivider;
 
   const _SettingsRowBase({
     required this.icon,
     required this.title,
     required this.trailing,
-    this.showDivider = true,
   });
 
   @override
