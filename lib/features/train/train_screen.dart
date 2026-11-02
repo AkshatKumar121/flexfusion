@@ -29,7 +29,7 @@ class TrainScreenState extends State<TrainScreen> {
   Future<_TrainData> _loadData() async {
     final db = AppDatabase.instance;
     final latestWeight = await db.getLatestBodyWeight();
-    final photos = await db.getProgressPhotos(limit: 12);
+    final photos = await db.getProgressPhotos(limit: 1000);
     final weekly = await db.getWeeklyProgressDetails();
     return _TrainData(
       latestWeight: latestWeight,
@@ -446,6 +446,18 @@ class TrainScreenState extends State<TrainScreen> {
   }
 
   Widget _buildPhotoCard(List<Map<String, Object?>> photos) {
+    final grouped = <String, List<Map<String, Object?>>>{};
+    for (final photo in photos) {
+      final date = photo['photo_date'] as String? ?? 'Unknown date';
+      grouped.putIfAbsent(date, () => []).add(photo);
+    }
+
+    String dateLabel(String value) {
+      final parsed = DateTime.tryParse(value);
+      if (parsed == null) return value;
+      return '${_weekday(parsed.weekday)}, ${parsed.day} ${_month(parsed.month)} ${parsed.year}';
+    }
+
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: _cardDecoration(),
@@ -467,7 +479,7 @@ class TrainScreenState extends State<TrainScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          if (photos.isEmpty)
+          if (grouped.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
@@ -475,51 +487,111 @@ class TrainScreenState extends State<TrainScreen> {
                   children: [
                     const Icon(Icons.photo_library_outlined, color: AppColors.grey, size: 30),
                     const SizedBox(height: 8),
-                    Text('Your progress photo timeline will appear here.', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10)),
+                    Text('Your date-wise progress photo timeline will appear here.', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10)),
                   ],
                 ),
               ),
             )
           else
-            SizedBox(
-              height: 118,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: photos.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 9),
-                itemBuilder: (context, index) {
-                  final photo = photos[index];
-                  final path = photo['local_file_path'] as String;
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(9),
-                    child: SizedBox(
-                      width: 88,
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: kIsWeb
-                                ? Container(color: AppColors.surface, child: const Icon(Icons.image, color: AppColors.grey))
-                                : Image.file(File(path), width: 88, fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Container(color: AppColors.surface, child: const Icon(Icons.broken_image_outlined, color: AppColors.grey))),
-                          ),
-                          Container(
-                            width: double.infinity,
-                            color: AppColors.surface,
-                            padding: const EdgeInsets.symmetric(vertical: 5),
-                            child: Text(
-                              '${photo['photo_date']}\n${(photo['angle'] as String).toUpperCase()}',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(color: AppColors.grey, fontSize: 8),
-                            ),
-                          ),
-                        ],
+            for (final entry in grouped.entries) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today_outlined, color: AppColors.green, size: 14),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        dateLabel(entry.key),
+                        style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w800),
                       ),
                     ),
-                  );
-                },
+                    Text(
+                      '${entry.value.length} photo${entry.value.length == 1 ? '' : 's'}',
+                      style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 126,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: entry.value.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 9),
+                  itemBuilder: (context, index) {
+                    final photo = entry.value[index];
+                    final path = photo['local_file_path'] as String;
+                    final angle = (photo['angle'] as String? ?? '').toUpperCase();
+                    return GestureDetector(
+                      onTap: () => _openProgressPhoto(path, dateLabel(entry.key), angle),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: SizedBox(
+                          width: 92,
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: kIsWeb
+                                    ? Container(color: AppColors.surface, child: const Icon(Icons.image, color: AppColors.grey))
+                                    : Image.file(
+                                        File(path),
+                                        width: 92,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Container(
+                                          color: AppColors.surface,
+                                          child: const Icon(Icons.broken_image_outlined, color: AppColors.grey),
+                                        ),
+                                      ),
+                              ),
+                              Container(
+                                width: double.infinity,
+                                color: AppColors.surface,
+                                padding: const EdgeInsets.symmetric(vertical: 5),
+                                child: Text(
+                                  angle,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 7),
+            ],
+        ],
+      ),
+    );
+  }
+
+  void _openProgressPhoto(String path, String date, String angle) {
+    if (kIsWeb) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: AppColors.white,
+            title: Text('$date • $angle', style: GoogleFonts.inter(fontSize: 12)),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 4,
+              child: Image.file(
+                File(path),
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image_outlined, color: AppColors.grey, size: 48),
               ),
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
