@@ -244,8 +244,9 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
     await _refresh();
   }
 
-  Future<void> _addExercise(int dayId, int currentCount) async {
+  Future<void> _addExercise(int dayId) async {
     final exercises = await AppDatabase.instance.getExercises();
+    final existingExercises = await AppDatabase.instance.getPlanDayExercises(dayId);
     if (!mounted) return;
     final selected = await showModalBottomSheet<Map<String, Object?>>(
       context: context,
@@ -301,7 +302,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
           dayId: dayId,
           exerciseId: selected['id'] as int,
           exerciseName: selected['name'] as String,
-          exerciseOrder: currentCount + 1,
+          exerciseOrder: existingExercises.length + 1,
           setCount: setCount,
           targetReps: reps,
           targetWeight: weight,
@@ -333,7 +334,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
               return _PlanDayCard(
                 key: ValueKey(day['id']),
                 day: day,
-                onAddExercise: () => _addExercise(day['id'] as int, 0),
+                onAddExercise: () => _addExercise(day['id'] as int),
                 onDelete: () async { await AppDatabase.instance.deleteWorkoutPlanDay(day['id'] as int); await _refresh(); },
               );
             },
@@ -346,7 +347,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
 
 class _PlanDayCard extends StatefulWidget {
   final Map<String, Object?> day;
-  final VoidCallback onAddExercise;
+  final Future<void> Function() onAddExercise;
   final VoidCallback onDelete;
   const _PlanDayCard({super.key, required this.day, required this.onAddExercise, required this.onDelete});
 
@@ -398,7 +399,7 @@ class _PlanDayCardState extends State<_PlanDayCard> {
                     if (mounted) setState(_load);
                   }, icon: const Icon(Icons.close, color: AppColors.grey, size: 18)),
                 ),
-              Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: widget.onAddExercise, icon: const Icon(Icons.add, size: 16), label: const Text('ADD EXERCISE'))),
+              Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: () async { await widget.onAddExercise(); if (mounted) setState(_load); }, icon: const Icon(Icons.add, size: 16), label: const Text('ADD EXERCISE'))),
             ]);
           },
         ) else Padding(padding: const EdgeInsets.only(top: 5), child: Text('Recovery day — no exercises scheduled.', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11))),
