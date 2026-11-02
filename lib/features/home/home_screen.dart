@@ -28,6 +28,11 @@ class HomeScreenState extends State<HomeScreen> {
     final latestWeight = await db.getLatestBodyWeight();
     final targets = await db.getNutritionTargets();
     final weekly = await db.getWeeklyProgressDetails();
+    final suggestedWorkoutDay = await db.getSuggestedWorkoutDay();
+    final suggestedExercises = suggestedWorkoutDay == null ||
+            (suggestedWorkoutDay['is_rest_day'] as int? ?? 0) == 1
+        ? <Map<String, Object?>>[]
+        : await db.getPlanDayExercises(suggestedWorkoutDay['id'] as int);
     final weightUnit = await db.getAppSetting('weight_unit', defaultValue: 'kg');
     return _DashboardData(
       nutrition: nutrition,
@@ -36,6 +41,8 @@ class HomeScreenState extends State<HomeScreen> {
       targets: targets,
       weekly: weekly,
       weightUnit: weightUnit,
+      suggestedWorkoutDay: suggestedWorkoutDay,
+      suggestedExerciseCount: suggestedExercises.length,
     );
   }
 
@@ -257,11 +264,22 @@ class HomeScreenState extends State<HomeScreen> {
                       icon: Icons.fitness_center,
                       title: 'TRAIN',
                       subtitle: 'Today\'s workout',
-                      description: 'Push Day',
-                      detail: '6 Exercises',
+                      description: data?.suggestedWorkoutDay == null
+                          ? 'No workout scheduled'
+                          : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
+                              ? 'Rest Day'
+                              : data.suggestedWorkoutDay!['label'] as String,
+                      detail: data?.suggestedWorkoutDay == null
+                          ? 'Create or activate a plan'
+                          : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
+                              ? 'Recovery day'
+                              : '${data.suggestedExerciseCount} Exercises',
                       accentColor: AppColors.red,
                       buttonText: 'START WORKOUT',
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen())),
+                      onTap: () async {
+                        await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen()));
+                        if (mounted) refreshDashboard();
+                      },
                     ),
                   ),
 
@@ -624,6 +642,8 @@ class _DashboardData {
   final Map<String, Object?>? targets;
   final Map<String, Object?> weekly;
   final String weightUnit;
+  final Map<String, Object?>? suggestedWorkoutDay;
+  final int suggestedExerciseCount;
 
   const _DashboardData({
     required this.nutrition,
@@ -632,6 +652,8 @@ class _DashboardData {
     required this.targets,
     required this.weekly,
     required this.weightUnit,
+    required this.suggestedWorkoutDay,
+    required this.suggestedExerciseCount,
   });
 }
 
