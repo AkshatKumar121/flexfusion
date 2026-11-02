@@ -11,7 +11,10 @@ class EatScreen extends StatefulWidget {
 
 class EatScreenState extends State<EatScreen> {
   late String _date;
-  late final DateTime _today;
+  DateTime get _today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
   bool _isLoading = true;
   double calorieTarget = 2200;
   double proteinTarget = 180;
@@ -26,7 +29,6 @@ class EatScreenState extends State<EatScreen> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _today = DateTime(now.year, now.month, now.day);
     _date = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     _loadData();
   }
