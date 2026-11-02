@@ -1446,6 +1446,14 @@ class AppDatabase {
     }
   }
 
+  Future<void> deleteWorkoutSession(int workoutId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('workout_sets', where: 'workout_id = ?', whereArgs: [workoutId]);
+      await txn.delete('workouts', where: 'id = ?', whereArgs: [workoutId]);
+    });
+  }
+
   Future<void> abandonWorkoutSession(int workoutId) async {
     final db = await database;
     await db.update('workouts', {
