@@ -163,6 +163,11 @@ class AppDatabase {
       )
     ''');
 
+    await _createWorkoutTables(db);
+  }
+
+
+  Future<void> _createWorkoutTables(Database db) async {
     await db.execute('''
       CREATE TABLE exercises (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -284,7 +289,19 @@ class AppDatabase {
       await _createEatV1Tables(db);
     }
     if (oldVersion < 4) {
-      await db.execute('ALTER TABLE workout_sets ADD COLUMN rest_seconds INTEGER NOT NULL DEFAULT 90');
+      final workoutSetsTable = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sets'",
+      );
+      if (workoutSetsTable.isEmpty) {
+        // Older installations may predate the workout module entirely.
+        await _createWorkoutTables(db);
+      } else {
+        final columns = await db.rawQuery('PRAGMA table_info(workout_sets)');
+        final hasRestSeconds = columns.any((column) => column['name'] == 'rest_seconds');
+        if (!hasRestSeconds) {
+          await db.execute('ALTER TABLE workout_sets ADD COLUMN rest_seconds INTEGER NOT NULL DEFAULT 90');
+        }
+      }
     }
   }
 
