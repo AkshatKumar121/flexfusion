@@ -20,7 +20,7 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
     _reload();
   }
 
-  void _reload() => _plansFuture = AppDatabase.instance.getWorkoutPlans();
+  void _reload() { _plansFuture = AppDatabase.instance.getWorkoutPlans(); }
 
   Future<void> _refresh() async {
     setState(_reload);
@@ -197,7 +197,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
     _reload();
   }
 
-  void _reload() => _daysFuture = AppDatabase.instance.getWorkoutPlanDays(widget.plan['id'] as int);
+  void _reload() { _daysFuture = AppDatabase.instance.getWorkoutPlanDays(widget.plan['id'] as int); }
 
   Future<void> _refresh() async {
     setState(_reload);
@@ -405,7 +405,7 @@ class _PlanDayCardState extends State<_PlanDayCard> {
   late Future<List<Map<String, Object?>>> _exercisesFuture;
   @override
   void initState() { super.initState(); _load(); }
-  void _load() => _exercisesFuture = AppDatabase.instance.getPlanDayExercises(widget.day['id'] as int);
+  void _load() { _exercisesFuture = AppDatabase.instance.getPlanDayExercises(widget.day['id'] as int); }
 
   Future<void> _substitute(Map<String, Object?> exercise) async {
     final library = await AppDatabase.instance.getExercises();
@@ -524,7 +524,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
   late Future<List<Map<String, Object?>>> _future;
   @override
   void initState() { super.initState(); _reload(); }
-  void _reload() => _future = AppDatabase.instance.getExercises();
+  void _reload() { _future = AppDatabase.instance.getExercises(); }
 
   Future<void> _editExercise([Map<String, Object?>? exercise]) async {
     final name = TextEditingController(text: exercise?['name'] as String? ?? '');
