@@ -41,7 +41,7 @@ class EatScreenState extends State<EatScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDay,
-      firstDate: _today.subtract(const Duration(days: 30)),
+      firstDate: DateTime(2000),
       lastDate: _today,
       helpText: 'SELECT FOOD LOG DATE',
     );
@@ -335,7 +335,7 @@ class EatScreenState extends State<EatScreen> {
   }
 
   Widget _addButton(String meal) => TextButton.icon(
-    onPressed: () => addFood(meal),
+    onPressed: _canEditSelectedDate ? () => addFood(meal) : null,
     style: TextButton.styleFrom(foregroundColor: AppColors.green, padding: const EdgeInsets.symmetric(horizontal: 8), visualDensity: VisualDensity.compact),
     icon: const Icon(Icons.add, size: 16),
     label: Text('ADD FOOD', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: .5)),
