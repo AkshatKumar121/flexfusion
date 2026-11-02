@@ -255,14 +255,14 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
           TextField(controller: labelController, style: GoogleFonts.inter(color: AppColors.white), decoration: const InputDecoration(labelText: 'Day name (e.g. Push A)')),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: scheduleType,
+            initialValue: scheduleType,
             dropdownColor: AppColors.card,
             decoration: const InputDecoration(labelText: 'Schedule'),
             items: const [DropdownMenuItem(value: 'sequence', child: Text('Sequence based')), DropdownMenuItem(value: 'weekday', child: Text('Fixed weekday'))],
             onChanged: (v) => setDialogState(() => scheduleType = v ?? 'sequence'),
           ),
           if (scheduleType == 'weekday') DropdownButtonFormField<int>(
-            value: weekday,
+            initialValue: weekday,
             dropdownColor: AppColors.card,
             decoration: const InputDecoration(labelText: 'Weekday'),
             items: const [DropdownMenuItem(value: 1, child: Text('Monday')), DropdownMenuItem(value: 2, child: Text('Tuesday')), DropdownMenuItem(value: 3, child: Text('Wednesday')), DropdownMenuItem(value: 4, child: Text('Thursday')), DropdownMenuItem(value: 5, child: Text('Friday')), DropdownMenuItem(value: 6, child: Text('Saturday')), DropdownMenuItem(value: 7, child: Text('Sunday'))],
