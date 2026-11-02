@@ -420,10 +420,45 @@ class AppDatabase {
     );
   }
 
+  Future<int> insertCustomFood({
+    required String name,
+    required double caloriesPer100g,
+    required double proteinPer100g,
+    required double carbsPer100g,
+    required double fatPer100g,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return db.insert('foods', {
+      'name': name.trim(),
+      'serving_basis_g': 100,
+      'calories_per_basis': caloriesPer100g,
+      'protein_per_basis_g': proteinPer100g,
+      'carbs_per_basis_g': carbsPer100g,
+      'fat_per_basis_g': fatPer100g,
+      'base_unit': 'g',
+      'source': 'user',
+      'verification_status': 'user_entered',
+      'is_custom': 1,
+      'created_at': now,
+      'updated_at': now,
+    });
+  }
+
+  Future<List<Map<String, Object?>>> getCustomFoods() async {
+    final db = await database;
+    return db.query(
+      'foods',
+      where: 'is_custom = 1 AND is_active = 1',
+      orderBy: 'name COLLATE NOCASE',
+    );
+  }
+
   Future<int> insertFoodLog({
     required String date,
     required String meal,
     required String name,
+    int? foodId,
     required double grams,
     required double calories,
     required double protein,
@@ -435,6 +470,7 @@ class AppDatabase {
     return db.insert('food_logs', {
       'log_date': date,
       'meal_type': meal,
+      'food_id': foodId,
       'food_name_snapshot': name,
       'quantity_g': grams,
       'quantity_value': grams,
