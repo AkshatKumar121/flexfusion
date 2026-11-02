@@ -1521,4 +1521,18 @@ class AppDatabase {
     return rows.isEmpty ? <String, Object?>{} : rows.first;
   }
 
+
+  Future<void> substitutePlanExercise({
+    required int planExerciseId,
+    required int exerciseId,
+    required String exerciseName,
+  }) async {
+    final db = await database;
+    await db.update('workout_plan_exercises', {
+      'exercise_id': exerciseId,
+      'exercise_name_snapshot': exerciseName.trim(),
+      'updated_at': DateTime.now().toIso8601String(),
+    }, where: 'id = ?', whereArgs: [planExerciseId]);
+  }
+
 }
