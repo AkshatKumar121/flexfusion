@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
+import 'workout_session_screen.dart';
 
 class WorkoutPlanScreen extends StatefulWidget {
   const WorkoutPlanScreen({super.key});
@@ -204,6 +205,19 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
     await _daysFuture;
   }
 
+  Future<void> _startDay(Map<String, Object?> day) async {
+    final id = await AppDatabase.instance.startWorkoutSession(
+      planId: widget.plan['id'] as int,
+      planDayId: day['id'] as int,
+      sessionName: day['label'] as String,
+    );
+    if (!mounted) return;
+    await Navigator.push(context, MaterialPageRoute<void>(
+      builder: (_) => WorkoutSessionScreen(workoutId: id, title: day['label'] as String),
+    ));
+    if (mounted) await _refresh();
+  }
+
   Future<void> _editDay(Map<String, Object?> day) async {
     final controller = TextEditingController(text: day['label'] as String);
     var type = day['schedule_type'] as String? ?? 'sequence';
@@ -380,6 +394,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
                 day: day,
                 onAddExercise: () => _addExercise(day['id'] as int),
                 onEdit: () => _editDay(day),
+                onStart: () => _startDay(day),
                 onDelete: () async { await AppDatabase.instance.deleteWorkoutPlanDay(day['id'] as int); await _refresh(); },
               );
             },
@@ -394,8 +409,9 @@ class _PlanDayCard extends StatefulWidget {
   final Map<String, Object?> day;
   final Future<void> Function() onAddExercise;
   final VoidCallback onEdit;
+  final VoidCallback onStart;
   final VoidCallback onDelete;
-  const _PlanDayCard({super.key, required this.day, required this.onAddExercise, required this.onEdit, required this.onDelete});
+  const _PlanDayCard({super.key, required this.day, required this.onAddExercise, required this.onEdit, required this.onStart, required this.onDelete});
 
   @override
   State<_PlanDayCard> createState() => _PlanDayCardState();
@@ -460,6 +476,7 @@ class _PlanDayCardState extends State<_PlanDayCard> {
         Row(children: [
           Expanded(child: Text(widget.day['label'] as String, style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w700))),
           Text(rest ? 'REST' : (widget.day['schedule_type'] == 'weekday' ? _weekday(widget.day['weekday'] as int? ?? 1) : 'SEQUENCE'), style: GoogleFonts.inter(color: AppColors.green, fontSize: 9, fontWeight: FontWeight.w800)),
+          if (!rest) TextButton(onPressed: widget.onStart, child: const Text('START')),
           IconButton(onPressed: widget.onEdit, icon: const Icon(Icons.edit_outlined, color: AppColors.grey, size: 18)),
           IconButton(onPressed: widget.onDelete, icon: const Icon(Icons.delete_outline, color: AppColors.grey, size: 19)),
         ]),
