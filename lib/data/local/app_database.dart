@@ -1038,5 +1038,276 @@ class AppDatabase {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
-}
 
+
+  // Workout plan and exercise library operations.
+  Future<List<Map<String, Object?>>> getExercises() async {
+    final db = await database;
+    return db.query('exercises', orderBy: 'muscle_group COLLATE NOCASE, name COLLATE NOCASE');
+  }
+
+  Future<int> saveExercise({
+    int? id,
+    required String name,
+    required String muscleGroup,
+    required String equipment,
+    String? instructions,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    final values = {
+      'name': name.trim(),
+      'muscle_group': muscleGroup.trim(),
+      'equipment': equipment.trim(),
+      'instructions': instructions?.trim(),
+      'is_custom': 1,
+      'updated_at': now,
+    };
+    if (id != null) {
+      await db.update('exercises', values, where: 'id = ?', whereArgs: [id]);
+      return id;
+    }
+    return db.insert('exercises', {...values, 'created_at': now});
+  }
+
+  Future<void> deleteExercise(int id) async {
+    final db = await database;
+    await db.delete('exercises', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<Map<String, Object?>>> getWorkoutPlans() async {
+    final db = await database;
+    return db.query('workout_plans', orderBy: 'is_active DESC, updated_at DESC, id DESC');
+  }
+
+  Future<Map<String, Object?>?> getActiveWorkoutPlan() async {
+    final db = await database;
+    final rows = await db.query('workout_plans', where: 'is_active = 1', limit: 1);
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<List<Map<String, Object?>>> getWorkoutPlanDays(int planId) async {
+    final db = await database;
+    return db.query('workout_plan_days', where: 'plan_id = ?', whereArgs: [planId], orderBy: 'day_order, id');
+  }
+
+  Future<List<Map<String, Object?>>> getPlanDayExercises(int dayId) async {
+    final db = await database;
+    return db.query('workout_plan_exercises', where: 'plan_day_id = ?', whereArgs: [dayId], orderBy: 'exercise_order, id');
+  }
+
+  Future<List<Map<String, Object?>>> getPlanExerciseSets(int planExerciseId) async {
+    final db = await database;
+    return db.query('workout_plan_sets', where: 'plan_exercise_id = ?', whereArgs: [planExerciseId], orderBy: 'set_order, id');
+  }
+
+  Future<int> createWorkoutPlan(String name, {String? description}) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return db.insert('workout_plans', {
+      'name': name.trim(),
+      'description': description?.trim(),
+      'is_active': 0,
+      'created_at': now,
+      'updated_at': now,
+    });
+  }
+
+  Future<void> updateWorkoutPlan(int id, {required String name, String? description}) async {
+    final db = await database;
+    await db.update('workout_plans', {
+      'name': name.trim(),
+      'description': description?.trim(),
+      'updated_at': DateTime.now().toIso8601String(),
+    }, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> setActiveWorkoutPlan(int id) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.update('workout_plans', {'is_active': 0});
+      await txn.update('workout_plans', {
+        'is_active': 1,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, where: 'id = ?', whereArgs: [id]);
+    });
+  }
+
+  Future<void> deleteWorkoutPlan(int id) async {
+    final db = await database;
+    await db.delete('workout_plans', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> duplicateWorkoutPlan(int planId, String newName) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return db.transaction((txn) async {
+      final sourceRows = await txn.query('workout_plans', where: 'id = ?', whereArgs: [planId], limit: 1);
+      if (sourceRows.isEmpty) throw StateError('Workout plan not found');
+      final source = sourceRows.first;
+      final newPlanId = await txn.insert('workout_plans', {
+        'name': newName.trim(),
+        'description': source['description'],
+        'is_active': 0,
+        'created_at': now,
+        'updated_at': now,
+      });
+      final days = await txn.query('workout_plan_days', where: 'plan_id = ?', whereArgs: [planId], orderBy: 'day_order, id');
+      for (final day in days) {
+        final newDayId = await txn.insert('workout_plan_days', {
+          'plan_id': newPlanId,
+          'day_order': day['day_order'],
+          'label': day['label'],
+          'schedule_type': day['schedule_type'],
+          'weekday': day['weekday'],
+          'is_rest_day': day['is_rest_day'],
+          'created_at': now,
+          'updated_at': now,
+        });
+        final exercises = await txn.query('workout_plan_exercises', where: 'plan_day_id = ?', whereArgs: [day['id']], orderBy: 'exercise_order, id');
+        for (final exercise in exercises) {
+          final newExerciseId = await txn.insert('workout_plan_exercises', {
+            'plan_day_id': newDayId,
+            'exercise_id': exercise['exercise_id'],
+            'exercise_name_snapshot': exercise['exercise_name_snapshot'],
+            'exercise_order': exercise['exercise_order'],
+            'notes': exercise['notes'],
+            'created_at': now,
+            'updated_at': now,
+          });
+          final sets = await txn.query('workout_plan_sets', where: 'plan_exercise_id = ?', whereArgs: [exercise['id']], orderBy: 'set_order, id');
+          for (final set in sets) {
+            await txn.insert('workout_plan_sets', {
+              'plan_exercise_id': newExerciseId,
+              'set_order': set['set_order'],
+              'target_reps': set['target_reps'],
+              'target_weight': set['target_weight'],
+              'target_weight_unit': set['target_weight_unit'],
+              'rest_seconds': set['rest_seconds'],
+              'created_at': now,
+              'updated_at': now,
+            });
+          }
+        }
+      }
+      return newPlanId;
+    });
+  }
+
+  Future<int> addWorkoutPlanDay({
+    required int planId,
+    required String label,
+    required int dayOrder,
+    String scheduleType = 'sequence',
+    int? weekday,
+    bool isRestDay = false,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return db.insert('workout_plan_days', {
+      'plan_id': planId,
+      'label': label.trim(),
+      'day_order': dayOrder,
+      'schedule_type': scheduleType,
+      'weekday': weekday,
+      'is_rest_day': isRestDay ? 1 : 0,
+      'created_at': now,
+      'updated_at': now,
+    });
+  }
+
+  Future<void> updateWorkoutPlanDay({
+    required int id,
+    required String label,
+    required int dayOrder,
+    required String scheduleType,
+    int? weekday,
+    required bool isRestDay,
+  }) async {
+    final db = await database;
+    await db.update('workout_plan_days', {
+      'label': label.trim(),
+      'day_order': dayOrder,
+      'schedule_type': scheduleType,
+      'weekday': weekday,
+      'is_rest_day': isRestDay ? 1 : 0,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteWorkoutPlanDay(int id) async {
+    final db = await database;
+    await db.delete('workout_plan_days', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> addExerciseToPlanDay({
+    required int dayId,
+    int? exerciseId,
+    required String exerciseName,
+    required int exerciseOrder,
+    int setCount = 3,
+    int targetReps = 10,
+    double? targetWeight,
+    String weightUnit = 'kg',
+    int restSeconds = 90,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return db.transaction((txn) async {
+      final id = await txn.insert('workout_plan_exercises', {
+        'plan_day_id': dayId,
+        'exercise_id': exerciseId,
+        'exercise_name_snapshot': exerciseName.trim(),
+        'exercise_order': exerciseOrder,
+        'created_at': now,
+        'updated_at': now,
+      });
+      for (var i = 1; i <= setCount; i++) {
+        await txn.insert('workout_plan_sets', {
+          'plan_exercise_id': id,
+          'set_order': i,
+          'target_reps': targetReps,
+          'target_weight': targetWeight,
+          'target_weight_unit': weightUnit,
+          'rest_seconds': restSeconds,
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+      return id;
+    });
+  }
+
+  Future<void> deletePlanExercise(int id) async {
+    final db = await database;
+    await db.delete('workout_plan_exercises', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> updatePlanExerciseSets({
+    required int planExerciseId,
+    required int setCount,
+    required int targetReps,
+    double? targetWeight,
+    required String weightUnit,
+    required int restSeconds,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    await db.transaction((txn) async {
+      await txn.delete('workout_plan_sets', where: 'plan_exercise_id = ?', whereArgs: [planExerciseId]);
+      for (var i = 1; i <= setCount; i++) {
+        await txn.insert('workout_plan_sets', {
+          'plan_exercise_id': planExerciseId,
+          'set_order': i,
+          'target_reps': targetReps,
+          'target_weight': targetWeight,
+          'target_weight_unit': weightUnit,
+          'rest_seconds': restSeconds,
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+    });
+  }
+
+}
