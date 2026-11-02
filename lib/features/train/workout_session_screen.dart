@@ -128,7 +128,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       final id = row['id'] as int;
       await AppDatabase.instance.updateWorkoutSet(
         id: id,
-        reps: int.tryParse(_controller(_reps, id, '\${row['actual_reps'] ?? 0}').text) ?? 0,
+        reps: int.tryParse(_controller(_reps, id, '${row['actual_reps'] ?? 0}').text) ?? 0,
         weight: double.tryParse(_controller(_weights, id, row['actual_weight']?.toString() ?? '').text),
         completed: (row['completed'] as int? ?? 0) == 1,
       );
