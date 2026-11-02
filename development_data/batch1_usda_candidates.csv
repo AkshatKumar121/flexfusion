@@ -1,7 +1,7 @@
 catalogue_id,catalogue_name,candidate_rank,match_type,matched_alias,fdc_id,usda_description,kcal_per_100g,protein_g_per_100g,carbs_g_per_100g,fat_g_per_100g,review_status
 FF001,White rice raw,1,direct,rice white medium grain raw,168879,"Rice, white, medium-grain, raw, enriched",360,6.61,79.34,0.58,REVIEW_REQUIRED
-FF001,White rice raw,2,direct,rice white short grain raw,168931,"Rice, white, short-grain, raw, unenriched",358,6.5,79.15,0.52,REVIEW_REQUIRED
-FF001,White rice raw,3,direct,rice white medium grain raw,169760,"Rice, white, medium-grain, raw, unenriched",360,6.61,79.34,0.58,REVIEW_REQUIRED
+FF001,White rice raw,2,direct,rice white medium grain raw,169760,"Rice, white, medium-grain, raw, unenriched",360,6.61,79.34,0.58,REVIEW_REQUIRED
+FF001,White rice raw,3,direct,rice white short grain raw,168931,"Rice, white, short-grain, raw, unenriched",358,6.5,79.15,0.52,REVIEW_REQUIRED
 FF002,White rice cooked,1,direct,rice white medium grain cooked,168930,"Rice, white, medium-grain, cooked, unenriched",130,2.38,28.59,0.21,REVIEW_REQUIRED
 FF002,White rice cooked,2,direct,rice white short grain cooked,168932,"Rice, white, short-grain, cooked, unenriched",130,2.36,28.73,0.19,REVIEW_REQUIRED
 FF003,Brown rice raw,,none,,,,,,,,NO_SAFE_MATCH
@@ -17,39 +17,22 @@ FF012,Poha cooked,,none,,,,,,,,NO_SAFE_MATCH
 FF013,Puffed rice,1,direct,rice puffed,173912,"Cereals ready-to-eat, rice, puffed, fortified",402,6.3,89.8,0.5,REVIEW_REQUIRED
 FF014,Thick rice flakes,,none,,,,,,,,NO_SAFE_MATCH
 FF015,Whole wheat grain,1,direct,wheat hard red winter,168890,"Wheat, hard red winter",327,12.61,71.18,1.54,REVIEW_REQUIRED
-FF016,Whole wheat flour atta,1,direct,wheat flour whole grain,168893,"Wheat flour, whole-grain (Includes foods for USDA's Food Distribution Program)",340,13.21,71.97,2.5,REVIEW_REQUIRED
-FF016,Whole wheat flour atta,2,direct,wheat flour whole grain,168944,"Wheat flour, whole-grain, soft wheat",332,9.61,74.48,1.95,REVIEW_REQUIRED
-FF017,Maida,1,proxy,wheat flour white,168894,"Wheat flour, white, all-purpose, enriched, bleached",364,10.33,76.31,0.98,REVIEW_REQUIRED
-FF017,Maida,2,proxy,wheat flour white,168895,"Wheat flour, white, all-purpose, self-rising, enriched",354,9.89,74.22,0.97,REVIEW_REQUIRED
-FF017,Maida,3,proxy,wheat flour white,168896,"Wheat flour, white, bread, enriched",361,11.98,72.53,1.66,REVIEW_REQUIRED
-FF017,Maida,4,proxy,wheat flour white,168936,"Wheat flour, white, all-purpose, enriched, unbleached",364,10.33,76.31,0.98,REVIEW_REQUIRED
-FF017,Maida,5,proxy,wheat flour white,168938,"Wheat flour, white (industrial), 10% protein, unbleached, enriched",366,9.71,76.22,1.48,REVIEW_REQUIRED
-FF017,Maida,6,proxy,wheat flour white,168939,"Wheat flour, white (industrial), 11.5% protein, bleached, enriched",363,11.5,73.81,1.45,REVIEW_REQUIRED
-FF017,Maida,7,proxy,wheat flour white,168940,"Wheat flour, white (industrial), 11.5% protein, bleached, unenriched",363,11.5,73.81,1.45,REVIEW_REQUIRED
-FF017,Maida,8,proxy,wheat flour white,168941,"Wheat flour, white (industrial), 11.5% protein, unbleached, enriched",363,11.5,73.81,1.45,REVIEW_REQUIRED
-FF017,Maida,9,proxy,wheat flour white,168942,"Wheat flour, white (industrial), 13% protein, bleached, enriched",362,13.07,72.2,1.38,REVIEW_REQUIRED
-FF017,Maida,10,proxy,wheat flour white,169723,"Wheat flour, white, cake, enriched",362,8.2,78.03,0.86,REVIEW_REQUIRED
-FF017,Maida,11,proxy,wheat flour white,169724,"Wheat flour, white, tortilla mix, enriched",405,9.66,67.14,10.63,REVIEW_REQUIRED
-FF017,Maida,12,proxy,wheat flour white,169754,"Wheat flour, white, all-purpose, enriched, calcium-fortified",364,10.33,76.31,0.98,REVIEW_REQUIRED
-FF017,Maida,13,proxy,wheat flour white,169761,"Wheat flour, white, all-purpose, unenriched",364,10.33,76.31,0.98,REVIEW_REQUIRED
-FF017,Maida,14,proxy,wheat flour white,172016,"Wheat flour, white (industrial), 9% protein, bleached, enriched",367,8.89,77.32,1.43,REVIEW_REQUIRED
-FF017,Maida,15,proxy,wheat flour white,172017,"Wheat flour, white (industrial), 9% protein, bleached, unenriched",367,8.89,77.32,1.43,REVIEW_REQUIRED
-FF017,Maida,16,proxy,wheat flour white,172018,"Wheat flour, white (industrial), 10% protein, bleached, enriched",366,9.71,76.22,1.48,REVIEW_REQUIRED
-FF017,Maida,17,proxy,wheat flour white,172019,"Wheat flour, white (industrial), 10% protein, bleached, unenriched",366,9.71,76.22,1.48,REVIEW_REQUIRED
-FF017,Maida,18,proxy,wheat flour white,172020,"Wheat flour, white (industrial), 13% protein, bleached, unenriched",362,13.07,72.2,1.38,REVIEW_REQUIRED
-FF017,Maida,19,proxy,wheat flour white,172021,"Wheat flour, white (industrial), 15% protein, bleached, enriched",362,15.33,69.88,1.41,REVIEW_REQUIRED
-FF017,Maida,20,proxy,wheat flour white,172022,"Wheat flour, white (industrial), 15% protein, bleached, unenriched",362,15.33,69.88,1.41,REVIEW_REQUIRED
-FF018,Dalia dry,1,proxy,wheat cracked,174089,"Rolls, hamburger or hot dog, wheat/cracked wheat",269,11.69,47.31,3.61,REVIEW_REQUIRED
+FF016,Whole wheat flour atta,1,direct,wheat flour whole grain,168944,"Wheat flour, whole-grain, soft wheat",332,9.61,74.48,1.95,REVIEW_REQUIRED
+FF016,Whole wheat flour atta,2,direct,wheat flour whole grain,168893,"Wheat flour, whole-grain (Includes foods for USDA's Food Distribution Program)",340,13.21,71.97,2.5,REVIEW_REQUIRED
+FF017,Maida,1,proxy,wheat flour white,169761,"Wheat flour, white, all-purpose, unenriched",364,10.33,76.31,0.98,REVIEW_REQUIRED
+FF017,Maida,2,proxy,wheat flour white,168894,"Wheat flour, white, all-purpose, enriched, bleached",364,10.33,76.31,0.98,REVIEW_REQUIRED
+FF017,Maida,3,proxy,wheat flour white,168936,"Wheat flour, white, all-purpose, enriched, unbleached",364,10.33,76.31,0.98,REVIEW_REQUIRED
+FF017,Maida,4,proxy,wheat flour white,168895,"Wheat flour, white, all-purpose, self-rising, enriched",354,9.89,74.22,0.97,REVIEW_REQUIRED
+FF017,Maida,5,proxy,wheat flour white,169754,"Wheat flour, white, all-purpose, enriched, calcium-fortified",364,10.33,76.31,0.98,REVIEW_REQUIRED
+FF018,Dalia dry,,none,,,,,,,,NO_SAFE_MATCH
 FF019,Dalia cooked,,none,,,,,,,,NO_SAFE_MATCH
 FF020,Rolled oats dry,,none,,,,,,,,NO_SAFE_MATCH
 FF021,Oats cooked with water,,none,,,,,,,,NO_SAFE_MATCH
 FF022,Ragi flour,1,proxy,millet flour,172023,Millet flour,382,10.75,75.12,4.25,REVIEW_REQUIRED
 FF023,Ragi porridge cooked,1,proxy,millet cooked,168871,"Millet, cooked",119,3.51,23.67,1,REVIEW_REQUIRED
-FF024,Jowar flour,1,proxy,sorghum,168943,"Sorghum flour, whole-grain",359,8.43,76.64,3.34,REVIEW_REQUIRED
-FF024,Jowar flour,2,proxy,sorghum,169662,"Syrups, sorghum",290,0,74.9,0,REVIEW_REQUIRED
+FF024,Jowar flour,1,proxy,sorghum flour,168943,"Sorghum flour, whole-grain",359,8.43,76.64,3.34,REVIEW_REQUIRED
+FF024,Jowar flour,2,proxy,sorghum flour,173262,"Sorghum flour, refined, unenriched",357,9.53,76.85,1.24,REVIEW_REQUIRED
 FF024,Jowar flour,3,proxy,sorghum,169716,Sorghum grain,329,10.62,72.09,3.46,REVIEW_REQUIRED
-FF024,Jowar flour,4,proxy,sorghum,171863,"Rolls, gluten-free, white, made with brown rice flour, tapioca starch, and sorghum flour",257,5.65,40.24,8.2,REVIEW_REQUIRED
-FF024,Jowar flour,5,proxy,sorghum,173262,"Sorghum flour, refined, unenriched",357,9.53,76.85,1.24,REVIEW_REQUIRED
 FF025,Jowar roti,,none,,,,,,,,NO_SAFE_MATCH
 FF026,Bajra flour,1,proxy,millet flour,172023,Millet flour,382,10.75,75.12,4.25,REVIEW_REQUIRED
 FF027,Bajra roti,1,proxy,millet cooked,168871,"Millet, cooked",119,3.51,23.67,1,REVIEW_REQUIRED
@@ -57,17 +40,17 @@ FF028,Barley raw,1,direct,barley pearled raw,170284,"Barley, pearled, raw",352,9
 FF029,Barley cooked,1,direct,barley pearled cooked,170285,"Barley, pearled, cooked",123,2.26,28.22,0.44,REVIEW_REQUIRED
 FF030,Quinoa raw,1,direct,quinoa uncooked,168874,"Quinoa, uncooked",368,14.12,64.16,6.07,REVIEW_REQUIRED
 FF031,Quinoa cooked,1,direct,quinoa cooked,168917,"Quinoa, cooked",120,4.4,21.3,1.92,REVIEW_REQUIRED
-FF032,Corn kernels raw,1,direct,corn sweet white raw,168538,"Corn, sweet, white, raw",86,3.22,19.02,1.18,REVIEW_REQUIRED
-FF032,Corn kernels raw,2,direct,corn sweet yellow raw,169998,"Corn, sweet, yellow, raw",86,3.27,18.7,1.35,REVIEW_REQUIRED
+FF032,Corn kernels raw,1,direct,corn sweet yellow raw,169998,"Corn, sweet, yellow, raw",86,3.27,18.7,1.35,REVIEW_REQUIRED
+FF032,Corn kernels raw,2,direct,corn sweet white raw,168538,"Corn, sweet, white, raw",86,3.22,19.02,1.18,REVIEW_REQUIRED
 FF033,Sweet corn boiled,1,direct,corn sweet yellow cooked boiled,168525,"Corn, sweet, yellow, cooked, boiled, drained, with salt",96,3.41,20.98,1.5,REVIEW_REQUIRED
-FF033,Sweet corn boiled,2,direct,corn sweet white cooked boiled,168539,"Corn, sweet, white, cooked, boiled, drained, without salt",97,3.34,21.71,1.41,REVIEW_REQUIRED
+FF033,Sweet corn boiled,2,direct,corn sweet yellow cooked boiled,169999,"Corn, sweet, yellow, cooked, boiled, drained, without salt",96,3.41,20.98,1.5,REVIEW_REQUIRED
 FF033,Sweet corn boiled,3,direct,corn sweet white cooked boiled,168540,"Corn, sweet, white, cooked, boiled, drained, with salt",97,3.34,21.71,1.41,REVIEW_REQUIRED
-FF033,Sweet corn boiled,4,direct,corn sweet yellow cooked boiled,169999,"Corn, sweet, yellow, cooked, boiled, drained, without salt",96,3.41,20.98,1.5,REVIEW_REQUIRED
-FF034,Makai atta,1,proxy,corn flour whole grain,168921,"Corn flour, whole-grain, blue (harina de maiz morado)",364,8.75,73.89,5.09,REVIEW_REQUIRED
-FF034,Makai atta,2,proxy,cornmeal whole grain,169697,"Cornmeal, whole-grain, yellow",362,8.12,76.89,3.59,REVIEW_REQUIRED
-FF034,Makai atta,3,proxy,corn flour whole grain,169748,"Corn flour, whole-grain, white",361,6.93,76.85,3.86,REVIEW_REQUIRED
+FF033,Sweet corn boiled,4,direct,corn sweet white cooked boiled,168539,"Corn, sweet, white, cooked, boiled, drained, without salt",97,3.34,21.71,1.41,REVIEW_REQUIRED
+FF034,Makai atta,1,proxy,corn flour whole grain,169748,"Corn flour, whole-grain, white",361,6.93,76.85,3.86,REVIEW_REQUIRED
+FF034,Makai atta,2,proxy,corn flour whole grain,170290,"Corn flour, whole-grain, yellow",361,6.93,76.85,3.86,REVIEW_REQUIRED
+FF034,Makai atta,3,proxy,corn flour whole grain,168921,"Corn flour, whole-grain, blue (harina de maiz morado)",364,8.75,73.89,5.09,REVIEW_REQUIRED
 FF034,Makai atta,4,proxy,cornmeal whole grain,169750,"Cornmeal, whole-grain, white",362,8.12,76.89,3.59,REVIEW_REQUIRED
-FF034,Makai atta,5,proxy,corn flour whole grain,170290,"Corn flour, whole-grain, yellow",361,6.93,76.85,3.86,REVIEW_REQUIRED
+FF034,Makai atta,5,proxy,cornmeal whole grain,169697,"Cornmeal, whole-grain, yellow",362,8.12,76.89,3.59,REVIEW_REQUIRED
 FF035,Semolina sooji dry,1,direct,semolina unenriched,168933,"Semolina, unenriched",360,12.68,72.83,1.05,REVIEW_REQUIRED
 FF035,Semolina sooji dry,2,direct,semolina enriched,169715,"Semolina, enriched",360,12.68,72.83,1.05,REVIEW_REQUIRED
 FF036,Sabudana dry,1,direct,tapioca pearl dry,169717,"Tapioca, pearl, dry",358,0.19,88.69,0.02,REVIEW_REQUIRED
