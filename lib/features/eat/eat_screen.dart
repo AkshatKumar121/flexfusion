@@ -357,7 +357,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
     super.dispose();
   }
 
-  double num(TextEditingController c) => double.tryParse(c.text.trim()) ?? 0;
+  double _parseNumber(TextEditingController c) => double.tryParse(c.text.trim()) ?? 0;
   InputDecoration decoration(String hint) => InputDecoration(
     hintText: hint, hintStyle: GoogleFonts.inter(color: AppColors.grey, fontSize: 11),
     filled: true, fillColor: AppColors.card, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -366,7 +366,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
   );
 
   Future<void> save() async {
-    final amount = num(grams);
+    final amount = _parseNumber(grams);
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a quantity greater than zero.')));
       return;
@@ -380,7 +380,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
     var food = selected;
     if (custom) {
       final foodName = name.text.trim();
-      final values = [num(kcal), num(protein), num(carbs), num(fat)];
+      final values = [_parseNumber(kcal), _parseNumber(protein), _parseNumber(carbs), _parseNumber(fat)];
       if (values.any((value) => value < 0) || kcal.text.trim().isEmpty ||
           protein.text.trim().isEmpty || carbs.text.trim().isEmpty ||
           fat.text.trim().isEmpty) {
