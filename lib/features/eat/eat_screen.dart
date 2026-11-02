@@ -80,6 +80,7 @@ class EatScreenState extends State<EatScreen> {
         date: _date,
         meal: meal,
         name: result.name,
+        foodId: result.foodId,
         grams: result.grams,
         calories: result.kcal,
         protein: result.protein,
@@ -263,19 +264,24 @@ class _MacroItem extends StatelessWidget {
 }
 
 class FoodData {
+  final int? id;
   final String name;
   final double kcal, protein, carbs, fat;
-  const FoodData(this.name, this.kcal, this.protein, this.carbs, this.fat);
+  final bool isCustom;
+  const FoodData(this.name, this.kcal, this.protein, this.carbs, this.fat,
+      {this.id, this.isCustom = false});
 }
 
 class LoggedFood {
   final int? id;
+  final int? foodId;
   final String name;
   final double grams, kcal, protein, carbs, fat;
-  const LoggedFood(this.name, this.grams, this.kcal, this.protein, this.carbs, this.fat, {this.id});
+  const LoggedFood(this.name, this.grams, this.kcal, this.protein, this.carbs, this.fat,
+      {this.id, this.foodId});
 
   LoggedFood copyWith({int? id}) => LoggedFood(
-    name, grams, kcal, protein, carbs, fat, id: id ?? this.id,
+    name, grams, kcal, protein, carbs, fat, id: id ?? this.id, foodId: foodId,
   );
 }
 
@@ -313,6 +319,36 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
   final fat = TextEditingController();
   FoodData? selected;
   bool custom = false;
+  bool _loadingCustomFoods = true;
+  List<FoodData> _customFoods = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomFoods();
+  }
+
+  Future<void> _loadCustomFoods() async {
+    try {
+      final rows = await AppDatabase.instance.getCustomFoods();
+      if (!mounted) return;
+      setState(() {
+        _customFoods = rows.map((row) => FoodData(
+          row['name'] as String,
+          (row['calories_per_basis'] as num).toDouble(),
+          (row['protein_per_basis_g'] as num).toDouble(),
+          (row['carbs_per_basis_g'] as num).toDouble(),
+          (row['fat_per_basis_g'] as num).toDouble(),
+          id: row['id'] as int,
+          isCustom: true,
+        )).toList();
+        _loadingCustomFoods = false;
+      });
+    } catch (error) {
+      debugPrint('Could not load saved custom foods: $error');
+      if (mounted) setState(() => _loadingCustomFoods = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -329,7 +365,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.green)),
   );
 
-  void save() {
+  Future<void> save() async {
     final amount = num(grams);
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a quantity greater than zero.')));
@@ -340,14 +376,53 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
       return;
     }
     if (!custom && selected == null) return;
-    final f = custom ? FoodData(name.text.trim(), num(kcal), num(protein), num(carbs), num(fat)) : selected!;
+
+    var food = selected;
+    if (custom) {
+      final foodName = name.text.trim();
+      final values = [num(kcal), num(protein), num(carbs), num(fat)];
+      if (values.any((value) => value < 0) || kcal.text.trim().isEmpty ||
+          protein.text.trim().isEmpty || carbs.text.trim().isEmpty ||
+          fat.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter valid non-negative nutrition values.')),
+        );
+        return;
+      }
+      try {
+        final foodId = await AppDatabase.instance.insertCustomFood(
+          name: foodName,
+          caloriesPer100g: values[0],
+          proteinPer100g: values[1],
+          carbsPer100g: values[2],
+          fatPer100g: values[3],
+        );
+        food = FoodData(foodName, values[0], values[1], values[2], values[3],
+            id: foodId, isCustom: true);
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not save custom food: $error')),
+          );
+        }
+        return;
+      }
+    }
+
+    final f = food!;
     final scale = amount / 100;
-    Navigator.pop(context, LoggedFood(f.name, amount, f.kcal * scale, f.protein * scale, f.carbs * scale, f.fat * scale));
+    if (mounted) {
+      Navigator.pop(context, LoggedFood(
+        f.name, amount, f.kcal * scale, f.protein * scale,
+        f.carbs * scale, f.fat * scale, foodId: f.id,
+      ));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final list = foods.where((f) => f.name.toLowerCase().contains(search.text.toLowerCase().trim())).toList();
+    final allFoods = [...foods, ..._customFoods];
+    final list = allFoods.where((f) => f.name.toLowerCase().contains(search.text.toLowerCase().trim())).toList();
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
@@ -415,7 +490,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
           final f = list[i]; final active = selected?.name == f.name;
           return ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 2),
             title: Text(f.name, style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-            subtitle: Text('${f.kcal.round()} kcal • P ${f.protein}g C ${f.carbs}g F ${f.fat}g per 100 g', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
+            subtitle: Text('${f.isCustom ? 'MY FOOD • ' : ''}${f.kcal.round()} kcal • P ${f.protein}g C ${f.carbs}g F ${f.fat}g per 100 g', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
             trailing: Icon(active ? Icons.check_circle : Icons.add_circle_outline, color: active ? AppColors.green : AppColors.grey),
             onTap: () => setState(() => selected = f),
           );
