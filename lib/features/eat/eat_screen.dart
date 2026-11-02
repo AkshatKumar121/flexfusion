@@ -481,6 +481,8 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
       style: GoogleFonts.inter(color: AppColors.white, fontSize: 13),
       decoration: decoration('Search foods').copyWith(prefixIcon: const Icon(Icons.search, color: AppColors.grey)),
     )),
+    if (_loadingCustomFoods)
+      const LinearProgressIndicator(minHeight: 2, color: AppColors.green, backgroundColor: AppColors.surface),
     Expanded(child: list.isEmpty
       ? Center(child: Text('No matching foods. Try another search or add a custom food.', textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12)))
       : ListView.separated(
