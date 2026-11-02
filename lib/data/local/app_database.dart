@@ -429,7 +429,14 @@ class AppDatabase {
   }) async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
-    return db.insert('foods', {
+    final existing = await db.query(
+      'foods',
+      columns: ['id', 'created_at'],
+      where: 'is_custom = 1 AND name = ? COLLATE NOCASE',
+      whereArgs: [name.trim()],
+      limit: 1,
+    );
+    final values = {
       'name': name.trim(),
       'serving_basis_g': 100,
       'calories_per_basis': caloriesPer100g,
@@ -439,9 +446,18 @@ class AppDatabase {
       'base_unit': 'g',
       'source': 'user',
       'verification_status': 'user_entered',
+      'is_active': 1,
       'is_custom': 1,
-      'created_at': now,
       'updated_at': now,
+    };
+    if (existing.isNotEmpty) {
+      final id = existing.first['id'] as int;
+      await db.update('foods', values, where: 'id = ?', whereArgs: [id]);
+      return id;
+    }
+    return db.insert('foods', {
+      ...values,
+      'created_at': now,
     });
   }
 
