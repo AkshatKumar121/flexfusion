@@ -228,8 +228,8 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
       title: const Text('Edit plan day'),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: controller, decoration: const InputDecoration(labelText: 'Day name')),
-        DropdownButtonFormField<String>(value: type, decoration: const InputDecoration(labelText: 'Schedule'), items: const [DropdownMenuItem(value: 'sequence', child: Text('Sequence based')), DropdownMenuItem(value: 'weekday', child: Text('Fixed weekday'))], onChanged: (v) => setDialog(() => type = v ?? 'sequence')),
-        if (type == 'weekday') DropdownButtonFormField<int>(value: weekday, decoration: const InputDecoration(labelText: 'Weekday'), items: const [DropdownMenuItem(value: 1, child: Text('Monday')), DropdownMenuItem(value: 2, child: Text('Tuesday')), DropdownMenuItem(value: 3, child: Text('Wednesday')), DropdownMenuItem(value: 4, child: Text('Thursday')), DropdownMenuItem(value: 5, child: Text('Friday')), DropdownMenuItem(value: 6, child: Text('Saturday')), DropdownMenuItem(value: 7, child: Text('Sunday'))], onChanged: (v) => setDialog(() => weekday = v ?? 1)),
+        DropdownButtonFormField<String>(initialValue: type, decoration: const InputDecoration(labelText: 'Schedule'), items: const [DropdownMenuItem(value: 'sequence', child: Text('Sequence based')), DropdownMenuItem(value: 'weekday', child: Text('Fixed weekday'))], onChanged: (v) => setDialog(() => type = v ?? 'sequence')),
+        if (type == 'weekday') DropdownButtonFormField<int>(initialValue: weekday, decoration: const InputDecoration(labelText: 'Weekday'), items: const [DropdownMenuItem(value: 1, child: Text('Monday')), DropdownMenuItem(value: 2, child: Text('Tuesday')), DropdownMenuItem(value: 3, child: Text('Wednesday')), DropdownMenuItem(value: 4, child: Text('Thursday')), DropdownMenuItem(value: 5, child: Text('Friday')), DropdownMenuItem(value: 6, child: Text('Saturday')), DropdownMenuItem(value: 7, child: Text('Sunday'))], onChanged: (v) => setDialog(() => weekday = v ?? 1)),
         CheckboxListTile(value: rest, onChanged: (v) => setDialog(() => rest = v ?? false), title: const Text('Rest day'), contentPadding: EdgeInsets.zero),
       ]),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')), ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('SAVE'))],
@@ -375,8 +375,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
           if (days.isEmpty) return Center(child: Text('Add your first training or rest day.', style: GoogleFonts.inter(color: AppColors.grey)));
           return ReorderableListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-            onReorder: (oldIndex, newIndex) async {
-              if (newIndex > oldIndex) newIndex--;
+            onReorderItem: (oldIndex, newIndex) async {
               final reordered = [...days];
               final moved = reordered.removeAt(oldIndex);
               reordered.insert(newIndex, moved);
