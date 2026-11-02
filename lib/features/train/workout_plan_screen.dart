@@ -374,6 +374,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
           final days = snapshot.data!;
           if (days.isEmpty) return Center(child: Text('Add your first training or rest day.', style: GoogleFonts.inter(color: AppColors.grey)));
           return ReorderableListView.builder(
+            buildDefaultDragHandles: false,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             onReorderItem: (oldIndex, newIndex) async {
               final reordered = [...days];
@@ -391,6 +392,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
               return _PlanDayCard(
                 key: ValueKey(day['id']),
                 day: day,
+                index: index,
                 onAddExercise: () => _addExercise(day['id'] as int),
                 onEdit: () => _editDay(day),
                 onStart: () => _startDay(day),
@@ -406,11 +408,12 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
 
 class _PlanDayCard extends StatefulWidget {
   final Map<String, Object?> day;
+  final int index;
   final Future<void> Function() onAddExercise;
   final VoidCallback onEdit;
   final VoidCallback onStart;
   final VoidCallback onDelete;
-  const _PlanDayCard({super.key, required this.day, required this.onAddExercise, required this.onEdit, required this.onStart, required this.onDelete});
+  const _PlanDayCard({super.key, required this.day, required this.index, required this.onAddExercise, required this.onEdit, required this.onStart, required this.onDelete});
 
   @override
   State<_PlanDayCard> createState() => _PlanDayCardState();
@@ -473,6 +476,7 @@ class _PlanDayCardState extends State<_PlanDayCard> {
       decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
+          ReorderableDragStartListener(index: widget.index, child: const Padding(padding: EdgeInsets.only(right: 8), child: Icon(Icons.drag_handle, color: AppColors.grey, size: 22))),
           Expanded(child: Text(widget.day['label'] as String, style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w700))),
           Text(rest ? 'REST' : (widget.day['schedule_type'] == 'weekday' ? _weekday(widget.day['weekday'] as int? ?? 1) : 'SEQUENCE'), style: GoogleFonts.inter(color: AppColors.green, fontSize: 9, fontWeight: FontWeight.w800)),
           if (!rest) TextButton(onPressed: widget.onStart, child: const Text('START')),
