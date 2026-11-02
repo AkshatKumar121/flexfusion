@@ -863,110 +863,113 @@ class AppDatabase {
     String dateKey(DateTime date) =>
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
+    final startKey = dateKey(start);
+    final endKey = dateKey(end);
+    final previousStartKey = dateKey(previousStart);
+
+    // Fetch each dataset in one grouped query instead of issuing queries
+    // separately for every day on the dashboard.
+    final results = await Future.wait([
+      db.rawQuery(
+        '''
+        SELECT log_date, SUM(calories) AS calories, SUM(protein_g) AS protein
+        FROM food_logs
+        WHERE log_date >= ? AND log_date <= ?
+        GROUP BY log_date
+        ''',
+        [previousStartKey, endKey],
+      ),
+      db.query(
+        'body_weights',
+        columns: ['log_date', 'weight_value'],
+        where: 'log_date >= ? AND log_date <= ?',
+        whereArgs: [previousStartKey, endKey],
+      ),
+      db.rawQuery(
+        '''
+        SELECT substr(completed_at, 1, 10) AS workout_date, COUNT(*) AS total
+        FROM workouts
+        WHERE status = 'completed'
+          AND substr(completed_at, 1, 10) >= ?
+          AND substr(completed_at, 1, 10) <= ?
+        GROUP BY substr(completed_at, 1, 10)
+        ''',
+        [previousStartKey, endKey],
+      ),
+    ]);
+
+    final nutritionByDate = {
+      for (final row in results[0]) row['log_date'] as String: row,
+    };
+    final weightByDate = {
+      for (final row in results[1]) row['log_date'] as String: row,
+    };
+    final workoutsByDate = {
+      for (final row in results[2]) row['workout_date'] as String: row,
+    };
+
     final daily = <Map<String, Object?>>[];
     for (var offset = 0; offset < 7; offset++) {
       final date = start.add(Duration(days: offset));
       final key = dateKey(date);
-      final nutrition = await db.rawQuery(
-        '''
-        SELECT COALESCE(SUM(calories), 0) AS calories,
-               COALESCE(SUM(protein_g), 0) AS protein
-        FROM food_logs WHERE log_date = ?
-        ''',
-        [key],
-      );
-      final weightRows = await db.query(
-        'body_weights',
-        columns: ['weight_value'],
-        where: 'log_date = ?',
-        whereArgs: [key],
-        limit: 1,
-      );
-      final workoutRows = await db.rawQuery(
-        '''
-        SELECT COUNT(*) AS workouts FROM workouts
-        WHERE status = 'completed' AND substr(completed_at, 1, 10) = ?
-        ''',
-        [key],
-      );
+      final nutrition = nutritionByDate[key];
+      final weight = weightByDate[key];
       daily.add({
         'date': key,
         'day': ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1],
-        'calories': (nutrition.first['calories'] as num).toDouble(),
-        'protein': (nutrition.first['protein'] as num).toDouble(),
-        'weight': weightRows.isEmpty
-            ? null
-            : (weightRows.first['weight_value'] as num).toDouble(),
-        'workouts': (workoutRows.first['workouts'] as num).toInt(),
+        'calories': (nutrition?['calories'] as num? ?? 0).toDouble(),
+        'protein': (nutrition?['protein'] as num? ?? 0).toDouble(),
+        'weight': weight == null ? null : (weight['weight_value'] as num).toDouble(),
+        'workouts': (workoutsByDate[key]?['total'] as num? ?? 0).toInt(),
       });
     }
 
-    final currentNutrition = await db.rawQuery(
-      '''
-      SELECT COUNT(*) AS tracked_days,
-             COALESCE(AVG(day_calories), 0) AS average_calories,
-             COALESCE(AVG(day_protein), 0) AS average_protein
-      FROM (
-        SELECT log_date, SUM(calories) AS day_calories,
-               SUM(protein_g) AS day_protein
-        FROM food_logs WHERE log_date >= ? AND log_date <= ?
-        GROUP BY log_date
-      )
-      ''',
-      [dateKey(start), dateKey(end)],
-    );
-    final previousNutrition = await db.rawQuery(
-      '''
-      SELECT COUNT(*) AS tracked_days,
-             COALESCE(AVG(day_calories), 0) AS average_calories,
-             COALESCE(AVG(day_protein), 0) AS average_protein
-      FROM (
-        SELECT log_date, SUM(calories) AS day_calories,
-               SUM(protein_g) AS day_protein
-        FROM food_logs WHERE log_date >= ? AND log_date < ?
-        GROUP BY log_date
-      )
-      ''',
-      [dateKey(previousStart), dateKey(start)],
-    );
+    double averageForNutrition(DateTime from, DateTime to, String field) {
+      final values = nutritionByDate.entries
+          .where((entry) => entry.key.compareTo(dateKey(from)) >= 0 &&
+              entry.key.compareTo(dateKey(to)) <= 0)
+          .map((entry) => (entry.value[field] as num).toDouble())
+          .toList();
+      return values.isEmpty ? 0 : values.reduce((a, b) => a + b) / values.length;
+    }
 
-    final currentWeight = await db.rawQuery(
-      'SELECT COUNT(*) AS days, COALESCE(AVG(weight_value), 0) AS average FROM body_weights WHERE log_date >= ? AND log_date <= ?',
-      [dateKey(start), dateKey(end)],
-    );
-    final previousWeight = await db.rawQuery(
-      'SELECT COUNT(*) AS days, COALESCE(AVG(weight_value), 0) AS average FROM body_weights WHERE log_date >= ? AND log_date < ?',
-      [dateKey(previousStart), dateKey(start)],
-    );
-    final currentWorkouts = await db.rawQuery(
-      "SELECT COUNT(*) AS total FROM workouts WHERE status = 'completed' AND substr(completed_at, 1, 10) >= ? AND substr(completed_at, 1, 10) <= ?",
-      [dateKey(start), dateKey(end)],
-    );
-    final previousWorkouts = await db.rawQuery(
-      "SELECT COUNT(*) AS total FROM workouts WHERE status = 'completed' AND substr(completed_at, 1, 10) >= ? AND substr(completed_at, 1, 10) < ?",
-      [dateKey(previousStart), dateKey(start)],
-    );
+    int nutritionDays(DateTime from, DateTime to) => nutritionByDate.keys
+        .where((key) => key.compareTo(dateKey(from)) >= 0 &&
+            key.compareTo(dateKey(to)) <= 0)
+        .length;
 
-    final cn = currentNutrition.first;
-    final pn = previousNutrition.first;
-    final cw = currentWeight.first;
-    final pw = previousWeight.first;
+    final currentWeights = results[1].where((row) =>
+        (row['log_date'] as String).compareTo(startKey) >= 0).toList();
+    final previousWeights = results[1].where((row) =>
+        (row['log_date'] as String).compareTo(previousStartKey) >= 0 &&
+        (row['log_date'] as String).compareTo(startKey) < 0).toList();
+
+    double averageWeight(List<Map<String, Object?>> rows) => rows.isEmpty
+        ? 0
+        : rows.map((row) => (row['weight_value'] as num).toDouble())
+            .reduce((a, b) => a + b) / rows.length;
+
+    int workoutCount(DateTime from, DateTime to) => workoutsByDate.entries
+        .where((entry) => entry.key.compareTo(dateKey(from)) >= 0 &&
+            entry.key.compareTo(dateKey(to)) <= 0)
+        .fold<int>(0, (total, entry) => total + (entry.value['total'] as num).toInt());
+
     return {
-      'start_date': dateKey(start),
-      'end_date': dateKey(end),
+      'start_date': startKey,
+      'end_date': endKey,
       'daily': daily,
-      'tracked_days': (cn['tracked_days'] as num).toInt(),
-      'average_calories': (cn['average_calories'] as num).toDouble(),
-      'average_protein': (cn['average_protein'] as num).toDouble(),
-      'previous_tracked_days': (pn['tracked_days'] as num).toInt(),
-      'previous_average_calories': (pn['average_calories'] as num).toDouble(),
-      'previous_average_protein': (pn['average_protein'] as num).toDouble(),
-      'weight_days': (cw['days'] as num).toInt(),
-      'average_weight': (cw['average'] as num).toDouble(),
-      'previous_weight_days': (pw['days'] as num).toInt(),
-      'previous_average_weight': (pw['average'] as num).toDouble(),
-      'workouts': (currentWorkouts.first['total'] as num).toInt(),
-      'previous_workouts': (previousWorkouts.first['total'] as num).toInt(),
+      'tracked_days': nutritionDays(start, end),
+      'average_calories': averageForNutrition(start, end, 'calories'),
+      'average_protein': averageForNutrition(start, end, 'protein'),
+      'previous_tracked_days': nutritionDays(previousStart, start.subtract(const Duration(days: 1))),
+      'previous_average_calories': averageForNutrition(previousStart, start.subtract(const Duration(days: 1)), 'calories'),
+      'previous_average_protein': averageForNutrition(previousStart, start.subtract(const Duration(days: 1)), 'protein'),
+      'weight_days': currentWeights.length,
+      'average_weight': averageWeight(currentWeights),
+      'previous_weight_days': previousWeights.length,
+      'previous_average_weight': averageWeight(previousWeights),
+      'workouts': workoutCount(start, end),
+      'previous_workouts': workoutCount(previousStart, start.subtract(const Duration(days: 1))),
     };
   }
 
