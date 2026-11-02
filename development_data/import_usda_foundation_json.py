@@ -268,5 +268,5 @@ def main() -> None:
     print("All candidates require manual review; production data was not changed.")
 
 
-if __riley__ == "__main__":
+if __name__ == "__main__":
     main()
