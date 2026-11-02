@@ -1310,4 +1310,196 @@ class AppDatabase {
     });
   }
 
+
+
+  // Workout session tracking and history.
+  Future<int> startWorkoutSession({
+    int? planId,
+    int? planDayId,
+    required String sessionName,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return db.transaction((txn) async {
+      final workoutId = await txn.insert('workouts', {
+        'plan_id': planId,
+        'plan_day_id': planDayId,
+        'started_at': now,
+        'session_name': sessionName.trim(),
+        'status': 'in_progress',
+      });
+      if (planDayId != null) {
+        final exercises = await txn.query(
+          'workout_plan_exercises',
+          where: 'plan_day_id = ?',
+          whereArgs: [planDayId],
+          orderBy: 'exercise_order, id',
+        );
+        for (final exercise in exercises) {
+          final sets = await txn.query(
+            'workout_plan_sets',
+            where: 'plan_exercise_id = ?',
+            whereArgs: [exercise['id']],
+            orderBy: 'set_order, id',
+          );
+          for (final set in sets) {
+            await txn.insert('workout_sets', {
+              'workout_id': workoutId,
+              'exercise_id': exercise['exercise_id'],
+              'exercise_name_snapshot': exercise['exercise_name_snapshot'],
+              'set_order': set['set_order'],
+              'actual_reps': set['target_reps'],
+              'actual_weight': set['target_weight'],
+              'weight_unit': set['target_weight_unit'] ?? 'kg',
+              'completed': 0,
+              'created_at': now,
+            });
+          }
+        }
+      }
+      return workoutId;
+    });
+  }
+
+  Future<int> addExerciseToWorkout({
+    required int workoutId,
+    int? exerciseId,
+    required String exerciseName,
+    required int setCount,
+    int targetReps = 10,
+    double? targetWeight,
+    String weightUnit = 'kg',
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    final existing = await db.query(
+      'workout_sets',
+      columns: ['exercise_name_snapshot'],
+      where: 'workout_id = ?',
+      whereArgs: [workoutId],
+    );
+    final matching = existing.where((row) => row['exercise_name_snapshot'] == exerciseName).length;
+    return db.transaction((txn) async {
+      var firstId = 0;
+      for (var i = 1; i <= setCount; i++) {
+        final id = await txn.insert('workout_sets', {
+          'workout_id': workoutId,
+          'exercise_id': exerciseId,
+          'exercise_name_snapshot': exerciseName,
+          'set_order': matching + i,
+          'actual_reps': targetReps,
+          'actual_weight': targetWeight,
+          'weight_unit': weightUnit,
+          'completed': 0,
+          'created_at': now,
+        });
+        if (i == 1) firstId = id;
+      }
+      return firstId;
+    });
+  }
+
+  Future<List<Map<String, Object?>>> getWorkoutSessionSets(int workoutId) async {
+    final db = await database;
+    return db.query(
+      'workout_sets',
+      where: 'workout_id = ?',
+      whereArgs: [workoutId],
+      orderBy: 'id',
+    );
+  }
+
+  Future<void> updateWorkoutSet({
+    required int id,
+    required int reps,
+    required double? weight,
+    required bool completed,
+  }) async {
+    final db = await database;
+    await db.update('workout_sets', {
+      'actual_reps': reps,
+      'actual_weight': weight,
+      'completed': completed ? 1 : 0,
+    }, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> finishWorkoutSession(int workoutId, {String? notes}) async {
+    final db = await database;
+    await db.update('workouts', {
+      'status': 'completed',
+      'completed_at': DateTime.now().toIso8601String(),
+      'notes': notes,
+    }, where: 'id = ?', whereArgs: [workoutId]);
+  }
+
+  Future<void> abandonWorkoutSession(int workoutId) async {
+    final db = await database;
+    await db.update('workouts', {
+      'status': 'abandoned',
+      'completed_at': DateTime.now().toIso8601String(),
+    }, where: 'id = ?', whereArgs: [workoutId]);
+  }
+
+  Future<List<Map<String, Object?>>> getWorkoutHistory({int limit = 50}) async {
+    final db = await database;
+    return db.rawQuery(
+      '''
+      SELECT w.*,
+        (SELECT COUNT(*) FROM workout_sets s WHERE s.workout_id = w.id) AS total_sets,
+        (SELECT COUNT(*) FROM workout_sets s WHERE s.workout_id = w.id AND s.completed = 1) AS completed_sets
+      FROM workouts w
+      WHERE w.status = 'completed'
+      ORDER BY w.completed_at DESC, w.id DESC
+      LIMIT ?
+      ''',
+      [limit],
+    );
+  }
+
+  Future<Map<String, Object?>?> getInProgressWorkout() async {
+    final db = await database;
+    final rows = await db.query(
+      'workouts',
+      where: "status = 'in_progress'",
+      orderBy: 'started_at DESC',
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<Map<String, Object?>?> getSuggestedWorkoutDay() async {
+    final db = await database;
+    final plans = await db.query('workout_plans', where: 'is_active = 1', limit: 1);
+    if (plans.isEmpty) return null;
+    final plan = plans.first;
+    final days = await db.query(
+      'workout_plan_days',
+      where: 'plan_id = ?',
+      whereArgs: [plan['id']],
+      orderBy: 'day_order, id',
+    );
+    if (days.isEmpty) return null;
+    final today = DateTime.now().weekday;
+    final fixed = days.where((day) =>
+        day['schedule_type'] == 'weekday' && day['weekday'] == today).toList();
+    if (fixed.isNotEmpty) return {...fixed.first, 'plan_name': plan['name'], 'plan_id': plan['id']};
+
+    final sequenceDays = days.where((day) => day['schedule_type'] != 'weekday').toList();
+    if (sequenceDays.isEmpty) return null;
+    final previous = await db.query(
+      'workouts',
+      where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
+      whereArgs: [plan['id']],
+      orderBy: 'completed_at DESC, id DESC',
+      limit: 1,
+    );
+    var nextIndex = 0;
+    if (previous.isNotEmpty) {
+      final lastDayId = previous.first['plan_day_id'];
+      final lastIndex = sequenceDays.indexWhere((day) => day['id'] == lastDayId);
+      if (lastIndex >= 0) nextIndex = (lastIndex + 1) % sequenceDays.length;
+    }
+    return {...sequenceDays[nextIndex], 'plan_name': plan['name'], 'plan_id': plan['id']};
+  }
+
 }
