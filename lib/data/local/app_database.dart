@@ -1480,6 +1480,8 @@ class AppDatabase {
 
   Future<void> advanceWorkoutPlanSequence(int planId, int currentDayId) async {
     final db = await database;
+    final currentRows = await db.query('workout_plan_days', columns: ['schedule_type'], where: 'id = ?', whereArgs: [currentDayId], limit: 1);
+    if (currentRows.isEmpty || currentRows.first['schedule_type'] == 'weekday') return;
     final days = await db.query('workout_plan_days', where: "plan_id = ? AND schedule_type != 'weekday'", whereArgs: [planId], orderBy: 'day_order, id');
     if (days.isEmpty) return;
     final currentIndex = days.indexWhere((day) => day['id'] == currentDayId);
