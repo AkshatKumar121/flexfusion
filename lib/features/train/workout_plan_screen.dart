@@ -407,6 +407,36 @@ class _PlanDayCardState extends State<_PlanDayCard> {
   void initState() { super.initState(); _load(); }
   void _load() => _exercisesFuture = AppDatabase.instance.getPlanDayExercises(widget.day['id'] as int);
 
+  Future<void> _editTargets(Map<String, Object?> exercise) async {
+    final sets = await AppDatabase.instance.getPlanExerciseSets(exercise['id'] as int);
+    if (sets.isEmpty || !mounted) return;
+    final first = sets.first;
+    final count = TextEditingController(text: sets.length.toString());
+    final reps = TextEditingController(text: first['target_reps'].toString());
+    final weight = TextEditingController(text: first['target_weight']?.toString() ?? '');
+    final rest = TextEditingController(text: first['rest_seconds'].toString());
+    final ok = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+      backgroundColor: AppColors.card,
+      title: Text('Edit ${exercise['exercise_name_snapshot']}', style: GoogleFonts.inter(color: AppColors.white)),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: count, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Sets')),
+        TextField(controller: reps, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Target reps')),
+        TextField(controller: weight, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Target weight kg')),
+        TextField(controller: rest, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Rest seconds')),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')), ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('SAVE'))],
+    ));
+    final setCount = int.tryParse(count.text);
+    final targetReps = int.tryParse(reps.text);
+    final restSeconds = int.tryParse(rest.text);
+    final targetWeight = double.tryParse(weight.text);
+    if (ok == true && setCount != null && setCount > 0 && setCount <= 20 && targetReps != null && targetReps > 0 && restSeconds != null && restSeconds >= 0 && (weight.text.trim().isEmpty || (targetWeight != null && targetWeight >= 0))) {
+      await AppDatabase.instance.updatePlanExerciseSets(planExerciseId: exercise['id'] as int, setCount: setCount, targetReps: targetReps, targetWeight: targetWeight, weightUnit: 'kg', restSeconds: restSeconds);
+      if (mounted) setState(_load);
+    }
+    count.dispose(); reps.dispose(); weight.dispose(); rest.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final rest = (widget.day['is_rest_day'] as int? ?? 0) == 1;
@@ -431,6 +461,7 @@ class _PlanDayCardState extends State<_PlanDayCard> {
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   title: Text(exercise['exercise_name_snapshot'] as String, style: GoogleFonts.inter(color: AppColors.white, fontSize: 12)),
+                  onTap: () => _editTargets(exercise),
                   subtitle: FutureBuilder<List<Map<String, Object?>>>(
                     future: AppDatabase.instance.getPlanExerciseSets(exercise['id'] as int),
                     builder: (context, sets) {
