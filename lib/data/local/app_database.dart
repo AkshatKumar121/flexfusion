@@ -1502,4 +1502,23 @@ class AppDatabase {
     return {...sequenceDays[nextIndex], 'plan_name': plan['name'], 'plan_id': plan['id']};
   }
 
+
+  Future<Map<String, Object?>> getWorkoutSessionSummary(int workoutId) async {
+    final db = await database;
+    final rows = await db.rawQuery(
+      '''
+      SELECT w.*,
+        COUNT(s.id) AS total_sets,
+        COALESCE(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END), 0) AS completed_sets,
+        COALESCE(SUM(CASE WHEN s.completed = 1 THEN COALESCE(s.actual_weight, 0) * COALESCE(s.actual_reps, 0) ELSE 0 END), 0) AS volume
+      FROM workouts w
+      LEFT JOIN workout_sets s ON s.workout_id = w.id
+      WHERE w.id = ?
+      GROUP BY w.id
+      ''',
+      [workoutId],
+    );
+    return rows.isEmpty ? <String, Object?>{} : rows.first;
+  }
+
 }
