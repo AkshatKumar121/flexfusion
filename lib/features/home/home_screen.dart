@@ -6,6 +6,7 @@ import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
 import '../profile/profile_screen.dart';
 import 'weekly_progress_screen.dart';
+import '../train/workout_session_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -260,6 +261,7 @@ class HomeScreenState extends State<HomeScreen> {
                       detail: '6 Exercises',
                       accentColor: AppColors.red,
                       buttonText: 'START WORKOUT',
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen())),
                     ),
                   ),
 
@@ -712,6 +714,7 @@ class _DashboardCard extends StatelessWidget {
   final String detail;
   final Color accentColor;
   final String buttonText;
+  final VoidCallback? onTap;
 
   const _DashboardCard({
     required this.icon,
@@ -721,6 +724,7 @@ class _DashboardCard extends StatelessWidget {
     required this.detail,
     required this.accentColor,
     required this.buttonText,
+    this.onTap,
   });
 
   @override
@@ -788,23 +792,25 @@ class _DashboardCard extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              vertical: 11,
-            ),
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              buttonText,
-              style: GoogleFonts.inter(
-                color: Colors.black,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 11),
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                buttonText,
+                style: GoogleFonts.inter(
+                  color: Colors.black,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ),
