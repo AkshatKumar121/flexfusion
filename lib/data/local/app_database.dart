@@ -984,7 +984,6 @@ class AppDatabase {
     final rows = await db.query('body_weights', orderBy: 'log_date DESC', limit: 1);
     return rows.isEmpty ? null : rows.first;
   }
-}
 
 
   Future<void> saveBodyWeight({
@@ -1040,3 +1039,4 @@ class AppDatabase {
     );
   }
 }
+
