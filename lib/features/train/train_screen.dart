@@ -481,7 +481,7 @@ class TrainScreenState extends State<TrainScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: photos.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 9),
+                separatorBuilder: (context, index) => const SizedBox(width: 9),
                 itemBuilder: (context, index) {
                   final photo = photos[index];
                   final path = photo['local_file_path'] as String;
@@ -495,7 +495,7 @@ class TrainScreenState extends State<TrainScreen> {
                             child: kIsWeb
                                 ? Container(color: AppColors.surface, child: const Icon(Icons.image, color: AppColors.grey))
                                 : Image.file(File(path), width: 88, fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(color: AppColors.surface, child: const Icon(Icons.broken_image_outlined, color: AppColors.grey))),
+                                    errorBuilder: (context, error, stackTrace) => Container(color: AppColors.surface, child: const Icon(Icons.broken_image_outlined, color: AppColors.grey))),
                           ),
                           Container(
                             width: double.infinity,
