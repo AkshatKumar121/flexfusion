@@ -10,7 +10,8 @@ class EatScreen extends StatefulWidget {
 }
 
 class EatScreenState extends State<EatScreen> {
-  late final String _date;
+  late String _date;
+  late final DateTime _today;
   bool _isLoading = true;
   double calorieTarget = 2200;
   double proteinTarget = 180;
@@ -25,8 +26,30 @@ class EatScreenState extends State<EatScreen> {
   void initState() {
     super.initState();
     final now = DateTime.now();
+    _today = DateTime(now.year, now.month, now.day);
     _date = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     _loadData();
+  }
+
+  DateTime get _selectedDay => DateTime.parse(_date);
+  bool get _canEditSelectedDate => !_selectedDay.isBefore(_today.subtract(const Duration(days: 30)));
+
+  String _formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDay,
+      firstDate: _today.subtract(const Duration(days: 30)),
+      lastDate: _today,
+      helpText: 'SELECT FOOD LOG DATE',
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _date = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+    });
+    await _loadData();
   }
 
   Future<void> refreshEatScreen() => _loadData();
@@ -71,6 +94,7 @@ class EatScreenState extends State<EatScreen> {
   double get fat => all.fold(0, (s, f) => s + f.fat);
 
   Future<void> addFood(String meal) async {
+    if (!_canEditSelectedDate) return;
     final result = await showModalBottomSheet<LoggedFood>(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
       builder: (_) => FoodPickerSheet(meal: meal),
@@ -109,14 +133,39 @@ class EatScreenState extends State<EatScreen> {
           Text('Eat well. Get stronger.', style: GoogleFonts.inter(color: AppColors.white, fontSize: 25, fontWeight: FontWeight.w800)),
           const SizedBox(height: 6),
           Text('Track your food and hit your daily goals.', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12)),
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
+          InkWell(
+            onTap: _selectDate,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+              decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
+              child: Row(children: [
+                const Icon(Icons.calendar_month_outlined, color: AppColors.green, size: 19),
+                const SizedBox(width: 9),
+                Expanded(child: Text(_selectedDay == _today ? 'TODAY • ${_formatDate(_selectedDay)}' : _formatDate(_selectedDay), style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w700))),
+                Text('CHANGE DATE', style: GoogleFonts.inter(color: AppColors.green, fontSize: 9, fontWeight: FontWeight.w800)),
+                const SizedBox(width: 5),
+                const Icon(Icons.chevron_right, color: AppColors.grey, size: 18),
+              ]),
+            ),
+          ),
+          if (!_canEditSelectedDate) Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text('This date is older than 30 days. Entries are available to view but cannot be changed.', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10)),
+          ),
+          const SizedBox(height: 16),
           _calorieCard(remaining),
           const SizedBox(height: 16),
           _macroCard(),
           const SizedBox(height: 26),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('TODAY’S MEALS', style: GoogleFonts.inter(color: AppColors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1)),
+            Text('${_selectedDay == _today ? 'TODAY’S MEALS' : 'MEALS • ${_formatDate(_selectedDay)}'}', style: GoogleFonts.inter(color: AppColors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1)),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text('${all.length} FOODS LOGGED', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: .6)),
+            const SizedBox(height: 5),
+            Text(_canEditSelectedDate ? 'EDITING AVAILABLE' : 'VIEW ONLY', style: GoogleFonts.inter(color: _canEditSelectedDate ? AppColors.green : AppColors.grey, fontSize: 8, fontWeight: FontWeight.w700)),
+          ]),
           ]),
           const SizedBox(height: 13),
           _mealCard('BREAKFAST', 'Start your day right', Icons.wb_twilight_outlined),
@@ -216,7 +265,13 @@ class EatScreenState extends State<EatScreen> {
                 Text('${entry.value.grams.round()} g • P ${entry.value.protein.round()}g • C ${entry.value.carbs.round()}g • F ${entry.value.fat.round()}g', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
               ])),
               Text('${entry.value.kcal.round()} kcal', style: GoogleFonts.inter(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w700)),
-              IconButton(
+              if (_canEditSelectedDate) IconButton(
+                onPressed: () => _editFood(entry.value),
+                icon: const Icon(Icons.edit_outlined, color: AppColors.green, size: 16),
+                tooltip: 'Edit quantity',
+                visualDensity: VisualDensity.compact,
+              ),
+              if (_canEditSelectedDate) IconButton(
                 onPressed: () async {
                   final food = entry.value;
                   if (food.id != null) {
@@ -236,6 +291,47 @@ class EatScreenState extends State<EatScreen> {
         ],
       ]),
     );
+  }
+
+  Future<void> _editFood(LoggedFood food) async {
+    if (!_canEditSelectedDate || food.id == null) return;
+    final controller = TextEditingController(text: food.grams.toStringAsFixed(0));
+    final grams = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text('Edit ${food.name}', style: const TextStyle(color: AppColors.white)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(color: AppColors.white),
+          decoration: const InputDecoration(labelText: 'Quantity (g)'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () {
+              final value = double.tryParse(controller.text);
+              Navigator.pop(dialogContext, value != null && value > 0 ? value : null);
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (grams == null || !mounted) return;
+    final ratio = grams / food.grams;
+    await AppDatabase.instance.updateFoodLog(
+      id: food.id!,
+      grams: grams,
+      calories: food.kcal * ratio,
+      protein: food.protein * ratio,
+      carbs: food.carbs * ratio,
+      fat: food.fat * ratio,
+    );
+    if (mounted) await _loadData();
   }
 
   Widget _addButton(String meal) => TextButton.icon(
