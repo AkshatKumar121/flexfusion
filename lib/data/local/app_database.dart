@@ -607,6 +607,27 @@ class AppDatabase {
     });
   }
 
+  Future<void> updateFoodLog({
+    required int id,
+    required double grams,
+    required double calories,
+    required double protein,
+    required double carbs,
+    required double fat,
+  }) async {
+    final db = await database;
+    await db.update('food_logs', {
+      'quantity_g': grams,
+      'quantity_value': grams,
+      'base_quantity': grams,
+      'calories': calories,
+      'protein_g': protein,
+      'carbs_g': carbs,
+      'fat_g': fat,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<String> getAppSetting(String key, {String defaultValue = ''}) async {
     final db = await database;
     final rows = await db.query('app_settings', where: 'key = ?', whereArgs: [key], limit: 1);
