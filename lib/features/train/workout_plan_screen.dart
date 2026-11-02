@@ -407,6 +407,18 @@ class _PlanDayCardState extends State<_PlanDayCard> {
   void initState() { super.initState(); _load(); }
   void _load() => _exercisesFuture = AppDatabase.instance.getPlanDayExercises(widget.day['id'] as int);
 
+  Future<void> _substitute(Map<String, Object?> exercise) async {
+    final library = await AppDatabase.instance.getExercises();
+    if (!mounted) return;
+    final selected = await showModalBottomSheet<Map<String, Object?>>(context: context, backgroundColor: AppColors.card, builder: (context) => SafeArea(child: ListView(shrinkWrap: true, children: [
+      const ListTile(title: Text('Replace with')),
+      for (final item in library) ListTile(title: Text(item['name'] as String), subtitle: Text('${item['muscle_group'] ?? ''} • ${item['equipment'] ?? ''}'), onTap: () => Navigator.pop(context, item)),
+    ])));
+    if (selected == null) return;
+    await AppDatabase.instance.substitutePlanExercise(planExerciseId: exercise['id'] as int, exerciseId: selected['id'] as int, exerciseName: selected['name'] as String);
+    if (mounted) setState(_load);
+  }
+
   Future<void> _editTargets(Map<String, Object?> exercise) async {
     final sets = await AppDatabase.instance.getPlanExerciseSets(exercise['id'] as int);
     if (sets.isEmpty || !mounted) return;
@@ -472,10 +484,24 @@ class _PlanDayCardState extends State<_PlanDayCard> {
                       return Text('${rows.length} sets × ${first['target_reps']} reps$weight • ${first['rest_seconds']}s rest', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10));
                     },
                   ),
-                  trailing: IconButton(onPressed: () async {
-                    await AppDatabase.instance.deletePlanExercise(exercise['id'] as int);
-                    if (mounted) setState(_load);
-                  }, icon: const Icon(Icons.close, color: AppColors.grey, size: 18)),
+                  trailing: PopupMenuButton<String>(
+                    iconColor: AppColors.grey,
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        await _editTargets(exercise);
+                      } else if (value == 'substitute') {
+                        await _substitute(exercise);
+                      } else if (value == 'remove') {
+                        await AppDatabase.instance.deletePlanExercise(exercise['id'] as int);
+                        if (mounted) setState(_load);
+                      }
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'edit', child: Text('Edit sets and targets')),
+                      PopupMenuItem(value: 'substitute', child: Text('Substitute exercise')),
+                      PopupMenuItem(value: 'remove', child: Text('Remove')),
+                    ],
+                  ),
                 ),
               Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: () async { await widget.onAddExercise(); if (mounted) setState(_load); }, icon: const Icon(Icons.add, size: 16), label: const Text('ADD EXERCISE'))),
             ]);
