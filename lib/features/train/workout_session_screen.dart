@@ -53,7 +53,7 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
         return _tile('Workout in progress', row['session_name'] as String, 'RESUME', () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => WorkoutSessionScreen(workoutId: row['id'] as int, title: row['session_name'] as String))));
       }),
       FutureBuilder<Map<String, Object?>?>(future: _suggested, builder: (context, s) {
-        if (!s.hasData) return const Center(child: CircularProgressIndicator());
+        if (s.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
         final day = s.data;
         if (day == null) return _tile('No active plan', 'Create a plan to see your next session.', 'CREATE PLAN', () async {
           await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()));
@@ -91,7 +91,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   int _rest = 0;
   @override
   void initState() { super.initState(); _reload(); }
-  void _reload() => _sets = AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
+  void _reload() { _sets = AppDatabase.instance.getWorkoutSessionSets(widget.workoutId); }
   @override
   void dispose() {
     _timer?.cancel();
