@@ -7,10 +7,16 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:path/path.dart' as p;
 
 class AppDatabase {
-  AppDatabase._();
+  AppDatabase._({String? databasePathOverride})
+      : _databasePathOverride = databasePathOverride;
+
+  @visibleForTesting
+  AppDatabase.forTesting(String databasePath)
+      : this._(databasePathOverride: databasePath);
 
   static final AppDatabase instance = AppDatabase._();
   static const int schemaVersion = 3;
+  final String? _databasePathOverride;
   Database? _database;
 
   Future<Database> get database async {
@@ -18,9 +24,10 @@ class AppDatabase {
     if (kIsWeb) {
       databaseFactory = databaseFactoryFfiWeb;
     }
-    final dbPath = kIsWeb
-        ? 'flexfusion_v1.db'
-        : p.join(await getDatabasesPath(), 'flexfusion_v1.db');
+    final dbPath = _databasePathOverride ??
+        (kIsWeb
+            ? 'flexfusion_v1.db'
+            : p.join(await getDatabasesPath(), 'flexfusion_v1.db'));
 
     _database = await openDatabase(
       dbPath,
@@ -408,6 +415,12 @@ class AppDatabase {
 
     // Mark complete only after the database transaction succeeds.
     await preferences.setBool(migrationKey, true);
+  }
+
+  @visibleForTesting
+  Future<void> closeForTesting() async {
+    await _database?.close();
+    _database = null;
   }
 
   Future<List<Map<String, Object?>>> getFoodLogsForDate(String date) async {
