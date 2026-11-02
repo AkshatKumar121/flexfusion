@@ -649,7 +649,7 @@ class TrainScreenState extends State<TrainScreen> {
 
   Future<void> _addProgressPhoto() async {
     if (kIsWeb) {
-      _showInfo('Photo logging', 'Photo storage is currently supported on iOS and Android. Web support will be added separately.');
+      _showInfo('Photo logging', 'Progress photo logging is currently available only in the iOS app. Web support will be added separately.');
       return;
     }
     final angle = await showModalBottomSheet<String>(
@@ -718,7 +718,7 @@ class TrainScreenState extends State<TrainScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$title — $message'),
+        content: Text('$title — $message', style: const TextStyle(color: AppColors.white)),
         backgroundColor: AppColors.surface,
       ),
     );
