@@ -100,7 +100,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       reps: int.tryParse(_controller(_reps, id, '${row['actual_reps'] ?? 0}').text) ?? 0,
       weight: double.tryParse(_controller(_weights, id, row['actual_weight']?.toString() ?? '').text),
       completed: done);
-    if (done) _startRest(90);
+    if (done) _startRest(row['rest_seconds'] as int? ?? 90);
     if (mounted) setState(_reload);
   }
   void _startRest(int seconds) {
@@ -123,7 +123,17 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     if (mounted) setState(_reload);
   }
   Future<void> _finish() async {
-    final rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
+    var rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
+    for (final row in rows) {
+      final id = row['id'] as int;
+      await AppDatabase.instance.updateWorkoutSet(
+        id: id,
+        reps: int.tryParse(_controller(_reps, id, '\${row['actual_reps'] ?? 0}').text) ?? 0,
+        weight: double.tryParse(_controller(_weights, id, row['actual_weight']?.toString() ?? '').text),
+        completed: (row['completed'] as int? ?? 0) == 1,
+      );
+    }
+    rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
     final done = rows.where((r) => (r['completed'] as int? ?? 0) == 1).length;
     final confirm = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
       backgroundColor: AppColors.card, title: const Text('Finish workout?'),
