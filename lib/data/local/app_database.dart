@@ -7,8 +7,7 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:path/path.dart' as p;
 
 class AppDatabase {
-  AppDatabase._({String? databasePathOverride})
-      : _databasePathOverride = databasePathOverride;
+  AppDatabase._({this._databasePathOverride});
 
   @visibleForTesting
   AppDatabase.forTesting(String databasePath)
