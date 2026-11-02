@@ -285,7 +285,7 @@ class LoggedFood {
   );
 }
 
-const foods = <FoodData>[
+const fallbackFoods = <FoodData>[
   FoodData('Chicken breast, raw', 120, 22.5, 0, 2.6),
   FoodData('Egg, whole', 143, 12.6, .7, 9.5),
   FoodData('Paneer', 265, 18.3, 1.2, 20.8),
@@ -321,6 +321,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
   bool custom = false;
   bool _loadingCustomFoods = true;
   List<FoodData> _customFoods = [];
+  List<FoodData> _catalogueFoods = [];
 
   @override
   void initState() {
@@ -330,10 +331,19 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
 
   Future<void> _loadCustomFoods() async {
     try {
-      final rows = await AppDatabase.instance.getCustomFoods();
+      final builtInRows = await AppDatabase.instance.getBuiltInFoods();
+      final customRows = await AppDatabase.instance.getCustomFoods();
       if (!mounted) return;
       setState(() {
-        _customFoods = rows.map((row) => FoodData(
+        _catalogueFoods = builtInRows.map((row) => FoodData(
+          row['name'] as String,
+          (row['calories_per_basis'] as num).toDouble(),
+          (row['protein_per_basis_g'] as num).toDouble(),
+          (row['carbs_per_basis_g'] as num).toDouble(),
+          (row['fat_per_basis_g'] as num).toDouble(),
+          id: row['id'] as int,
+        )).toList();
+        _customFoods = customRows.map((row) => FoodData(
           row['name'] as String,
           (row['calories_per_basis'] as num).toDouble(),
           (row['protein_per_basis_g'] as num).toDouble(),
@@ -421,7 +431,10 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final allFoods = [...foods, ..._customFoods];
+    final allFoods = [
+      ...(_catalogueFoods.isNotEmpty ? _catalogueFoods : fallbackFoods),
+      ..._customFoods,
+    ];
     final list = allFoods.where((f) => f.name.toLowerCase().contains(search.text.toLowerCase().trim())).toList();
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
