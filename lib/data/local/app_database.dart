@@ -985,3 +985,58 @@ class AppDatabase {
     return rows.isEmpty ? null : rows.first;
   }
 }
+
+
+  Future<void> saveBodyWeight({
+    required String date,
+    required double weightKg,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    final existing = await db.query(
+      'body_weights',
+      columns: ['id', 'created_at'],
+      where: 'log_date = ?',
+      whereArgs: [date],
+      limit: 1,
+    );
+    await db.insert(
+      'body_weights',
+      {
+        'log_date': date,
+        'weight_value': weightKg,
+        'weight_unit': 'kg',
+        'created_at': existing.isEmpty ? now : existing.first['created_at'],
+        'updated_at': now,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<Map<String, Object?>>> getProgressPhotos({int limit = 12}) async {
+    final db = await database;
+    return db.query(
+      'progress_photos',
+      orderBy: 'photo_date DESC, id DESC',
+      limit: limit,
+    );
+  }
+
+  Future<void> saveProgressPhoto({
+    required String date,
+    required String angle,
+    required String localFilePath,
+  }) async {
+    final db = await database;
+    await db.insert(
+      'progress_photos',
+      {
+        'photo_date': date,
+        'angle': angle,
+        'local_file_path': localFilePath,
+        'created_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+}
