@@ -1,0 +1,251 @@
+catalogue_id,catalogue_name,candidate_rank,match_score,fdc_id,usda_description,kcal_per_100g,protein_g_per_100g,carbs_g_per_100g,fat_g_per_100g,review_status
+FF001,White rice raw,1,0.610,169726,"Wild rice, raw",357,14.73,74.9,1.08,REVIEW_REQUIRED
+FF001,White rice raw,2,0.516,169251,"Mushrooms, white, raw",22,3.09,3.26,0.34,REVIEW_REQUIRED
+FF001,White rice raw,3,0.493,170081,"Radishes, white icicle, raw",14,1.1,2.63,0.1,REVIEW_REQUIRED
+FF001,White rice raw,4,0.493,168879,"Rice, white, medium-grain, raw, enriched",360,6.61,79.34,0.58,REVIEW_REQUIRED
+FF001,White rice raw,5,0.490,168931,"Rice, white, short-grain, raw, unenriched",358,6.5,79.15,0.52,REVIEW_REQUIRED
+FF002,White rice cooked,1,0.622,168897,"Wild rice, cooked",101,3.99,21.34,0.34,REVIEW_REQUIRED
+FF002,White rice cooked,2,0.606,169711,"Rice, white, glutinous, unenriched, cooked",97,2.02,21.09,0.19,REVIEW_REQUIRED
+FF002,White rice cooked,3,0.541,168882,"Rice, white, short-grain, enriched, cooked",130,2.36,28.73,0.19,REVIEW_REQUIRED
+FF002,White rice cooked,4,0.539,168914,"Rice noodles, cooked",108,1.79,24.01,0.2,REVIEW_REQUIRED
+FF002,White rice cooked,5,0.537,168880,"Rice, white, medium-grain, enriched, cooked",130,2.38,28.59,0.21,REVIEW_REQUIRED
+FF003,Brown rice raw,1,0.584,169726,"Wild rice, raw",357,14.73,74.9,1.08,REVIEW_REQUIRED
+FF003,Brown rice raw,2,0.468,173155,"Snacks, brown rice chips",384,8.2,81.5,2.8,REVIEW_REQUIRED
+FF003,Brown rice raw,3,0.442,168898,"Rice flour, brown",363,7.23,76.48,2.78,REVIEW_REQUIRED
+FF003,Brown rice raw,4,0.399,168855,"Snacks, rice cakes, brown rice, rye",386,8.1,79.9,3.8,REVIEW_REQUIRED
+FF003,Brown rice raw,5,0.395,169679,"Snacks, rice cakes, brown rice, corn",385,8.4,81.2,3.2,REVIEW_REQUIRED
+FF004,Brown rice cooked,1,0.601,168897,"Wild rice, cooked",101,3.99,21.34,0.34,REVIEW_REQUIRED
+FF004,Brown rice cooked,2,0.539,168914,"Rice noodles, cooked",108,1.79,24.01,0.2,REVIEW_REQUIRED
+FF004,Brown rice cooked,3,0.529,173263,"Rice, brown, parboiled, cooked, UNCLE BENS",147,3.09,31.33,0.85,REVIEW_REQUIRED
+FF004,Brown rice cooked,4,0.470,173155,"Snacks, brown rice chips",384,8.2,81.5,2.8,REVIEW_REQUIRED
+FF004,Brown rice cooked,5,0.431,168898,"Rice flour, brown",363,7.23,76.48,2.78,REVIEW_REQUIRED
+FF005,Basmati rice raw,1,0.566,169726,"Wild rice, raw",357,14.73,74.9,1.08,REVIEW_REQUIRED
+FF005,Basmati rice raw,2,0.380,167763,"Tamarinds, raw",239,2.8,62.5,0.6,REVIEW_REQUIRED
+FF005,Basmati rice raw,3,0.378,169230,"Garlic, raw",149,6.36,33.06,0.5,REVIEW_REQUIRED
+FF005,Basmati rice raw,4,0.372,170068,"Watercress, raw",11,2.3,1.29,0.1,REVIEW_REQUIRED
+FF005,Basmati rice raw,5,0.366,167755,"Raspberries, raw",52,1.2,11.94,0.65,REVIEW_REQUIRED
+FF006,Basmati rice cooked,1,0.585,168897,"Wild rice, cooked",101,3.99,21.34,0.34,REVIEW_REQUIRED
+FF006,Basmati rice cooked,2,0.528,168914,"Rice noodles, cooked",108,1.79,24.01,0.2,REVIEW_REQUIRED
+FF006,Basmati rice cooked,3,0.372,168918,"Teff, cooked",101,3.87,19.86,0.65,REVIEW_REQUIRED
+FF006,Basmati rice cooked,4,0.366,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF006,Basmati rice cooked,5,0.359,172467,"Tempeh, cooked",195,19.91,7.62,11.38,REVIEW_REQUIRED
+FF007,Parboiled rice raw,1,0.596,169726,"Wild rice, raw",357,14.73,74.9,1.08,REVIEW_REQUIRED
+FF007,Parboiled rice raw,2,0.388,169230,"Garlic, raw",149,6.36,33.06,0.5,REVIEW_REQUIRED
+FF007,Parboiled rice raw,3,0.378,171013,"Oil, rice bran",884,0,0,100,REVIEW_REQUIRED
+FF007,Parboiled rice raw,4,0.372,170400,"Celeriac, raw",42,1.5,9.2,0.3,REVIEW_REQUIRED
+FF007,Parboiled rice raw,5,0.370,171687,"Acerola juice, raw",23,0.4,4.8,0.3,REVIEW_REQUIRED
+FF008,Parboiled rice cooked,1,0.609,168897,"Wild rice, cooked",101,3.99,21.34,0.34,REVIEW_REQUIRED
+FF008,Parboiled rice cooked,2,0.518,168914,"Rice noodles, cooked",108,1.79,24.01,0.2,REVIEW_REQUIRED
+FF008,Parboiled rice cooked,3,0.515,173263,"Rice, brown, parboiled, cooked, UNCLE BENS",147,3.09,31.33,0.85,REVIEW_REQUIRED
+FF008,Parboiled rice cooked,4,0.495,169708,"Rice, white, long-grain, parboiled, enriched, cooked",123,2.91,26.05,0.37,REVIEW_REQUIRED
+FF008,Parboiled rice cooked,5,0.489,169759,"Rice, white, long-grain, parboiled, unenriched, cooked",123,2.91,26.05,0.37,REVIEW_REQUIRED
+FF009,Red rice raw,1,0.605,169726,"Wild rice, raw",357,14.73,74.9,1.08,REVIEW_REQUIRED
+FF009,Red rice raw,2,0.506,169977,"Cabbage, red, raw",31,1.43,7.37,0.16,REVIEW_REQUIRED
+FF009,Red rice raw,3,0.457,168431,"Lettuce, red leaf, raw",13,1.33,2.26,0.22,REVIEW_REQUIRED
+FF009,Red rice raw,4,0.417,168412,"Endive, raw",17,1.25,3.35,0.2,REVIEW_REQUIRED
+FF009,Red rice raw,5,0.415,174923,"Bread, rice bran",243,8.9,43.5,4.6,REVIEW_REQUIRED
+FF010,Red rice cooked,1,0.619,168897,"Wild rice, cooked",101,3.99,21.34,0.34,REVIEW_REQUIRED
+FF010,Red rice cooked,2,0.551,168914,"Rice noodles, cooked",108,1.79,24.01,0.2,REVIEW_REQUIRED
+FF010,Red rice cooked,3,0.511,170050,"Tomatoes, red, ripe, cooked",18,0.95,4.01,0.11,REVIEW_REQUIRED
+FF010,Red rice cooked,4,0.430,170089,"Tomatoes, red, ripe, cooked, stewed",79,1.96,13.05,2.68,REVIEW_REQUIRED
+FF010,Red rice cooked,5,0.388,172467,"Tempeh, cooked",195,19.91,7.62,11.38,REVIEW_REQUIRED
+FF011,Poha dry,1,0.392,169699,"Couscous, dry",376,12.76,77.43,0.64,REVIEW_REQUIRED
+FF011,Poha dry,2,0.372,170688,"Bulgur, dry",342,12.29,75.87,1.33,REVIEW_REQUIRED
+FF011,Poha dry,3,0.359,169717,"Tapioca, pearl, dry",358,0.19,88.69,0.02,REVIEW_REQUIRED
+FF011,Poha dry,4,0.331,168911,"Spaghetti, spinach, dry",372,13.35,74.81,1.57,REVIEW_REQUIRED
+FF011,Poha dry,5,0.324,169736,"Pasta, dry, enriched",371,13.04,74.67,1.51,REVIEW_REQUIRED
+FF012,Poha cooked,1,0.479,172467,"Tempeh, cooked",195,19.91,7.62,11.38,REVIEW_REQUIRED
+FF012,Poha cooked,2,0.479,168917,"Quinoa, cooked",120,4.4,21.3,1.92,REVIEW_REQUIRED
+FF012,Poha cooked,3,0.460,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF012,Poha cooked,4,0.439,168918,"Teff, cooked",101,3.87,19.86,0.65,REVIEW_REQUIRED
+FF012,Poha cooked,5,0.432,169700,"Couscous, cooked",112,3.79,23.22,0.16,REVIEW_REQUIRED
+FF013,Puffed rice,1,0.392,167724,"Millet, puffed",354,13,80,3.4,REVIEW_REQUIRED
+FF013,Puffed rice,2,0.351,174923,"Bread, rice bran",243,8.9,43.5,4.6,REVIEW_REQUIRED
+FF013,Puffed rice,3,0.338,169726,"Wild rice, raw",357,14.73,74.9,1.08,REVIEW_REQUIRED
+FF013,Puffed rice,4,0.333,173161,Rice crackers,416,10,82.64,5,REVIEW_REQUIRED
+FF013,Puffed rice,5,0.321,171651,"Cereals ready-to-eat, QUAKER, QUAKER Puffed Rice",383,7.01,87.78,0.9,REVIEW_REQUIRED
+FF014,Thick rice flakes,1,0.372,173161,Rice crackers,416,10,82.64,5,REVIEW_REQUIRED
+FF014,Thick rice flakes,2,0.321,168897,"Wild rice, cooked",101,3.99,21.34,0.34,REVIEW_REQUIRED
+FF014,Thick rice flakes,3,0.317,171013,"Oil, rice bran",884,0,0,100,REVIEW_REQUIRED
+FF014,Thick rice flakes,4,0.317,169726,"Wild rice, raw",357,14.73,74.9,1.08,REVIEW_REQUIRED
+FF014,Thick rice flakes,5,0.300,169742,"Rice noodles, dry",364,5.95,80.18,0.56,REVIEW_REQUIRED
+FF015,Whole wheat grain,1,0.541,168944,"Wheat flour, whole-grain, soft wheat",332,9.61,74.48,1.95,REVIEW_REQUIRED
+FF015,Whole wheat grain,2,0.533,172749,"Crackers, whole-wheat",427,10.58,69.55,14.13,REVIEW_REQUIRED
+FF015,Whole wheat grain,3,0.457,174916,"Bread, pita, whole-wheat",262,9.8,55.89,1.71,REVIEW_REQUIRED
+FF015,Whole wheat grain,4,0.456,167942,"Crackers, saltines, whole wheat (includes multi-grain)",398,7.14,68.25,10.71,REVIEW_REQUIRED
+FF015,Whole wheat grain,5,0.448,174092,"Bagels, whole grain white",255,9.3,54.52,0,REVIEW_REQUIRED
+FF016,Whole wheat flour atta,1,0.500,168944,"Wheat flour, whole-grain, soft wheat",332,9.61,74.48,1.95,REVIEW_REQUIRED
+FF016,Whole wheat flour atta,2,0.443,172749,"Crackers, whole-wheat",427,10.58,69.55,14.13,REVIEW_REQUIRED
+FF016,Whole wheat flour atta,3,0.419,172823,"Crackers, whole-wheat, low salt",443,8.8,68.6,17.2,REVIEW_REQUIRED
+FF016,Whole wheat flour atta,4,0.417,170687,"Buckwheat flour, whole-groat",335,12.62,70.59,3.1,REVIEW_REQUIRED
+FF016,Whole wheat flour atta,5,0.392,174916,"Bread, pita, whole-wheat",262,9.8,55.89,1.71,REVIEW_REQUIRED
+FF017,Maida,1,0.194,167763,"Tamarinds, raw",239,2.8,62.5,0.6,REVIEW_REQUIRED
+FF017,Maida,2,0.156,172442,Miso,198,12.79,25.37,6.01,REVIEW_REQUIRED
+FF017,Maida,3,0.156,171401,Lard,902,0,0,100,REVIEW_REQUIRED
+FF017,Maida,4,0.147,168566,"Tomatillos, raw",32,0.96,5.84,1.02,REVIEW_REQUIRED
+FF017,Maida,5,0.140,173865,"Ham, minced",263,16.28,1.84,20.68,REVIEW_REQUIRED
+FF018,Dalia dry,1,0.401,170688,"Bulgur, dry",342,12.29,75.87,1.33,REVIEW_REQUIRED
+FF018,Dalia dry,2,0.350,169699,"Couscous, dry",376,12.76,77.43,0.64,REVIEW_REQUIRED
+FF018,Dalia dry,3,0.331,171665,"Cereals, WHEATENA, dry",357,13.1,75.6,2.9,REVIEW_REQUIRED
+FF018,Dalia dry,4,0.331,169742,"Rice noodles, dry",364,5.95,80.18,0.56,REVIEW_REQUIRED
+FF018,Dalia dry,5,0.326,168911,"Spaghetti, spinach, dry",372,13.35,74.81,1.57,REVIEW_REQUIRED
+FF019,Dalia cooked,1,0.469,168917,"Quinoa, cooked",120,4.4,21.3,1.92,REVIEW_REQUIRED
+FF019,Dalia cooked,2,0.450,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF019,Dalia cooked,3,0.441,170287,"Bulgur, cooked",83,3.08,18.58,0.24,REVIEW_REQUIRED
+FF019,Dalia cooked,4,0.441,168871,"Millet, cooked",119,3.51,23.67,1,REVIEW_REQUIRED
+FF019,Dalia cooked,5,0.430,168918,"Teff, cooked",101,3.87,19.86,0.65,REVIEW_REQUIRED
+FF020,Rolled oats dry,1,0.408,172989,"Cereals, QUAKER, Quick Oats, Dry",371,13.7,68.18,6.87,REVIEW_REQUIRED
+FF020,Rolled oats dry,2,0.344,169699,"Couscous, dry",376,12.76,77.43,0.64,REVIEW_REQUIRED
+FF020,Rolled oats dry,3,0.333,169742,"Rice noodles, dry",364,5.95,80.18,0.56,REVIEW_REQUIRED
+FF020,Rolled oats dry,4,0.326,171661,"Cereals, oats, instant, fortified, plain, dry",362,11.92,69.52,6.9,REVIEW_REQUIRED
+FF020,Rolled oats dry,5,0.318,174640,"Cereals, QUAKER, Quick Oats with Iron, Dry",371,13.7,68.18,6.87,REVIEW_REQUIRED
+FF021,Oats cooked with water,1,0.575,171666,"Cereals, WHEATENA, cooked with water",56,2,11.8,0.5,REVIEW_REQUIRED
+FF021,Oats cooked with water,2,0.491,171676,"Cereals, WHEATENA, cooked with water, with salt",59,2.03,11.74,0.45,REVIEW_REQUIRED
+FF021,Oats cooked with water,3,0.477,170543,"Taro, cooked, with salt",142,0.52,34.6,0.11,REVIEW_REQUIRED
+FF021,Oats cooked with water,4,0.438,170135,"Taro, shoots, cooked, with salt",14,0.73,3.19,0.08,REVIEW_REQUIRED
+FF021,Oats cooked with water,5,0.436,173917,"Cereals, farina, enriched, cooked with water, with salt",53,1.82,10.92,0.34,REVIEW_REQUIRED
+FF022,Ragi flour,1,0.450,173755,Carob flour,222,4.62,88.88,0.65,REVIEW_REQUIRED
+FF022,Ragi flour,2,0.439,172023,Millet flour,382,10.75,75.12,4.25,REVIEW_REQUIRED
+FF022,Ragi flour,3,0.439,168446,Potato flour,357,6.9,83.1,0.34,REVIEW_REQUIRED
+FF022,Ragi flour,4,0.413,170684,Arrowroot flour,357,0.3,88.15,0.1,REVIEW_REQUIRED
+FF022,Ragi flour,5,0.378,168898,"Rice flour, brown",363,7.23,76.48,2.78,REVIEW_REQUIRED
+FF023,Ragi porridge cooked,1,0.363,168897,"Wild rice, cooked",101,3.99,21.34,0.34,REVIEW_REQUIRED
+FF023,Ragi porridge cooked,2,0.359,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF023,Ragi porridge cooked,3,0.353,172467,"Tempeh, cooked",195,19.91,7.62,11.38,REVIEW_REQUIRED
+FF023,Ragi porridge cooked,4,0.353,168871,"Millet, cooked",119,3.51,23.67,1,REVIEW_REQUIRED
+FF023,Ragi porridge cooked,5,0.352,171620,"Bratwurst, pork, cooked",333,13.72,2.85,29.18,REVIEW_REQUIRED
+FF024,Jowar flour,1,0.471,173755,Carob flour,222,4.62,88.88,0.65,REVIEW_REQUIRED
+FF024,Jowar flour,2,0.460,168446,Potato flour,357,6.9,83.1,0.34,REVIEW_REQUIRED
+FF024,Jowar flour,3,0.459,170684,Arrowroot flour,357,0.3,88.15,0.1,REVIEW_REQUIRED
+FF024,Jowar flour,4,0.399,172023,Millet flour,382,10.75,75.12,4.25,REVIEW_REQUIRED
+FF024,Jowar flour,5,0.362,169740,Barley malt flour,361,10.28,78.3,1.84,REVIEW_REQUIRED
+FF025,Jowar roti,1,0.184,167783,"Rowal, raw",111,2.3,23.9,2,REVIEW_REQUIRED
+FF025,Jowar roti,2,0.175,169725,"Wheat, sprouted",198,7.49,42.53,1.27,REVIEW_REQUIRED
+FF025,Jowar roti,3,0.175,168176,"Feijoa, raw",61,0.71,15.21,0.42,REVIEW_REQUIRED
+FF025,Jowar roti,4,0.168,168583,"Wasabi, root, raw",109,4.8,23.54,0.63,REVIEW_REQUIRED
+FF025,Jowar roti,5,0.167,170393,"Carrots, raw",41,0.93,9.58,0.24,REVIEW_REQUIRED
+FF026,Bajra flour,1,0.439,173755,Carob flour,222,4.62,88.88,0.65,REVIEW_REQUIRED
+FF026,Bajra flour,2,0.432,170684,Arrowroot flour,357,0.3,88.15,0.1,REVIEW_REQUIRED
+FF026,Bajra flour,3,0.430,168446,Potato flour,357,6.9,83.1,0.34,REVIEW_REQUIRED
+FF026,Bajra flour,4,0.412,169740,Barley malt flour,361,10.28,78.3,1.84,REVIEW_REQUIRED
+FF026,Bajra flour,5,0.399,172023,Millet flour,382,10.75,75.12,4.25,REVIEW_REQUIRED
+FF027,Bajra roti,1,0.176,171844,"Bread, chapati or roti, plain, commercially prepared",297,11.25,46.36,7.45,REVIEW_REQUIRED
+FF027,Bajra roti,2,0.175,170481,"Borage, raw",21,1.8,3.06,0.7,REVIEW_REQUIRED
+FF027,Bajra roti,3,0.167,170393,"Carrots, raw",41,0.93,9.58,0.24,REVIEW_REQUIRED
+FF027,Bajra roti,4,0.167,169387,"Arugula, raw",25,2.58,3.65,0.66,REVIEW_REQUIRED
+FF027,Bajra roti,5,0.166,169043,"Babyfood, juice, orange-carrot",43,0.5,9.9,0.1,REVIEW_REQUIRED
+FF028,Barley raw,1,0.683,170284,"Barley, pearled, raw",352,9.91,77.72,1.16,REVIEW_REQUIRED
+FF028,Barley raw,2,0.489,168421,"Kale, raw",35,2.92,4.42,1.49,REVIEW_REQUIRED
+FF028,Barley raw,3,0.462,170481,"Borage, raw",21,1.8,3.06,0.7,REVIEW_REQUIRED
+FF028,Barley raw,4,0.462,169988,"Celery, raw",14,0.69,2.97,0.17,REVIEW_REQUIRED
+FF028,Barley raw,5,0.462,169230,"Garlic, raw",149,6.36,33.06,0.5,REVIEW_REQUIRED
+FF029,Barley cooked,1,0.701,170285,"Barley, pearled, cooked",123,2.26,28.22,0.44,REVIEW_REQUIRED
+FF029,Barley cooked,2,0.459,170287,"Bulgur, cooked",83,3.08,18.58,0.24,REVIEW_REQUIRED
+FF029,Barley cooked,3,0.459,170283,"Barley, hulled",354,12.48,73.48,2.3,REVIEW_REQUIRED
+FF029,Barley cooked,4,0.459,168871,"Millet, cooked",119,3.51,23.67,1,REVIEW_REQUIRED
+FF029,Barley cooked,5,0.450,168918,"Teff, cooked",101,3.87,19.86,0.65,REVIEW_REQUIRED
+FF030,Quinoa raw,1,0.483,168163,"Quinces, raw",57,0.4,15.3,0.1,REVIEW_REQUIRED
+FF030,Quinoa raw,2,0.462,168176,"Feijoa, raw",61,0.71,15.21,0.42,REVIEW_REQUIRED
+FF030,Quinoa raw,3,0.450,169908,"Loquats, raw",47,0.43,12.14,0.2,REVIEW_REQUIRED
+FF030,Quinoa raw,4,0.450,169260,"Okra, raw",33,1.93,7.45,0.19,REVIEW_REQUIRED
+FF030,Quinoa raw,5,0.450,168571,"Nopales, raw",16,1.32,3.33,0.09,REVIEW_REQUIRED
+FF031,Quinoa cooked,1,1.000,168917,"Quinoa, cooked",120,4.4,21.3,1.92,REVIEW_REQUIRED
+FF031,Quinoa cooked,2,0.542,168874,"Quinoa, uncooked",368,14.12,64.16,6.07,REVIEW_REQUIRED
+FF031,Quinoa cooked,3,0.442,169700,"Couscous, cooked",112,3.79,23.22,0.16,REVIEW_REQUIRED
+FF031,Quinoa cooked,4,0.432,170287,"Bulgur, cooked",83,3.08,18.58,0.24,REVIEW_REQUIRED
+FF031,Quinoa cooked,5,0.432,168871,"Millet, cooked",119,3.51,23.67,1,REVIEW_REQUIRED
+FF032,Corn kernels raw,1,0.487,169998,"Corn, sweet, yellow, raw",86,3.27,18.7,1.35,REVIEW_REQUIRED
+FF032,Corn kernels raw,2,0.474,168538,"Corn, sweet, white, raw",86,3.22,19.02,1.18,REVIEW_REQUIRED
+FF032,Corn kernels raw,3,0.411,171722,"Cranberries, raw",46,0.46,11.97,0.13,REVIEW_REQUIRED
+FF032,Corn kernels raw,4,0.408,169300,"Succotash, (corn and limas), raw",99,5.03,19.59,1.02,REVIEW_REQUIRED
+FF032,Corn kernels raw,5,0.381,173946,"Blackberries, raw",43,1.39,9.61,0.49,REVIEW_REQUIRED
+FF033,Sweet corn boiled,1,0.407,169998,"Corn, sweet, yellow, raw",86,3.27,18.7,1.35,REVIEW_REQUIRED
+FF033,Sweet corn boiled,2,0.405,168540,"Corn, sweet, white, cooked, boiled, drained, with salt",97,3.34,21.71,1.41,REVIEW_REQUIRED
+FF033,Sweet corn boiled,3,0.403,168525,"Corn, sweet, yellow, cooked, boiled, drained, with salt",96,3.41,20.98,1.5,REVIEW_REQUIRED
+FF033,Sweet corn boiled,4,0.398,168539,"Corn, sweet, white, cooked, boiled, drained, without salt",97,3.34,21.71,1.41,REVIEW_REQUIRED
+FF033,Sweet corn boiled,5,0.396,169999,"Corn, sweet, yellow, cooked, boiled, drained, without salt",96,3.41,20.98,1.5,REVIEW_REQUIRED
+FF034,Makai atta,1,0.165,173576,"Oil, oat",884,0,0,100,REVIEW_REQUIRED
+FF034,Makai atta,2,0.162,172769,"Muffins, oat bran",270,7,48.3,7.4,REVIEW_REQUIRED
+FF034,Makai atta,3,0.160,167695,"Mayonnaise, made with tofu",322,5.95,3.06,31.79,REVIEW_REQUIRED
+FF034,Makai atta,4,0.158,172445,"Soy meal, defatted, raw",337,49.2,35.89,2.39,REVIEW_REQUIRED
+FF034,Makai atta,5,0.156,175119,"Fish, mackerel, Atlantic, raw",205,18.6,0,13.89,REVIEW_REQUIRED
+FF035,Semolina sooji dry,1,0.382,169715,"Semolina, enriched",360,12.68,72.83,1.05,REVIEW_REQUIRED
+FF035,Semolina sooji dry,2,0.371,168933,"Semolina, unenriched",360,12.68,72.83,1.05,REVIEW_REQUIRED
+FF035,Semolina sooji dry,3,0.326,169699,"Couscous, dry",376,12.76,77.43,0.64,REVIEW_REQUIRED
+FF035,Semolina sooji dry,4,0.295,169742,"Rice noodles, dry",364,5.95,80.18,0.56,REVIEW_REQUIRED
+FF035,Semolina sooji dry,5,0.292,168911,"Spaghetti, spinach, dry",372,13.35,74.81,1.57,REVIEW_REQUIRED
+FF036,Sabudana dry,1,0.408,170688,"Bulgur, dry",342,12.29,75.87,1.33,REVIEW_REQUIRED
+FF036,Sabudana dry,2,0.392,169699,"Couscous, dry",376,12.76,77.43,0.64,REVIEW_REQUIRED
+FF036,Sabudana dry,3,0.344,171565,"Gravy, brown, dry",367,10.74,59.38,9.61,REVIEW_REQUIRED
+FF036,Sabudana dry,4,0.338,171665,"Cereals, WHEATENA, dry",357,13.1,75.6,2.9,REVIEW_REQUIRED
+FF036,Sabudana dry,5,0.332,168911,"Spaghetti, spinach, dry",372,13.35,74.81,1.57,REVIEW_REQUIRED
+FF037,Sabudana cooked,1,0.467,168917,"Quinoa, cooked",120,4.4,21.3,1.92,REVIEW_REQUIRED
+FF037,Sabudana cooked,2,0.442,170287,"Bulgur, cooked",83,3.08,18.58,0.24,REVIEW_REQUIRED
+FF037,Sabudana cooked,3,0.427,169700,"Couscous, cooked",112,3.79,23.22,0.16,REVIEW_REQUIRED
+FF037,Sabudana cooked,4,0.424,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF037,Sabudana cooked,5,0.419,168873,"Oat bran, cooked",40,3.21,11.44,0.86,REVIEW_REQUIRED
+FF038,Toor dal raw,1,0.407,169260,"Okra, raw",33,1.93,7.45,0.19,REVIEW_REQUIRED
+FF038,Toor dal raw,2,0.396,167783,"Rowal, raw",111,2.3,23.9,2,REVIEW_REQUIRED
+FF038,Toor dal raw,3,0.386,169219,"Cornsalad, raw",21,2,3.6,0.4,REVIEW_REQUIRED
+FF038,Toor dal raw,4,0.385,170481,"Borage, raw",21,1.8,3.06,0.7,REVIEW_REQUIRED
+FF038,Toor dal raw,5,0.376,168571,"Nopales, raw",16,1.32,3.33,0.09,REVIEW_REQUIRED
+FF039,Toor dal cooked,1,0.388,168917,"Quinoa, cooked",120,4.4,21.3,1.92,REVIEW_REQUIRED
+FF039,Toor dal cooked,2,0.378,168918,"Teff, cooked",101,3.87,19.86,0.65,REVIEW_REQUIRED
+FF039,Toor dal cooked,3,0.372,169700,"Couscous, cooked",112,3.79,23.22,0.16,REVIEW_REQUIRED
+FF039,Toor dal cooked,4,0.370,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF039,Toor dal cooked,5,0.363,174595,"Bratwurst, veal, cooked",341,13.99,0,31.7,REVIEW_REQUIRED
+FF040,Moong dal split raw,1,0.340,169089,"Longans, raw",60,1.31,15.14,0.1,REVIEW_REQUIRED
+FF040,Moong dal split raw,2,0.323,169910,"Mangos, raw",60,0.82,14.98,0.38,REVIEW_REQUIRED
+FF040,Moong dal split raw,3,0.323,169702,"Millet, raw",378,11.02,72.85,4.22,REVIEW_REQUIRED
+FF040,Moong dal split raw,4,0.323,169230,"Garlic, raw",149,6.36,33.06,0.5,REVIEW_REQUIRED
+FF040,Moong dal split raw,5,0.317,168571,"Nopales, raw",16,1.32,3.33,0.09,REVIEW_REQUIRED
+FF041,Moong dal split cooked,1,0.356,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF041,Moong dal split cooked,2,0.350,168871,"Millet, cooked",119,3.51,23.67,1,REVIEW_REQUIRED
+FF041,Moong dal split cooked,3,0.331,169400,"Malabar spinach, cooked",23,2.98,2.71,0.78,REVIEW_REQUIRED
+FF041,Moong dal split cooked,4,0.319,169700,"Couscous, cooked",112,3.79,23.22,0.16,REVIEW_REQUIRED
+FF041,Moong dal split cooked,5,0.313,168914,"Rice noodles, cooked",108,1.79,24.01,0.2,REVIEW_REQUIRED
+FF042,Moong whole raw,1,0.486,171287,"Egg, whole, raw, fresh",143,12.56,0.72,9.51,REVIEW_REQUIRED
+FF042,Moong whole raw,2,0.439,171083,"Turkey, whole, giblets, raw",124,18.18,0.07,5.09,REVIEW_REQUIRED
+FF042,Moong whole raw,3,0.427,172190,"Egg, goose, whole, fresh, raw",185,13.87,1.35,13.27,REVIEW_REQUIRED
+FF042,Moong whole raw,4,0.414,172189,"Egg, duck, whole, fresh, raw",185,12.81,1.45,13.77,REVIEW_REQUIRED
+FF042,Moong whole raw,5,0.409,172191,"Egg, quail, whole, fresh, raw",158,13.05,0.41,11.09,REVIEW_REQUIRED
+FF043,Moong whole boiled,1,0.430,173424,"Egg, whole, cooked, hard-boiled",155,12.58,1.12,10.61,REVIEW_REQUIRED
+FF043,Moong whole boiled,2,0.363,172188,"Egg, whole, dried",592,48.05,1.13,43.9,REVIEW_REQUIRED
+FF043,Moong whole boiled,3,0.319,171119,"Chicken, feet, boiled",215,19.4,0.2,14.6,REVIEW_REQUIRED
+FF043,Moong whole boiled,4,0.305,168216,"Plantains, green, boiled",121,1.09,29.15,0.08,REVIEW_REQUIRED
+FF043,Moong whole boiled,5,0.302,170116,"Potatoes, frozen, whole, cooked, boiled, drained, with salt",63,1.98,13.93,0.13,REVIEW_REQUIRED
+FF044,Masoor dal raw,1,0.376,167783,"Rowal, raw",111,2.3,23.9,2,REVIEW_REQUIRED
+FF044,Masoor dal raw,2,0.370,169219,"Cornsalad, raw",21,2,3.6,0.4,REVIEW_REQUIRED
+FF044,Masoor dal raw,3,0.370,168389,"Asparagus, raw",20,2.2,3.88,0.12,REVIEW_REQUIRED
+FF044,Masoor dal raw,4,0.370,167759,"Sapodilla, raw",83,0.44,19.96,1.1,REVIEW_REQUIRED
+FF044,Masoor dal raw,5,0.367,170481,"Borage, raw",21,1.8,3.06,0.7,REVIEW_REQUIRED
+FF045,Masoor dal cooked,1,0.380,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF045,Masoor dal cooked,2,0.372,168871,"Millet, cooked",119,3.51,23.67,1,REVIEW_REQUIRED
+FF045,Masoor dal cooked,3,0.359,169700,"Couscous, cooked",112,3.79,23.22,0.16,REVIEW_REQUIRED
+FF045,Masoor dal cooked,4,0.351,174595,"Bratwurst, veal, cooked",341,13.99,0,31.7,REVIEW_REQUIRED
+FF045,Masoor dal cooked,5,0.351,170683,"Amaranth grain, cooked",102,3.8,18.69,1.58,REVIEW_REQUIRED
+FF046,Urad dal raw,1,0.396,167783,"Rowal, raw",111,2.3,23.9,2,REVIEW_REQUIRED
+FF046,Urad dal raw,2,0.378,171721,"Crabapples, raw",76,0.4,19.95,0.3,REVIEW_REQUIRED
+FF046,Urad dal raw,3,0.372,169260,"Okra, raw",33,1.93,7.45,0.19,REVIEW_REQUIRED
+FF046,Urad dal raw,4,0.372,168421,"Kale, raw",35,2.92,4.42,1.49,REVIEW_REQUIRED
+FF046,Urad dal raw,5,0.367,169276,"Radishes, raw",16,0.68,3.4,0.1,REVIEW_REQUIRED
+FF047,Urad dal cooked,1,0.388,170287,"Bulgur, cooked",83,3.08,18.58,0.24,REVIEW_REQUIRED
+FF047,Urad dal cooked,2,0.388,168917,"Quinoa, cooked",120,4.4,21.3,1.92,REVIEW_REQUIRED
+FF047,Urad dal cooked,3,0.370,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF047,Urad dal cooked,4,0.363,174686,"Guava sauce, cooked",36,0.32,9.48,0.14,REVIEW_REQUIRED
+FF047,Urad dal cooked,5,0.363,174595,"Bratwurst, veal, cooked",341,13.99,0,31.7,REVIEW_REQUIRED
+FF048,Chana dal raw,1,0.396,173944,"Bananas, raw",89,1.09,22.84,0.33,REVIEW_REQUIRED
+FF048,Chana dal raw,2,0.396,169985,"Cassava, raw",160,1.36,38.06,0.28,REVIEW_REQUIRED
+FF048,Chana dal raw,3,0.378,169219,"Cornsalad, raw",21,2,3.6,0.4,REVIEW_REQUIRED
+FF048,Chana dal raw,4,0.370,171721,"Crabapples, raw",76,0.4,19.95,0.3,REVIEW_REQUIRED
+FF048,Chana dal raw,5,0.367,169981,"Cardoon, raw",17,0.7,4.07,0.1,REVIEW_REQUIRED
+FF049,Chana dal cooked,1,0.370,168572,"Cabbage, napa, cooked",12,1.1,2.23,0.17,REVIEW_REQUIRED
+FF049,Chana dal cooked,2,0.362,169746,"Spelt, cooked",127,5.5,26.44,0.85,REVIEW_REQUIRED
+FF049,Chana dal cooked,3,0.356,174686,"Guava sauce, cooked",36,0.32,9.48,0.14,REVIEW_REQUIRED
+FF049,Chana dal cooked,4,0.356,172467,"Tempeh, cooked",195,19.91,7.62,11.38,REVIEW_REQUIRED
+FF049,Chana dal cooked,5,0.356,170287,"Bulgur, cooked",83,3.08,18.58,0.24,REVIEW_REQUIRED
+FF050,Whole brown chana raw,1,0.388,171083,"Turkey, whole, giblets, raw",124,18.18,0.07,5.09,REVIEW_REQUIRED
+FF050,Whole brown chana raw,2,0.374,171287,"Egg, whole, raw, fresh",143,12.56,0.72,9.51,REVIEW_REQUIRED
+FF050,Whole brown chana raw,3,0.372,172189,"Egg, duck, whole, fresh, raw",185,12.81,1.45,13.77,REVIEW_REQUIRED
+FF050,Whole brown chana raw,4,0.368,172191,"Egg, quail, whole, fresh, raw",158,13.05,0.41,11.09,REVIEW_REQUIRED
+FF050,Whole brown chana raw,5,0.368,172190,"Egg, goose, whole, fresh, raw",185,13.87,1.35,13.27,REVIEW_REQUIRED
