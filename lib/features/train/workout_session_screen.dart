@@ -19,12 +19,18 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
     _suggested = AppDatabase.instance.getSuggestedWorkoutDay();
     _active = AppDatabase.instance.getInProgressWorkout();
   }
+  void _finishAndCloseLauncher() {
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
   Future<void> _start({Map<String, Object?>? day, String? name}) async {
     final title = name ?? day?['label'] as String? ?? 'Workout';
     final id = await AppDatabase.instance.startWorkoutSession(
       planId: day?['plan_id'] as int?, planDayId: day?['id'] as int?, sessionName: title);
     if (!mounted) return;
-    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => WorkoutSessionScreen(workoutId: id, title: title)));
+    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => WorkoutSessionScreen(workoutId: id, title: title, onFinished: _finishAndCloseLauncher)));
     if (mounted) setState(_load);
   }
   Future<void> _logRestDay(Map<String, Object?> day) async {
@@ -50,7 +56,7 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
       FutureBuilder<Map<String, Object?>?>(future: _active, builder: (context, s) {
         final row = s.data;
         if (row == null) return const SizedBox.shrink();
-        return _tile('Workout in progress', row['session_name'] as String, 'RESUME', () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => WorkoutSessionScreen(workoutId: row['id'] as int, title: row['session_name'] as String))));
+        return _tile('Workout in progress', row['session_name'] as String, 'RESUME', () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => WorkoutSessionScreen(workoutId: row['id'] as int, title: row['session_name'] as String, onFinished: _finishAndCloseLauncher))));
       }),
       FutureBuilder<Map<String, Object?>?>(future: _suggested, builder: (context, s) {
         if (s.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
@@ -83,7 +89,8 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
 class WorkoutSessionScreen extends StatefulWidget {
   final int workoutId;
   final String title;
-  const WorkoutSessionScreen({super.key, required this.workoutId, required this.title});
+  final VoidCallback? onFinished;
+  const WorkoutSessionScreen({super.key, required this.workoutId, required this.title, this.onFinished});
   @override
   State<WorkoutSessionScreen> createState() => _WorkoutSessionScreenState();
 }
@@ -155,9 +162,13 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     if (confirm == true) {
       await AppDatabase.instance.finishWorkoutSession(widget.workoutId);
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute<void>(
-          builder: (_) => WorkoutSummaryScreen(workoutId: widget.workoutId),
-        ));
+        // Return to the screen that opened the workout launcher. The launcher
+        // closes itself as well, so the user lands directly on TRAIN/HOME.
+        if (widget.onFinished != null) {
+          widget.onFinished!();
+        } else {
+          Navigator.pop(context);
+        }
       }
     }
   }
