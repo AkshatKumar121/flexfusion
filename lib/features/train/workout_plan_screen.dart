@@ -64,6 +64,13 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
     if (mounted) await _refresh();
   }
 
+  Future<void> _rename(Map<String, Object?> plan) async {
+    final name = await _textDialog('Rename workout plan', initial: plan['name'] as String);
+    if (name == null || !mounted) return;
+    await AppDatabase.instance.updateWorkoutPlan(plan['id'] as int, name: name);
+    await _refresh();
+  }
+
   Future<void> _duplicate(Map<String, Object?> plan) async {
     final name = await _textDialog('Duplicate plan', initial: '${plan['name']} Copy');
     if (name == null || !mounted) return;
@@ -148,6 +155,8 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
                       if (value == 'activate') {
                         await AppDatabase.instance.setActiveWorkoutPlan(plan['id'] as int);
                         await _refresh();
+                      } else if (value == 'rename') {
+                        await _rename(plan);
                       } else if (value == 'duplicate') {
                         await _duplicate(plan);
                       } else if (value == 'delete') {
@@ -156,6 +165,7 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
                     },
                     itemBuilder: (_) => [
                       if (!active) const PopupMenuItem(value: 'activate', child: Text('Set as active')),
+                      const PopupMenuItem(value: 'rename', child: Text('Rename')),
                       const PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
                       const PopupMenuItem(value: 'delete', child: Text('Delete')),
                     ],
@@ -192,6 +202,29 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
   Future<void> _refresh() async {
     setState(_reload);
     await _daysFuture;
+  }
+
+  Future<void> _editDay(Map<String, Object?> day) async {
+    final controller = TextEditingController(text: day['label'] as String);
+    var type = day['schedule_type'] as String? ?? 'sequence';
+    var weekday = day['weekday'] as int? ?? 1;
+    var rest = (day['is_rest_day'] as int? ?? 0) == 1;
+    final ok = await showDialog<bool>(context: context, builder: (context) => StatefulBuilder(builder: (context, setDialog) => AlertDialog(
+      backgroundColor: AppColors.card,
+      title: const Text('Edit plan day'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: controller, decoration: const InputDecoration(labelText: 'Day name')),
+        DropdownButtonFormField<String>(value: type, decoration: const InputDecoration(labelText: 'Schedule'), items: const [DropdownMenuItem(value: 'sequence', child: Text('Sequence based')), DropdownMenuItem(value: 'weekday', child: Text('Fixed weekday'))], onChanged: (v) => setDialog(() => type = v ?? 'sequence')),
+        if (type == 'weekday') DropdownButtonFormField<int>(value: weekday, decoration: const InputDecoration(labelText: 'Weekday'), items: const [DropdownMenuItem(value: 1, child: Text('Monday')), DropdownMenuItem(value: 2, child: Text('Tuesday')), DropdownMenuItem(value: 3, child: Text('Wednesday')), DropdownMenuItem(value: 4, child: Text('Thursday')), DropdownMenuItem(value: 5, child: Text('Friday')), DropdownMenuItem(value: 6, child: Text('Saturday')), DropdownMenuItem(value: 7, child: Text('Sunday'))], onChanged: (v) => setDialog(() => weekday = v ?? 1)),
+        CheckboxListTile(value: rest, onChanged: (v) => setDialog(() => rest = v ?? false), title: const Text('Rest day'), contentPadding: EdgeInsets.zero),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')), ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('SAVE'))],
+    )));
+    if (ok == true && controller.text.trim().isNotEmpty && mounted) {
+      await AppDatabase.instance.updateWorkoutPlanDay(id: day['id'] as int, label: controller.text, dayOrder: day['day_order'] as int, scheduleType: type, weekday: type == 'weekday' ? weekday : null, isRestDay: rest);
+      await _refresh();
+    }
+    controller.dispose();
   }
 
   Future<void> _addDay() async {
@@ -326,8 +359,19 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final days = snapshot.data!;
           if (days.isEmpty) return Center(child: Text('Add your first training or rest day.', style: GoogleFonts.inter(color: AppColors.grey)));
-          return ListView.builder(
+          return ReorderableListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+            onReorder: (oldIndex, newIndex) async {
+              if (newIndex > oldIndex) newIndex--;
+              final reordered = [...days];
+              final moved = reordered.removeAt(oldIndex);
+              reordered.insert(newIndex, moved);
+              for (var i = 0; i < reordered.length; i++) {
+                final row = reordered[i];
+                await AppDatabase.instance.updateWorkoutPlanDay(id: row['id'] as int, label: row['label'] as String, dayOrder: i + 1, scheduleType: row['schedule_type'] as String, weekday: row['weekday'] as int?, isRestDay: (row['is_rest_day'] as int? ?? 0) == 1);
+              }
+              await _refresh();
+            },
             itemCount: days.length,
             itemBuilder: (context, index) {
               final day = days[index];
@@ -335,6 +379,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
                 key: ValueKey(day['id']),
                 day: day,
                 onAddExercise: () => _addExercise(day['id'] as int),
+                onEdit: () => _editDay(day),
                 onDelete: () async { await AppDatabase.instance.deleteWorkoutPlanDay(day['id'] as int); await _refresh(); },
               );
             },
@@ -348,8 +393,9 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
 class _PlanDayCard extends StatefulWidget {
   final Map<String, Object?> day;
   final Future<void> Function() onAddExercise;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
-  const _PlanDayCard({super.key, required this.day, required this.onAddExercise, required this.onDelete});
+  const _PlanDayCard({super.key, required this.day, required this.onAddExercise, required this.onEdit, required this.onDelete});
 
   @override
   State<_PlanDayCard> createState() => _PlanDayCardState();
@@ -372,6 +418,7 @@ class _PlanDayCardState extends State<_PlanDayCard> {
         Row(children: [
           Expanded(child: Text(widget.day['label'] as String, style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w700))),
           Text(rest ? 'REST' : (widget.day['schedule_type'] == 'weekday' ? _weekday(widget.day['weekday'] as int? ?? 1) : 'SEQUENCE'), style: GoogleFonts.inter(color: AppColors.green, fontSize: 9, fontWeight: FontWeight.w800)),
+          IconButton(onPressed: widget.onEdit, icon: const Icon(Icons.edit_outlined, color: AppColors.grey, size: 18)),
           IconButton(onPressed: widget.onDelete, icon: const Icon(Icons.delete_outline, color: AppColors.grey, size: 19)),
         ]),
         if (!rest) FutureBuilder<List<Map<String, Object?>>>(
