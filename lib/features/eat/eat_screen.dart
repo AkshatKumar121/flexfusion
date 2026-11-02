@@ -160,7 +160,7 @@ class EatScreenState extends State<EatScreen> {
           _macroCard(),
           const SizedBox(height: 26),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('${_selectedDay == _today ? 'TODAY’S MEALS' : 'MEALS • ${_formatDate(_selectedDay)}'}', style: GoogleFonts.inter(color: AppColors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1)),
+            Text(_selectedDay == _today ? 'TODAY’S MEALS' : 'MEALS • ${_formatDate(_selectedDay)}', style: GoogleFonts.inter(color: AppColors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1)),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text('${all.length} FOODS LOGGED', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: .6)),
             const SizedBox(height: 5),
