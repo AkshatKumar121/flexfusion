@@ -101,8 +101,15 @@ def match_score(food_name: str, description: str,
 
 
 def extract_macros(food: dict) -> dict[str, str]:
-    """Extract USDA amounts by nutrient name and unit, not by array position."""
+    """Extract macro amounts by nutrient name and unit.
+
+    Foundation Foods can expose multiple kcal calculations. Prefer Atwater
+    General Factors, then a plain Energy record, then Atwater Specific Factors.
+    kJ records are never substituted for kcal records.
+    """
     result: dict[str, str] = {}
+    energy_candidates: list[tuple[int, str]] = []
+
     for record in food.get("foodNutrients", []):
         nutrient = record.get("nutrient") or {}
         name = norm(str(nutrient.get("name", "")))
@@ -110,14 +117,28 @@ def extract_macros(food: dict) -> dict[str, str]:
         amount = record.get("amount")
         if amount is None:
             continue
-        if name == "energy" and unit == "kcal":
-            result.setdefault("kcal", str(amount))
+
+        if name.startswith("energy") and unit == "kcal":
+            if "atwater general factors" in name:
+                priority = 0
+            elif name == "energy":
+                priority = 1
+            elif "atwater specific factors" in name:
+                priority = 2
+            else:
+                priority = 3
+            energy_candidates.append((priority, str(amount)))
         elif name == "protein" and unit == "g":
             result.setdefault("protein", str(amount))
         elif name == "carbohydrate by difference" and unit == "g":
             result.setdefault("carbs", str(amount))
         elif name == "total lipid fat" and unit == "g":
             result.setdefault("fat", str(amount))
+
+    if energy_candidates:
+        energy_candidates.sort(key=lambda item: item[0])
+        result["kcal"] = energy_candidates[0][1]
+
     return result
 
 
@@ -244,9 +265,8 @@ def main() -> None:
     print(f"Foods with candidates: {len(matched_catalogue_ids)}")
     print(f"Foods needing another source: {len(manifest) - len(matched_catalogue_ids)}")
     print(f"Candidate rows written: {len(output)}")
-    print(f"Output: {args.output}")
     print("All candidates require manual review; production data was not changed.")
 
 
-if __name__ == "__main__":
+if __riley__ == "__main__":
     main()
