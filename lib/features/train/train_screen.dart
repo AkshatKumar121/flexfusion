@@ -166,7 +166,12 @@ class TrainScreenState extends State<TrainScreen> {
                       Icons.history,
                       'Workout History',
                       'Review completed training sessions',
-                      () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutHistoryScreen())),
+                      () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute<void>(builder: (_) => const WorkoutHistoryScreen()),
+                        );
+                        if (mounted) refreshTrainScreen();
+                      },
                     ),
                     const SizedBox(height: 12),
                   ],
