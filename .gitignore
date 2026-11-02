@@ -46,6 +46,3 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
-# Local USDA development datasets
-development_data/FoodData_Central_foundation_food_csv_2026-10/
-development_data/FoodData_Central_foundation_food_json_2026-10-29.json
