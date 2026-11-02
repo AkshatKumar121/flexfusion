@@ -21,6 +21,19 @@ NUTRIENTS = {"1003": "protein", "1004": "fat", "1005": "carbs", "1008": "kcal"}
 
 # Each phrase is a deliberate USDA-description match, not a fuzzy synonym.
 # "proxy" means the source food is related but is NOT the exact Indian food.
+# Exclude descriptions that contain a phrase but are clearly a prepared product,
+# syrup, bread, or otherwise unsuitable ingredient match.
+EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
+    "FF017": ("tortilla", "bread", "rolls", "cake", "mix"),
+    "FF018": ("rolls", "bread", "hamburger", "hot dog"),
+    "FF019": ("rolls", "bread", "hamburger", "hot dog"),
+    "FF024": ("syrup", "syrups", "rolls", "bread"),
+    "FF025": ("syrup", "syrups", "rolls", "bread"),
+    "FF034": ("mix", "tortilla", "chips", "bread"),
+}
+
+MAX_CANDIDATES_PER_FOOD = 5
+
 ALIASES: dict[str, tuple[str, list[str]]] = {
     "FF001": ("direct", ["rice white medium grain raw", "rice white long grain raw", "rice white short grain raw"]),
     "FF002": ("direct", ["rice white medium grain cooked", "rice white long grain cooked", "rice white short grain cooked"]),
@@ -107,12 +120,20 @@ def main() -> None:
     for item in batch:
         catalogue_id = item["catalogue_id"]
         match_type, phrases = ALIASES.get(catalogue_id, ("none", []))
-        matches: dict[str, tuple[str, str]] = {}
-        for phrase in phrases:
+        matches: dict[str, tuple[str, str, int]] = {}
+        excluded = tuple(norm(term) for term in EXCLUDE_TERMS.get(catalogue_id, ()))
+        for phrase_priority, phrase in enumerate(phrases):
             needle = norm(phrase)
             for fdc_id, description, normalized in foods:
-                if needle in normalized:
-                    matches[fdc_id] = (description, phrase)
+                if needle not in normalized:
+                    continue
+                if any(term in normalized for term in excluded):
+                    continue
+                # Prefer the first, most specific curated phrase. Keep the
+                # original USDA description visible for human review.
+                previous = matches.get(fdc_id)
+                if previous is None or phrase_priority < previous[2]:
+                    matches[fdc_id] = (description, phrase, phrase_priority)
 
         if not matches:
             output_rows.append({
@@ -131,8 +152,11 @@ def main() -> None:
             })
             continue
 
-        ranked = sorted(matches.items(), key=lambda pair: pair[0])
-        for rank, (fdc_id, (description, phrase)) in enumerate(ranked, 1):
+        ranked = sorted(
+            matches.items(),
+            key=lambda pair: (pair[1][2], len(norm(pair[1][0])), pair[0]),
+        )[:MAX_CANDIDATES_PER_FOOD]
+        for rank, (fdc_id, (description, phrase, _priority)) in enumerate(ranked, 1):
             values = nutrient_values.get(fdc_id, {})
             output_rows.append({
                 "catalogue_id": catalogue_id,
@@ -165,7 +189,8 @@ def main() -> None:
     missing = sum(row["review_status"] == "NO_SAFE_MATCH" for row in output_rows)
     print(f"Created: {OUTPUT}")
     print(f"Candidate rows: {safe}; catalogue foods with no safe phrase match: {missing}")
-    print("DIRECT and PROXY matches both require review; PROXY is not an exact food match.")
+    print(f"Candidates are capped at {MAX_CANDIDATES_PER_FOOD} per food; unsuitable prepared-product matches are excluded.")
+    print("DIRECT and PROXY matches both require human review; PROXY is not an exact food match.")
     print("No production catalogue values were changed.")
 
 
