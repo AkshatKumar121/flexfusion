@@ -27,6 +27,12 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
     await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => WorkoutSessionScreen(workoutId: id, title: title)));
     if (mounted) setState(_load);
   }
+  Future<void> _logRestDay(Map<String, Object?> day) async {
+    await AppDatabase.instance.advanceWorkoutPlanSequence(day['plan_id'] as int, day['id'] as int);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rest day logged. Your next plan day is ready.')));
+    setState(_load);
+  }
   Future<void> _startFree() async {
     final c = TextEditingController(text: 'Free Workout');
     final name = await showDialog<String>(context: context, builder: (context) => AlertDialog(
@@ -54,7 +60,7 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
           if (mounted) setState(_load);
         });
         final rest = (day['is_rest_day'] as int? ?? 0) == 1;
-        return _tile('Your planned session', '${day['label']} • ${day['plan_name']}', rest ? 'REST DAY' : 'START', rest ? null : () => _start(day: day));
+        return _tile('Your planned session', '${day['label']} • ${day['plan_name']}', rest ? 'LOG REST DAY' : 'START', rest ? () => _logRestDay(day) : () => _start(day: day));
       }),
       _tile('Unscheduled workout', 'Start a session outside your plan.', 'START FREE WORKOUT', _startFree),
     ]),
