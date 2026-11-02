@@ -55,12 +55,14 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
       FutureBuilder<Map<String, Object?>?>(future: _suggested, builder: (context, s) {
         if (s.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
         final day = s.data;
-        if (day == null) return _tile('No active plan', 'Create a plan to see your next session.', 'CREATE PLAN', () async {
-          await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()));
-          if (mounted) {
-          setState(_load);
+        if (day == null) {
+          return _tile('No active plan', 'Create a plan to see your next session.', 'CREATE PLAN', () async {
+            await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()));
+            if (mounted) {
+              setState(_load);
+            }
+          });
         }
-        });
         final rest = (day['is_rest_day'] as int? ?? 0) == 1;
         return _tile('Your planned session', '${day['label']} • ${day['plan_name']}', rest ? 'LOG REST DAY' : 'START', rest ? () => _logRestDay(day) : () => _start(day: day));
       }),
