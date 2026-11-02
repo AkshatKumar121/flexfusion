@@ -211,6 +211,36 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
   late Future<List<Map<String, Object?>>> _history;
   @override
   void initState() { super.initState(); _history = AppDatabase.instance.getWorkoutHistory(); }
+  Future<void> _deleteWorkout(Map<String, Object?> row) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: const Text('Delete workout?'),
+        content: Text(
+          'Delete "${row['session_name']}" from workout history? This will permanently remove its sets and recorded details.',
+          style: const TextStyle(color: AppColors.grey),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('DELETE', style: TextStyle(color: AppColors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await AppDatabase.instance.deleteWorkoutSession(row['id'] as int);
+    if (!mounted) return;
+    setState(() {
+      _history = AppDatabase.instance.getWorkoutHistory();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Workout removed from history.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background,
@@ -226,7 +256,22 @@ class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
         return Card(color: AppColors.card, child: ListTile(
           title: Text(row['session_name'] as String, style: const TextStyle(color: AppColors.white)),
           subtitle: Text('$dateLabel • ${row['completed_sets']}/${row['total_sets']} sets completed', style: const TextStyle(color: AppColors.grey, fontSize: 11)),
-          trailing: const Icon(Icons.chevron_right, color: AppColors.grey),
+          trailing: PopupMenuButton<String>(
+            iconColor: AppColors.grey,
+            onSelected: (value) {
+              if (value == 'delete') _deleteWorkout(row);
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'delete',
+                child: Row(children: [
+                  Icon(Icons.delete_outline, color: AppColors.red, size: 18),
+                  SizedBox(width: 8),
+                  Text('Remove from history'),
+                ]),
+              ),
+            ],
+          ),
           onTap: () async {
             final sets = await AppDatabase.instance.getWorkoutSessionSets(row['id'] as int);
             if (!context.mounted) return;
