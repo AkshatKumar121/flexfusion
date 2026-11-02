@@ -23,17 +23,26 @@ class HomeScreenState extends State<HomeScreen> {
 
   Future<_DashboardData> _loadDashboard() async {
     final db = AppDatabase.instance;
-    final nutrition = await db.getDashboardNutrition(_dateKey(DateTime.now()));
-    final weights = await db.getRecentBodyWeights();
-    final latestWeight = await db.getLatestBodyWeight();
-    final targets = await db.getNutritionTargets();
-    final weekly = await db.getWeeklyProgressDetails();
-    final suggestedWorkoutDay = await db.getSuggestedWorkoutDay();
+    final results = await Future.wait<Object?>([
+      db.getDashboardNutrition(_dateKey(DateTime.now())),
+      db.getRecentBodyWeights(),
+      db.getLatestBodyWeight(),
+      db.getNutritionTargets(),
+      db.getWeeklyProgressDetails(),
+      db.getSuggestedWorkoutDay(),
+      db.getAppSetting('weight_unit', defaultValue: 'kg'),
+    ]);
+    final nutrition = results[0] as Map<String, double>;
+    final weights = results[1] as List<Map<String, Object?>>;
+    final latestWeight = results[2] as Map<String, Object?>?;
+    final targets = results[3] as Map<String, Object?>?;
+    final weekly = results[4] as Map<String, Object?>;
+    final suggestedWorkoutDay = results[5] as Map<String, Object?>?;
+    final weightUnit = results[6] as String;
     final suggestedExercises = suggestedWorkoutDay == null ||
             (suggestedWorkoutDay['is_rest_day'] as int? ?? 0) == 1
         ? <Map<String, Object?>>[]
         : await db.getPlanDayExercises(suggestedWorkoutDay['id'] as int);
-    final weightUnit = await db.getAppSetting('weight_unit', defaultValue: 'kg');
     return _DashboardData(
       nutrition: nutrition,
       weights: weights,
