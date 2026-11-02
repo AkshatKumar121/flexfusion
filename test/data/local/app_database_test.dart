@@ -397,9 +397,19 @@ void main() {
     final workoutSetColumns = await upgradedDb.rawQuery('PRAGMA table_info(workout_sets)');
     expect(workoutSetColumns.map((column) => column['name']), contains('rest_seconds'));
 
-    final foods = await upgradedDb.query('foods');
-    expect(foods, hasLength(1));
-    expect(foods.single['name'], 'Existing Paneer');
+    final preservedCustomFoods = await upgradedDb.query(
+      'foods',
+      where: 'is_custom = 1',
+    );
+    expect(preservedCustomFoods, hasLength(1));
+    expect(preservedCustomFoods.single['name'], 'Existing Paneer');
+
+    final builtInFoods = await upgradedDb.query(
+      'foods',
+      where: 'source = ?',
+      whereArgs: ['flexfusion_catalog_v1'],
+    );
+    expect(builtInFoods, hasLength(1014));
 
     final logs = await upgradedDb.query('food_logs');
     expect(logs, hasLength(1));
