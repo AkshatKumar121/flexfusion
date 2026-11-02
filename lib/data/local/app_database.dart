@@ -15,7 +15,7 @@ class AppDatabase {
       : this._(databasePathOverride: databasePath);
 
   static final AppDatabase instance = AppDatabase._();
-  static const int schemaVersion = 3;
+  static const int schemaVersion = 4;
   final String? _databasePathOverride;
   Database? _database;
 
@@ -253,6 +253,7 @@ class AppDatabase {
         actual_weight REAL,
         weight_unit TEXT,
         completed INTEGER NOT NULL DEFAULT 0,
+        rest_seconds INTEGER NOT NULL DEFAULT 90,
         created_at TEXT NOT NULL,
         FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE,
         FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE SET NULL
@@ -281,6 +282,9 @@ class AppDatabase {
       await db.execute('ALTER TABLE food_logs ADD COLUMN serving_name_snapshot TEXT');
       await db.execute("UPDATE food_logs SET quantity_value = quantity_g, base_quantity = quantity_g, base_unit = 'g', quantity_unit = 'g' WHERE quantity_value IS NULL");
       await _createEatV1Tables(db);
+    }
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE workout_sets ADD COLUMN rest_seconds INTEGER NOT NULL DEFAULT 90');
     }
   }
 
@@ -1352,6 +1356,7 @@ class AppDatabase {
               'actual_weight': set['target_weight'],
               'weight_unit': set['target_weight_unit'] ?? 'kg',
               'completed': 0,
+              'rest_seconds': set['rest_seconds'] ?? 90,
               'created_at': now,
             });
           }
@@ -1369,6 +1374,7 @@ class AppDatabase {
     int targetReps = 10,
     double? targetWeight,
     String weightUnit = 'kg',
+    int restSeconds = 90,
   }) async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
@@ -1391,6 +1397,7 @@ class AppDatabase {
           'actual_weight': targetWeight,
           'weight_unit': weightUnit,
           'completed': 0,
+          'rest_seconds': restSeconds,
           'created_at': now,
         });
         if (i == 1) firstId = id;
