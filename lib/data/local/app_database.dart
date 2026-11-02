@@ -289,6 +289,15 @@ class AppDatabase {
       await _createEatV1Tables(db);
     }
     if (oldVersion < 4) {
+      // Some legacy databases did not yet contain the settings table.
+      // Create it before post-open catalogue seeding and workout sequence use.
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
       final workoutSetsTable = await db.rawQuery(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sets'",
       );
