@@ -10,7 +10,7 @@ class AppDatabase {
   AppDatabase._();
 
   static final AppDatabase instance = AppDatabase._();
-  static const int schemaVersion = 2;
+  static const int schemaVersion = 3;
   Database? _database;
 
   Future<Database> get database async {
@@ -79,6 +79,7 @@ class AppDatabase {
         updated_at TEXT NOT NULL
       )
     ''');
+    await _createEatV1Tables(db);
     await db.execute('''
       CREATE TABLE food_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -243,6 +244,112 @@ class AppDatabase {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE user_profile ADD COLUMN age INTEGER');
     }
+    if (oldVersion < 3) {
+      await db.execute("ALTER TABLE foods ADD COLUMN base_unit TEXT NOT NULL DEFAULT 'g'");
+      await db.execute("ALTER TABLE foods ADD COLUMN source TEXT NOT NULL DEFAULT 'legacy'");
+      await db.execute('ALTER TABLE foods ADD COLUMN source_id TEXT');
+      await db.execute('ALTER TABLE foods ADD COLUMN barcode TEXT');
+      await db.execute('ALTER TABLE foods ADD COLUMN category_id INTEGER');
+      await db.execute("ALTER TABLE foods ADD COLUMN preparation_state TEXT NOT NULL DEFAULT 'unspecified'");
+      await db.execute("ALTER TABLE foods ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'unverified'");
+      await db.execute('ALTER TABLE foods ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1');
+      await db.execute('ALTER TABLE food_logs ADD COLUMN quantity_value REAL');
+      await db.execute("ALTER TABLE food_logs ADD COLUMN quantity_unit TEXT NOT NULL DEFAULT 'g'");
+      await db.execute('ALTER TABLE food_logs ADD COLUMN base_quantity REAL');
+      await db.execute("ALTER TABLE food_logs ADD COLUMN base_unit TEXT NOT NULL DEFAULT 'g'");
+      await db.execute('ALTER TABLE food_logs ADD COLUMN serving_name_snapshot TEXT');
+      await db.execute("UPDATE food_logs SET quantity_value = quantity_g, base_quantity = quantity_g, base_unit = 'g', quantity_unit = 'g' WHERE quantity_value IS NULL");
+      await _createEatV1Tables(db);
+    }
+  }
+
+  Future<void> _createEatV1Tables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS food_categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        slug TEXT NOT NULL UNIQUE,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS food_servings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        food_id INTEGER NOT NULL,
+        label TEXT NOT NULL,
+        unit_key TEXT NOT NULL,
+        quantity REAL NOT NULL DEFAULT 1,
+        base_quantity REAL NOT NULL,
+        base_unit TEXT NOT NULL,
+        is_default INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE CASCADE,
+        UNIQUE(food_id, unit_key, label)
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_food_servings_food ON food_servings(food_id, sort_order)');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS food_recipes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        servings REAL NOT NULL DEFAULT 1,
+        is_custom INTEGER NOT NULL DEFAULT 1,
+        source TEXT NOT NULL DEFAULT 'user',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS recipe_ingredients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        recipe_id INTEGER NOT NULL,
+        food_id INTEGER,
+        ingredient_name_snapshot TEXT NOT NULL,
+        quantity_value REAL NOT NULL,
+        quantity_unit TEXT NOT NULL,
+        base_quantity REAL NOT NULL,
+        base_unit TEXT NOT NULL,
+        calories REAL NOT NULL,
+        protein_g REAL NOT NULL,
+        carbs_g REAL NOT NULL,
+        fat_g REAL NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (recipe_id) REFERENCES food_recipes(id) ON DELETE CASCADE,
+        FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE SET NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe ON recipe_ingredients(recipe_id, sort_order)');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS saved_meals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS saved_meal_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        saved_meal_id INTEGER NOT NULL,
+        food_id INTEGER,
+        food_name_snapshot TEXT NOT NULL,
+        quantity_value REAL NOT NULL,
+        quantity_unit TEXT NOT NULL,
+        base_quantity REAL NOT NULL,
+        base_unit TEXT NOT NULL,
+        calories REAL NOT NULL,
+        protein_g REAL NOT NULL,
+        carbs_g REAL NOT NULL,
+        fat_g REAL NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (saved_meal_id) REFERENCES saved_meals(id) ON DELETE CASCADE,
+        FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE SET NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_saved_meal_items_meal ON saved_meal_items(saved_meal_id, sort_order)');
   }
 
   Future<void> _migrateLegacyMealLogs(Database db) async {
@@ -317,6 +424,11 @@ class AppDatabase {
       'meal_type': meal,
       'food_name_snapshot': name,
       'quantity_g': grams,
+      'quantity_value': grams,
+      'quantity_unit': 'g',
+      'base_quantity': grams,
+      'base_unit': 'g',
+      'serving_name_snapshot': 'g',
       'calories': calories,
       'protein_g': protein,
       'carbs_g': carbs,
