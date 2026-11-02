@@ -1432,11 +1432,15 @@ class AppDatabase {
 
   Future<void> finishWorkoutSession(int workoutId, {String? notes}) async {
     final db = await database;
+    final rows = await db.query('workouts', columns: ['plan_id', 'plan_day_id'], where: 'id = ?', whereArgs: [workoutId], limit: 1);
     await db.update('workouts', {
       'status': 'completed',
       'completed_at': DateTime.now().toIso8601String(),
       'notes': notes,
     }, where: 'id = ?', whereArgs: [workoutId]);
+    if (rows.isNotEmpty && rows.first['plan_id'] != null && rows.first['plan_day_id'] != null) {
+      await advanceWorkoutPlanSequence(rows.first['plan_id'] as int, rows.first['plan_day_id'] as int);
+    }
   }
 
   Future<void> abandonWorkoutSession(int workoutId) async {
@@ -1474,6 +1478,15 @@ class AppDatabase {
     return rows.isEmpty ? null : rows.first;
   }
 
+  Future<void> advanceWorkoutPlanSequence(int planId, int currentDayId) async {
+    final db = await database;
+    final days = await db.query('workout_plan_days', where: "plan_id = ? AND schedule_type != 'weekday'", whereArgs: [planId], orderBy: 'day_order, id');
+    if (days.isEmpty) return;
+    final currentIndex = days.indexWhere((day) => day['id'] == currentDayId);
+    final next = days[(currentIndex < 0 ? 0 : currentIndex + 1) % days.length];
+    await saveAppSetting('workout_plan_sequence_$planId', (next['id'] as int).toString());
+  }
+
   Future<Map<String, Object?>?> getSuggestedWorkoutDay() async {
     final db = await database;
     final plans = await db.query('workout_plans', where: 'is_active = 1', limit: 1);
@@ -1493,18 +1506,24 @@ class AppDatabase {
 
     final sequenceDays = days.where((day) => day['schedule_type'] != 'weekday').toList();
     if (sequenceDays.isEmpty) return null;
-    final previous = await db.query(
-      'workouts',
-      where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
-      whereArgs: [plan['id']],
-      orderBy: 'completed_at DESC, id DESC',
-      limit: 1,
-    );
+    final pointer = await db.query('app_settings', columns: ['value'], where: 'key = ?', whereArgs: ['workout_plan_sequence_${plan['id']}'], limit: 1);
     var nextIndex = 0;
-    if (previous.isNotEmpty) {
-      final lastDayId = previous.first['plan_day_id'];
-      final lastIndex = sequenceDays.indexWhere((day) => day['id'] == lastDayId);
-      if (lastIndex >= 0) nextIndex = (lastIndex + 1) % sequenceDays.length;
+    if (pointer.isNotEmpty) {
+      final pointerId = int.tryParse(pointer.first['value'] as String? ?? '');
+      final pointerIndex = sequenceDays.indexWhere((day) => day['id'] == pointerId);
+      if (pointerIndex >= 0) nextIndex = pointerIndex;
+    } else {
+      final previous = await db.query(
+        'workouts',
+        where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
+        whereArgs: [plan['id']],
+        orderBy: 'completed_at DESC, id DESC',
+        limit: 1,
+      );
+      if (previous.isNotEmpty) {
+        final lastIndex = sequenceDays.indexWhere((day) => day['id'] == previous.first['plan_day_id']);
+        if (lastIndex >= 0) nextIndex = (lastIndex + 1) % sequenceDays.length;
+      }
     }
     return {...sequenceDays[nextIndex], 'plan_name': plan['name'], 'plan_id': plan['id']};
   }
