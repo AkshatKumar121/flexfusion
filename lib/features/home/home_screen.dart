@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   late Future<_DashboardData> _dashboardFuture;
+  _DashboardData? _cachedDashboardData;
 
   String _dateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -55,15 +56,21 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<_DashboardData> _loadDashboardAndCache() async {
+    final data = await _loadDashboard();
+    _cachedDashboardData = data;
+    return data;
+  }
+
   @override
   void initState() {
     super.initState();
-    _dashboardFuture = _loadDashboard();
+    _dashboardFuture = _loadDashboardAndCache();
   }
 
   void refreshDashboard() {
     setState(() {
-      _dashboardFuture = _loadDashboard();
+      _dashboardFuture = _loadDashboardAndCache();
     });
   }
 
@@ -113,8 +120,9 @@ class HomeScreenState extends State<HomeScreen> {
 
     return FutureBuilder<_DashboardData>(
       future: _dashboardFuture,
+      initialData: _cachedDashboardData,
       builder: (context, snapshot) {
-        final data = snapshot.data;
+        final data = snapshot.data ?? _cachedDashboardData;
         final kcal = data?.nutrition['calories'] ?? 0.0;
         final protein = data?.nutrition['protein'] ?? 0.0;
         final calorieTarget = (data?.targets?['calorie_target'] as num?)?.toDouble() ?? 2200.0;
