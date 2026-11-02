@@ -278,7 +278,10 @@ class TrainScreenState extends State<TrainScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen())),
+              onPressed: () async {
+                await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen()));
+                if (mounted) refreshTrainScreen();
+              },
               icon: const Icon(Icons.play_arrow, size: 18),
               label: const Text('START WORKOUT'),
               style: ElevatedButton.styleFrom(
