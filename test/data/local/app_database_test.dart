@@ -388,7 +388,7 @@ void main() {
 
     final upgradedDb = await appDatabase.database;
     final version = await upgradedDb.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 3);
+    expect(version.single['user_version'], 4);
 
     final workoutTables = await upgradedDb.rawQuery(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sets'",
