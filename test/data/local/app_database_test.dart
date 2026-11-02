@@ -32,10 +32,10 @@ void main() {
     }
   });
 
-  test('fresh database creates the complete Eat V1 schema at version 3', () async {
+  test('fresh database creates the complete V1 schema at version 4', () async {
     final db = await appDatabase.database;
     final version = await db.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 3);
+    expect(version.single['user_version'], 4);
 
     final rows = await db.rawQuery(
       "SELECT name FROM sqlite_master WHERE type = 'table'",
@@ -306,7 +306,7 @@ void main() {
     expect(logs.single['calories'], 156);
   });
 
-  test('version 2 database upgrades to version 3 without losing food logs', () async {
+  test('version 2 database upgrades to version 4 without losing food logs', () async {
     final databasePath = p.join(tempDirectory.path, 'test.db');
     final oldDb = await openDatabase(
       databasePath,
@@ -389,6 +389,13 @@ void main() {
     final upgradedDb = await appDatabase.database;
     final version = await upgradedDb.rawQuery('PRAGMA user_version');
     expect(version.single['user_version'], 3);
+
+    final workoutTables = await upgradedDb.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sets'",
+    );
+    expect(workoutTables, hasLength(1));
+    final workoutSetColumns = await upgradedDb.rawQuery('PRAGMA table_info(workout_sets)');
+    expect(workoutSetColumns.map((column) => column['name']), contains('rest_seconds'));
 
     final foods = await upgradedDb.query('foods');
     expect(foods, hasLength(1));
