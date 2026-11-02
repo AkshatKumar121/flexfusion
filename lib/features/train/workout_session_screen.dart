@@ -57,7 +57,9 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
         final day = s.data;
         if (day == null) return _tile('No active plan', 'Create a plan to see your next session.', 'CREATE PLAN', () async {
           await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()));
-          if (mounted) setState(_load);
+          if (mounted) {
+          setState(_load);
+        }
         });
         final rest = (day['is_rest_day'] as int? ?? 0) == 1;
         return _tile('Your planned session', '${day['label']} • ${day['plan_name']}', rest ? 'LOG REST DAY' : 'START', rest ? () => _logRestDay(day) : () => _start(day: day));
@@ -113,7 +115,9 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     _timer?.cancel(); setState(() => _rest = seconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_rest <= 1) { t.cancel(); if (mounted) setState(() => _rest = 0); }
-      else if (mounted) setState(() => _rest--);
+      else if (mounted) {
+        setState(() => _rest--);
+      }
     });
   }
   Future<void> _addExercise() async {
@@ -141,6 +145,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     }
     rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
     final done = rows.where((r) => (r['completed'] as int? ?? 0) == 1).length;
+    if (!mounted) return;
     final confirm = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
       backgroundColor: AppColors.card, title: const Text('Finish workout?'),
       content: Text('You completed $done of ${rows.length} sets. Save this session to history?'),
