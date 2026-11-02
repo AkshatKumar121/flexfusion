@@ -271,16 +271,16 @@ class TrainScreenState extends State<TrainScreen> {
           ),
           const SizedBox(height: 5),
           Text(
-            'Set up your training plan to see today’s session here.',
+            'Start your planned session or create a workout plan.',
             style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
           ),
           const SizedBox(height: 17),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen())),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('SET UP WORKOUT PLAN'),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen())),
+              icon: const Icon(Icons.play_arrow, size: 18),
+              label: const Text('START WORKOUT'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.green,
                 foregroundColor: Colors.black,
@@ -638,8 +638,6 @@ class TrainScreenState extends State<TrainScreen> {
     refreshTrainScreen();
     _showInfo('Photo saved', 'Your $angle progress photo is saved on this device.');
   }
-
-  void _showComingSoon(String feature) => _showInfo(feature, 'This section is next in the TRAIN implementation.');
 
   void _showInfo(String title, String message) {
     if (!mounted) return;
