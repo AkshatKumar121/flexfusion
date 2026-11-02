@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
+import 'workout_plan_screen.dart';
 
 class TrainScreen extends StatefulWidget {
   const TrainScreen({super.key});
@@ -152,13 +153,13 @@ class TrainScreenState extends State<TrainScreen> {
                       Icons.calendar_month_outlined,
                       'My Plan',
                       'Create and manage your training split',
-                      () => _showComingSoon('Workout plans'),
+                      () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen())),
                     ),
                     _buildToolTile(
                       Icons.fitness_center,
                       'Exercise Library',
                       'Browse exercises and target muscles',
-                      () => _showComingSoon('Exercise library'),
+                      () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ExerciseLibraryScreen())),
                     ),
                     _buildToolTile(
                       Icons.history,
@@ -276,7 +277,7 @@ class TrainScreenState extends State<TrainScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => _showComingSoon('Workout plan setup'),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen())),
               icon: const Icon(Icons.add, size: 18),
               label: const Text('SET UP WORKOUT PLAN'),
               style: ElevatedButton.styleFrom(
