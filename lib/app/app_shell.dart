@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'theme/app_colors.dart';
 import '../features/home/home_screen.dart';
 import '../features/eat/eat_screen.dart';
+import '../features/train/train_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -16,13 +17,10 @@ class _AppShellState extends State<AppShell> {
   int _selectedIndex = 1;
   final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
   final GlobalKey<EatScreenState> _eatScreenKey = GlobalKey<EatScreenState>();
+  final GlobalKey<TrainScreenState> _trainScreenKey = GlobalKey<TrainScreenState>();
 
   late final List<Widget> _screens = [
-    _PlaceholderScreen(
-      title: 'Train',
-      subtitle: 'Your workouts will appear here.',
-      icon: Icons.fitness_center,
-    ),
+    TrainScreen(key: _trainScreenKey),
     HomeScreen(key: _homeScreenKey),
     EatScreen(key: _eatScreenKey),
   ];
@@ -87,7 +85,9 @@ class _AppShellState extends State<AppShell> {
           setState(() {
             _selectedIndex = index;
           });
-          if (index == 1) {
+          if (index == 0) {
+            _trainScreenKey.currentState?.refreshTrainScreen();
+          } else if (index == 1) {
             _homeScreenKey.currentState?.refreshDashboard();
           } else if (index == 2) {
             _eatScreenKey.currentState?.refreshEatScreen();
