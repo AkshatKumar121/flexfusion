@@ -357,7 +357,7 @@ Create one record for every failure. Do not combine unrelated bugs.
 
 | Bug ID | Severity | Screen / area | Steps to reproduce | Expected | Actual | Evidence | Status | Fix commit | Retest |
 |---|---|---|---|---|---|---|---|---|---|
-| BUG-001 | P1 | SQLite migration v2→v6 | Run `flutter test`; legacy v2 upgrade test opens database | Migration completes and preserves existing food logs; workout schema is created/upgraded | `no such table: workouts` while adding `paused_at` | Terminal output 2026-11-03 | Confirmed / Open | — | Pending |
+| BUG-001 | P1 | SQLite migration v2→v6 | Run targeted v2→v6 migration test using a temporary database | Migration completes and preserves existing food logs; workout schema is created/upgraded | Pre-fix: `no such table: workouts` while adding `paused_at`; after migration-order/column guards, targeted test passes | Terminal output 2026-11-03; user confirmed post-fix pass | Fixed / Retest passed | `5dac8c9` (migration), `69d1a8c` (test) | Pass — targeted test |
 | BUG-002 | P2 | Database test expectation | Run `flutter test` on fresh database | Test expects current schema version 6 | Test expects 4; actual schema version is 6 | Terminal output 2026-11-03 | Confirmed / Open | — | Pending |
 
 Severity guidance:
