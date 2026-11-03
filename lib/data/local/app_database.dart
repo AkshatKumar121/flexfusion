@@ -1577,12 +1577,19 @@ class AppDatabase {
       );
       if (rows.isEmpty || rows.first['status'] != 'in_progress') return;
 
+      final pausedAt = rows.first['paused_at'] as String?;
+      final existingPausedSeconds = rows.first['paused_seconds'] as int? ?? 0;
+      final pausedDuration = pausedAt == null
+          ? 0
+          : DateTime.now().difference(DateTime.tryParse(pausedAt) ?? DateTime.now()).inSeconds;
       final updated = await txn.update(
         'workouts',
         {
           'status': 'completed',
           'completed_at': DateTime.now().toIso8601String(),
           'notes': notes,
+          'paused_at': null,
+          'paused_seconds': existingPausedSeconds + (pausedDuration > 0 ? pausedDuration : 0),
         },
         where: "id = ? AND status = 'in_progress'",
         whereArgs: [workoutId],
