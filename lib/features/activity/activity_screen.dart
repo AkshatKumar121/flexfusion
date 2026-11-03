@@ -42,7 +42,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
     final requestedKey = _key(requestedDate);
     final syncGeneration = ++_syncGeneration;
-    if(mounted) setState(()=>_syncing=true);
+    if (mounted) {
+      setState(() => _syncing = true);
+    }
     try {
       final data=await _health.readDailySummary(requestedDate);
       if (data != null) {
