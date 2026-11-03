@@ -476,7 +476,11 @@ class WorkoutSummaryScreen extends StatelessWidget {
         final data = snapshot.data!;
         final started = DateTime.tryParse(data['started_at'] as String? ?? '');
         final ended = DateTime.tryParse(data['completed_at'] as String? ?? '');
-        final duration = started == null || ended == null ? 0 : ended.difference(started).inMinutes;
+        final pausedSeconds = data['paused_seconds'] as int? ?? 0;
+        final rawDuration = started == null || ended == null
+            ? Duration.zero
+            : ended.difference(started) - Duration(seconds: pausedSeconds);
+        final duration = rawDuration.isNegative ? 0 : rawDuration.inMinutes;
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
