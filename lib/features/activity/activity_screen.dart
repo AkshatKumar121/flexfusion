@@ -39,10 +39,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if(!mounted)return;
     setState((){_healthDay=saved;_syncing=false;});
   }
-  int get _steps=>_healthDay?['steps'] is num?(_healthDay!['steps'] as num).round():_logs.fold<int>(0,(s,r)=>s+((r['steps'] as num?)?.toInt()??0));
-  double get _km=>_healthDay?['distance_km'] is num?(_healthDay!['distance_km'] as num).toDouble():_logs.fold<double>(0,(s,r)=>s+((r['distance_km'] as num?)?.toDouble()??0));
-  double get _kcal=>_healthDay?['active_calories'] is num?(_healthDay!['active_calories'] as num).toDouble():_logs.fold<double>(0,(s,r)=>s+((r['active_calories'] as num?)?.toDouble()??0));
-  int get _minutes=>_healthDay?['exercise_minutes'] is num?(_healthDay!['exercise_minutes'] as num).round():_logs.fold<int>(0,(s,r)=>s+((r['duration_minutes'] as num?)?.toInt()??0));
+  int get _steps=>_healthDay?['steps'] is num&&(_healthDay!['steps'] as num)>0?(_healthDay!['steps'] as num).round():_logs.fold<int>(0,(s,r)=>s+((r['steps'] as num?)?.toInt()??0));
+  double get _km=>_healthDay?['distance_km'] is num&&(_healthDay!['distance_km'] as num)>0?(_healthDay!['distance_km'] as num).toDouble():_logs.fold<double>(0,(s,r)=>s+((r['distance_km'] as num?)?.toDouble()??0));
+  double get _kcal=>_healthDay?['active_calories'] is num&&(_healthDay!['active_calories'] as num)>0?(_healthDay!['active_calories'] as num).toDouble():_logs.fold<double>(0,(s,r)=>s+((r['active_calories'] as num?)?.toDouble()??0));
+  int get _minutes=>_healthDay?['exercise_minutes'] is num&&(_healthDay!['exercise_minutes'] as num)>0?(_healthDay!['exercise_minutes'] as num).round():_logs.fold<int>(0,(s,r)=>s+((r['duration_minutes'] as num?)?.toInt()??0));
   Future<void> _pickDate() async {
     final picked=await showDatePicker(context:context,initialDate:_date,firstDate:DateTime(2020),lastDate:DateTime.now());
     if(picked!=null){setState(()=>_date=picked);await _refresh();}
