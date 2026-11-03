@@ -9,7 +9,9 @@ import 'weekly_progress_screen.dart';
 import '../train/workout_session_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onOpenEat;
+
+  const HomeScreen({super.key, this.onOpenEat});
 
   @override
   State<HomeScreen> createState() => HomeScreenState();
@@ -313,6 +315,7 @@ class HomeScreenState extends State<HomeScreen> {
                       detail: 'of ${calorieTarget.round()} kcal',
                       accentColor: AppColors.green,
                       buttonText: 'LOG MEAL',
+                      onTap: widget.onOpenEat,
                     ),
                   ),
                   ],
