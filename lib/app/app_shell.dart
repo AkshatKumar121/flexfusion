@@ -5,6 +5,7 @@ import 'theme/app_colors.dart';
 import '../features/home/home_screen.dart';
 import '../features/eat/eat_screen.dart';
 import '../features/train/train_screen.dart';
+import '../features/activity/activity_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -21,9 +22,11 @@ class _AppShellState extends State<AppShell> {
 
   late final List<Widget> _screens = [
     TrainScreen(key: _trainScreenKey),
-    HomeScreen(key: _homeScreenKey, onOpenEat: _openEatTab),
+    HomeScreen(key: _homeScreenKey, onOpenEat: _openEatTab, onOpenActivity: _openActivity),
     EatScreen(key: _eatScreenKey),
   ];
+
+  void _openActivity() { Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ActivityScreen())); }
 
   void _openEatTab() {
     setState(() => _selectedIndex = 2);

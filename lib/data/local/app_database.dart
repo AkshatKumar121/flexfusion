@@ -15,7 +15,7 @@ class AppDatabase {
       : this._(databasePathOverride: databasePath);
 
   static final AppDatabase instance = AppDatabase._();
-  static const int schemaVersion = 4;
+  static const int schemaVersion = 5;
   final String? _databasePathOverride;
   Database? _database;
 
@@ -164,6 +164,10 @@ class AppDatabase {
     ''');
 
     await _createWorkoutTables(db);
+    await db.execute('''CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, activity_type TEXT NOT NULL, activity_date TEXT NOT NULL, started_at TEXT, duration_minutes INTEGER NOT NULL DEFAULT 0, distance_km REAL, steps INTEGER, active_calories REAL, notes TEXT, source TEXT NOT NULL DEFAULT 'manual', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON activity_logs(activity_date, started_at)');
+    await db.execute('''CREATE TABLE IF NOT EXISTS activity_health_daily (activity_date TEXT PRIMARY KEY, steps INTEGER, distance_km REAL, active_calories REAL, exercise_minutes REAL, synced_at TEXT NOT NULL)''');
+
   }
 
 
@@ -268,6 +272,12 @@ class AppDatabase {
   }
 
   Future<void> _upgradeSchema(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 5) {
+    await db.execute('''CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, activity_type TEXT NOT NULL, activity_date TEXT NOT NULL, started_at TEXT, duration_minutes INTEGER NOT NULL DEFAULT 0, distance_km REAL, steps INTEGER, active_calories REAL, notes TEXT, source TEXT NOT NULL DEFAULT 'manual', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON activity_logs(activity_date, started_at)');
+    await db.execute('''CREATE TABLE IF NOT EXISTS activity_health_daily (activity_date TEXT PRIMARY KEY, steps INTEGER, distance_km REAL, active_calories REAL, exercise_minutes REAL, synced_at TEXT NOT NULL)''');
+    }
+
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE user_profile ADD COLUMN age INTEGER');
     }
@@ -1687,6 +1697,32 @@ class AppDatabase {
       'exercise_name_snapshot': exerciseName.trim(),
       'updated_at': DateTime.now().toIso8601String(),
     }, where: 'id = ?', whereArgs: [planExerciseId]);
+  }
+
+
+  Future<int> saveActivityLog({int? id, required String activityType, required String activityDate, String? startedAt, required int durationMinutes, double? distanceKm, int? steps, double? activeCalories, String? notes}) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    final values = <String, Object?>{'activity_type': activityType, 'activity_date': activityDate, 'started_at': startedAt, 'duration_minutes': durationMinutes, 'distance_km': distanceKm, 'steps': steps, 'active_calories': activeCalories, 'notes': notes, 'source': 'manual', 'updated_at': now};
+    if (id == null) { values['created_at'] = now; return db.insert('activity_logs', values); }
+    await db.update('activity_logs', values, where: 'id = ?', whereArgs: [id]);
+    return id;
+  }
+  Future<void> deleteActivityLog(int id) async { final db = await database; await db.delete('activity_logs', where: 'id = ?', whereArgs: [id]); }
+  Future<List<Map<String, Object?>>> getActivityLogs(String date) async { final db = await database; return db.query('activity_logs', where: 'activity_date = ?', whereArgs: [date], orderBy: 'started_at DESC, id DESC'); }
+  Future<List<Map<String, Object?>>> getActivityHistory({int days = 7}) async {
+    final db = await database;
+    final cutoff = DateTime.now().subtract(Duration(days: days - 1)).toIso8601String().substring(0, 10);
+    return db.query('activity_logs', where: 'activity_date >= ?', whereArgs: [cutoff], orderBy: 'activity_date DESC, started_at DESC');
+  }
+  Future<void> saveHealthActivitySummary({required String date, int? steps, double? distanceKm, double? activeCalories, double? exerciseMinutes}) async {
+    final db = await database;
+    await db.insert('activity_health_daily', {'activity_date': date, 'steps': steps, 'distance_km': distanceKm, 'active_calories': activeCalories, 'exercise_minutes': exerciseMinutes, 'synced_at': DateTime.now().toIso8601String()}, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+  Future<Map<String, Object?>?> getHealthActivitySummary(String date) async {
+    final db = await database;
+    final rows = await db.query('activity_health_daily', where: 'activity_date = ?', whereArgs: [date], limit: 1);
+    return rows.isEmpty ? null : rows.first;
   }
 
 }

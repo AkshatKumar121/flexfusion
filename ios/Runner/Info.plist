@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>FlexFusion reads steps, walking and running distance, active energy and exercise minutes for your activity summary.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>FlexFusion does not write activity data to Apple Health.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>FlexFusion uses the camera to capture your progress photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

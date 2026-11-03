@@ -10,8 +10,8 @@ import '../train/workout_session_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onOpenEat;
-
-  const HomeScreen({super.key, this.onOpenEat});
+  final VoidCallback? onOpenActivity;
+  const HomeScreen({super.key, this.onOpenEat, this.onOpenActivity});
 
   @override
   State<HomeScreen> createState() => HomeScreenState();
@@ -359,7 +359,10 @@ class HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 14),
 
               // LOG ACTIVITY CARD
-              Container(
+              InkWell(
+                onTap: widget.onOpenActivity,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -423,6 +426,7 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+              ),
               ),
 
               const SizedBox(height: 24),
