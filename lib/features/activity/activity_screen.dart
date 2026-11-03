@@ -32,11 +32,15 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if(_syncing)return;
     setState(()=>_syncing=true);
     final data=await _health.readDailySummary(_date);
-    if(data!=null)await AppDatabase.instance.saveHealthActivitySummary(
-      date:_key(_date),steps:data['steps'] as int?,
-      distanceKm:(data['distance_km'] as num?)?.toDouble(),
-      activeCalories:(data['active_calories'] as num?)?.toDouble(),
-      exerciseMinutes:(data['exercise_minutes'] as num?)?.toDouble());
+    if (data != null) {
+      await AppDatabase.instance.saveHealthActivitySummary(
+        date: _key(_date),
+        steps: data['steps'] as int?,
+        distanceKm: (data['distance_km'] as num?)?.toDouble(),
+        activeCalories: (data['active_calories'] as num?)?.toDouble(),
+        exerciseMinutes: (data['exercise_minutes'] as num?)?.toDouble(),
+      );
+    }
     final saved=await AppDatabase.instance.getHealthActivitySummary(_key(_date));
     if(!mounted)return;
     setState((){_healthDay=saved;_syncing=false;});
