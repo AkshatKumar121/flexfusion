@@ -380,6 +380,50 @@ void main() {
     expect(logs.single['calories'], 156);
   });
 
+  test('legacy meal migration does not duplicate rows if preference marker is lost', () async {
+    const legacyKey = 'flexfusion_meals_2026-11-02';
+    const migrationKey = 'flexfusion_sqlite_meal_migration_v1_complete';
+    final legacyMeals = jsonEncode({
+      'BREAKFAST': [
+        {
+          'name': 'Crash Recovery Oats',
+          'grams': 40,
+          'kcal': 156,
+          'protein': 6.76,
+          'carbs': 26.52,
+          'fat': 2.76,
+        }
+      ],
+      'LUNCH': [],
+      'SNACKS': [],
+      'DINNER': [],
+    });
+    SharedPreferences.setMockInitialValues({legacyKey: legacyMeals});
+
+    final firstOpenLogs = await appDatabase.getFoodLogsForDate('2026-11-02');
+    expect(firstOpenLogs, hasLength(1));
+
+    // Simulate a crash after SQLite committed but before the old
+    // SharedPreferences completion flag was persisted.
+    SharedPreferences.setMockInitialValues({legacyKey: legacyMeals});
+    await appDatabase.closeForTesting();
+    appDatabase = AppDatabase.forTesting(p.join(tempDirectory.path, 'test.db'));
+
+    final reopenedLogs = await appDatabase.getFoodLogsForDate('2026-11-02');
+    expect(reopenedLogs, hasLength(1));
+    expect(reopenedLogs.single['food_name_snapshot'], 'Crash Recovery Oats');
+
+    final db = await appDatabase.database;
+    final marker = await db.query(
+      'app_settings',
+      where: 'key = ?',
+      whereArgs: [migrationKey],
+      limit: 1,
+    );
+    expect(marker, hasLength(1));
+  });
+
+
   test('version 1 database upgrades all modules to version 6 and preserves food logs', () async {
     final databasePath = p.join(tempDirectory.path, 'test.db');
     final oldDb = await openDatabase(
