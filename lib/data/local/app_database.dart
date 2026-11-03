@@ -38,7 +38,54 @@ class AppDatabase {
     );
     await _migrateLegacyMealLogs(_database!);
     await _seedBuiltInFoodCatalog(_database!);
+    await _seedBuiltInExerciseCatalog(_database!);
     return _database!;
+  }
+
+  Future<void> _seedBuiltInExerciseCatalog(Database db) async {
+    const seedKey = 'exercise_catalog_v1_seeded';
+    final settings = await db.query(
+      'app_settings',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [seedKey],
+      limit: 1,
+    );
+    if (settings.isNotEmpty && settings.first['value'] == '1') return;
+
+    final source = await rootBundle.loadString('assets/data/exercise_catalog.json');
+    final catalog = jsonDecode(source) as List<dynamic>;
+    final now = DateTime.now().toIso8601String();
+
+    await db.transaction((txn) async {
+      for (final item in catalog) {
+        final exercise = item as Map<String, dynamic>;
+        final name = exercise['name'] as String;
+        final existing = await txn.query(
+          'exercises',
+          columns: ['id'],
+          where: 'name = ? COLLATE NOCASE',
+          whereArgs: [name],
+          limit: 1,
+        );
+        if (existing.isNotEmpty) continue;
+
+        await txn.insert('exercises', {
+          'name': name,
+          'muscle_group': exercise['muscle_group'],
+          'equipment': exercise['equipment'],
+          'instructions': exercise['instructions'],
+          'is_custom': 0,
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+      await txn.insert(
+        'app_settings',
+        {'key': seedKey, 'value': '1', 'updated_at': now},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    });
   }
 
   Future<void> _createSchema(Database db, int version) async {
