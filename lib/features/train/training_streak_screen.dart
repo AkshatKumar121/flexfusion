@@ -48,9 +48,10 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
           final workoutDays = (data['workout_days'] as List).cast<String>().toSet();
           final activityDays = (data['activity_days'] as List).cast<String>().toSet();
           final healthSteps = (data['health_steps'] as Map).cast<String, int>();
+          final manualSteps = (data['manual_steps'] as Map).cast<String, int>();
           final activeDays = {...workoutDays, ...activityDays};
           final todayKey = _key(_today);
-          final steps = healthSteps[todayKey] ?? 0;
+          final steps = healthSteps[todayKey] ?? manualSteps[todayKey] ?? 0;
           final weekStart = _today.subtract(Duration(days: _today.weekday - 1));
           final week = List.generate(7, (i) => weekStart.add(Duration(days: i)));
           final weekWorkoutCount = week.where((d) => workoutDays.contains(_key(d))).length;
@@ -114,20 +115,20 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                           child: Column(
                             children: [
                               Container(
-                                width: 54,
-                                height: 54,
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: done ? AppColors.green : (isToday ? Colors.transparent : const Color(0xFF292929)),
                                   border: isToday && !done ? Border.all(color: AppColors.green, width: 2.5) : null,
                                 ),
                                 child: done
-                                    ? const Icon(Icons.check, color: Colors.black, size: 34)
+                                    ? const Icon(Icons.check, color: Colors.black, size: 27)
                                     : (isToday ? const Icon(Icons.circle, color: AppColors.green, size: 8) : null),
                               ),
                               const SizedBox(height: 8),
                               Text(const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-                                style: GoogleFonts.inter(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w500)),
+                                style: GoogleFonts.inter(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         );
