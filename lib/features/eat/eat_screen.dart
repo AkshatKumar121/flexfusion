@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
-import '../train/training_streak_screen.dart';
+import 'nutrition_streak_screen.dart';
 
 class EatScreen extends StatefulWidget {
   const EatScreen({super.key});
@@ -202,7 +202,7 @@ class EatScreenState extends State<EatScreen> {
         visualDensity: VisualDensity.compact,
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => const TrainingStreakScreen(),
+            builder: (_) => const NutritionStreakScreen(),
           ),
         ),
         icon: const Icon(
