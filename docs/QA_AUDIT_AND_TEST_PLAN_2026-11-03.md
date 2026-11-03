@@ -3,7 +3,7 @@
 **Date:** 2026-11-03  
 **Branch:** `flexfusion_v1`  
 **Audit scope:** Current repository tree and application source at the branch head used for this review.  
-**Status:** Static source review documented; first local database test run recorded on 2026-11-03. Runtime/build verification and device testing remain pending.
+**Status:** Static source review documented; user reported the full automated test run passed (20/20) on 2026-11-03. Runtime/build verification and device testing remain pending.
 
 ---
 
@@ -24,7 +24,7 @@
 - [x] Existing automated test inventory
 - [ ] Run `flutter pub get`
 - [x] Run `flutter analyze` — passed 2026-11-03, no issues found.
-- [ ] Run `flutter test`
+- [x] Run `flutter test` — user reported all 20 tests passed on 2026-11-03.
 - [x] iOS debug build — passed 2026-11-03 with `--no-codesign`; physical-device launch/signing still pending.
 - [ ] Build and launch on a physical iPhone
 - [ ] Physical-device HealthKit permission/sync verification
@@ -43,13 +43,13 @@ Severity definitions: **P0** = release blocker/data-loss risk; **P1** = major fu
 | AUD-001 | P1 | Eat / Nutrition streak | **Confirmed by user reproduction:** with configured targets of 1,800 kcal / 150 g protein and no food logs today, the streak screen displayed 2,200 kcal / 180 g. | Fixed by returning a zero-value current-day streak row with effective saved targets even when no food logs exist; regression test added. **Retest passed — user confirmed targeted regression test and screen behaviour.** |
 | AUD-002 | P1 | Activity / Apple Health | **Confirmed by source review:** Health sync used mutable `_date` after awaiting HealthKit, allowing a date change during sync to save the result under the wrong day. | Fixed by capturing the requested date/key before the async read, persisting only under that key, allowing a new date's sync to supersede stale UI updates, and guarding refresh results. Awaiting user retest. |
 | AUD-003 | P1 | Settings | “Reset App Data” was presented in Settings but did not actually reset data. | **Mitigated:** removed the incomplete destructive action from Settings until a complete, tested reset can safely clear database records and local progress-photo files. Reset is not currently offered in V1. Verify it is absent on device. |
-| AUD-004 | P1 / migration risk | SQLite migration | The version upgrade path adds pause columns to `workouts` for every database below v6 before the later legacy checks that can create missing workout tables. Older installations without the `workouts` table may fail during upgrade. | Add migration tests from every supported schema version (especially v1–v5); make migrations table/column-aware and idempotent. |
+| AUD-004 | P1 / migration risk | SQLite migration | The version upgrade path could alter `workouts` before ensuring the table exists on older installations. | **Addressed by migration fixes and coverage:** user confirmed v1→v6 through v5→v6 upgrade tests passed; see DB-003 and RUN-010. |
 | AUD-005 | P2 | Training streak | The streak used a fixed 10,000-step threshold and did not expose the configured goal in Profile. | **Fix committed:** Profile → Daily Targets now lets the user edit the daily step goal (default 10,000); the Training Streak uses that saved value for goal checks, progress and labels. A day counts when a workout is completed OR the step goal is reached. A manual activity log by itself does not qualify. Automated DB tests cover the default and a custom threshold; awaiting user test run. |
 | AUD-006 | P2 | Activity form | Numeric inputs use `tryParse` with fallback values. Invalid text can be silently treated as zero/null instead of being rejected with a field-level validation message. | Add input format validation and test blank, malformed, decimal, zero and negative values. |
 | AUD-007 | P2 | Apple Health | HealthKit errors are caught and converted to `null` without preserving/logging a diagnostic reason. This makes permission, configuration and data-read failures difficult to distinguish during support/testing. | Add safe diagnostic logging and user-facing states for unavailable, denied, syncing and sync-failed; never expose sensitive Health data in logs. |
 | AUD-008 | P2 | Automated tests | The repository currently has database-focused tests, but no visible widget/integration tests for the main screens, workout flows, HealthKit behavior or navigation. | Add widget tests for critical flows and integration/device test coverage for plugins and platform permissions. |
-| AUD-009 | P2 | Database tests | Fresh-schema test still expects schema version 4 although the application schema is now version 6. The assertion is stale and causes a false failure. | Update schema-version assertions and migration test names/expectations to the current schema version. |
-| AUD-010 | P1 | Database migration | Confirmed by local test run: upgrading a version-2 database fails with `no such table: workouts` because the v6 migration alters `workouts` before the older-schema migration creates/checks workout tables. | Reorder/guard migration steps and add upgrade tests from each supported historical schema version while verifying existing data is preserved. |
+| AUD-009 | P2 | Database tests | Fresh-schema test expected schema version 4 although the application schema is version 6. | **Fixed:** assertion updated to version 6; included in the user-reported 20/20 passing automated test run. |
+| AUD-010 | P1 | Database migration | Version-2 upgrade previously failed with `no such table: workouts` during the v6 migration. | **Fixed and retested:** migration order/guards updated; v1→v6 through v5→v6 tests passed, and the user reports 20/20 automated tests passing. |
 
 ### Audit notes / risks to verify
 
@@ -316,9 +316,9 @@ Implemented areas:
 
 | ID | Test case | Expected result | Status / notes |
 |---|---|---|---|
-| DB-001 | Fresh database creation | All expected tables/indexes are created and `PRAGMA user_version` equals the current schema version (6). | Test assertion corrected to expect version 6; targeted retest pending. |
+| DB-001 | Fresh database creation | All expected tables/indexes are created and `PRAGMA user_version` equals the current schema version (6). | **Pass — included in user-reported 20/20 automated test run.** |
 | DB-002 | Upgrade a v5 database to v6 | Pause fields are added and existing records remain. | **Pass — user confirmed targeted fresh-schema and v5→v6 migration tests.** |
-| DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | **Pass — v1→v6, v2→v6, v3→v6, v4→v6 and v5→v6 targeted migration tests all passed.** |
+| DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | **Pass — v1→v6, v2→v6, v3→v6, v4→v6 and v5→v6 targeted migration tests passed; included in user-reported 20/20 automated test run.** |
 | DB-004 | Force-close during writes | Database remains consistent on next launch. | [ ] |
 | DB-005 | Insert/update/delete each entity | Correct rows are changed; no orphan records. | [ ] |
 | DB-006 | Verify foreign-key cascade/set-null behavior | Related records follow documented rules. | [ ] |
@@ -359,6 +359,7 @@ Use one row per test run. Link screenshots/videos or note the evidence filename.
 | RUN-007 | 2026-11-03 | `609b314` | Mac (Flutter test / sqflite FFI) | DB-003 v3→v6 migration | 1 | 0 | 0 | User confirmed targeted v3→v6 migration test passed. |
 | RUN-008 | 2026-11-03 | `1b756fcd` | Mac (Flutter test / sqflite FFI) | DB-003 v1→v6 migration | 1 | 0 | 0 | User confirmed targeted v1→v6 migration test passed; existing food/log data and all migrated schema modules verified. |
 | RUN-009 | 2026-11-03 | `e6497b1` | Mac (Flutter test / sqflite FFI) | AUD-001 empty-day nutrition targets regression test | 1 | 0 | 0 | User confirmed targeted test passed after pulling the fix. |
+| RUN-010 | 2026-11-03 | `flexfusion_v1` (exact commit not supplied) | Mac (Flutter test) | Full automated test suite | 20 | 0 | 0 | User reported all 20 tests passed. Exact terminal command and commit SHA were not supplied; device/manual QA remains pending. |
 
 ## 5. Bug / issue register
 
