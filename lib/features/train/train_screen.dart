@@ -189,52 +189,71 @@ class TrainScreenState extends State<TrainScreen> {
     return Column(
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              'TRAIN',
-              style: GoogleFonts.inter(
-                color: AppColors.white,
-                fontSize: 25,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.1,
+            SizedBox(
+              width: 130,
+              height: 48,
+              child: Image.asset(
+                'assets/images/fxf_logo.jpg',
+                fit: BoxFit.contain,
+                alignment: Alignment.centerLeft,
               ),
             ),
-            const Spacer(),
-            IconButton(
-              onPressed: () async {
-                final selected = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                  builder: (context, child) => Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.dark(
-                        primary: AppColors.green,
-                        surface: AppColors.card,
+            Transform.translate(
+              offset: const Offset(-25, 0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(height: 38, width: 2, color: const Color(0xFF555555)),
+                  const SizedBox(width: 13),
+                  Transform.translate(
+                    offset: const Offset(0, 1),
+                    child: Text(
+                      'TRAINER',
+                      style: GoogleFonts.inter(
+                        color: AppColors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 5,
                       ),
                     ),
-                    child: child!,
                   ),
-                );
-                if (selected != null && mounted) {
-                  _showInfo('Workout calendar', 'Calendar view will be added with workout planning.');
-                }
-              },
-              icon: const Icon(Icons.calendar_month_outlined, color: AppColors.white),
-              tooltip: 'Calendar',
+                ],
+              ),
             ),
           ],
         ),
+        const SizedBox(height: 20),
+        Container(height: 1, color: const Color(0xFF292929)),
         Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Track, progress, grow',
-            style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
+          alignment: Alignment.centerRight,
+          child: IconButton(
+            onPressed: () async {
+              final selected = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now(),
+                builder: (context, child) => Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.dark(
+                      primary: AppColors.green,
+                      surface: AppColors.card,
+                    ),
+                  ),
+                  child: child!,
+                ),
+              );
+              if (selected != null && mounted) {
+                _showInfo('Workout calendar', 'Calendar view will be added with workout planning.');
+              }
+            },
+            icon: const Icon(Icons.calendar_month_outlined, color: AppColors.white),
+            tooltip: 'Calendar',
           ),
         ),
-        const SizedBox(height: 17),
-        Container(height: 1, color: AppColors.border),
       ],
     );
   }
