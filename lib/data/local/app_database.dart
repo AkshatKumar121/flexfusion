@@ -1139,6 +1139,11 @@ class AppDatabase {
     );
   }
 
+  Future<void> deleteProgressPhoto(int id) async {
+    final db = await database;
+    await db.delete('progress_photos', where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<String?> saveProgressPhoto({
     required String date,
     required String angle,
