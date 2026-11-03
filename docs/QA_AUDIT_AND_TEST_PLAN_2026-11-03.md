@@ -50,6 +50,7 @@ Severity definitions: **P0** = release blocker/data-loss risk; **P1** = major fu
 | AUD-008 | P2 | Automated tests | The repository currently has database-focused tests, but no visible widget/integration tests for the main screens, workout flows, HealthKit behavior or navigation. | Add widget tests for critical flows and integration/device test coverage for plugins and platform permissions. |
 | AUD-009 | P2 | Database tests | Fresh-schema test expected schema version 4 although the application schema is version 6. | **Fixed:** assertion updated to version 6; included in the user-reported 20/20 passing automated test run. |
 | AUD-010 | P1 | Database migration | Version-2 upgrade previously failed with `no such table: workouts` during the v6 migration. | **Fixed and retested:** migration order/guards updated; v1→v6 through v5→v6 tests passed, and the user reports 20/20 automated tests passing. |
+| AUD-011 | P2 | Train / progress photo deletion | Photo deletion removed the SQLite row before deleting the local image. If filesystem deletion failed, the app reported failure although the database record was already gone, potentially leaving an orphaned image. | **Fix committed:** image is first renamed to a temporary pending-delete path; the DB row is then deleted; if the DB operation fails, the image is restored. Final temporary-file cleanup is best-effort and logged. Awaiting analyzer and device retest. |
 
 ### Audit notes / risks to verify
 
@@ -176,7 +177,7 @@ Implemented areas:
 | TRN-005 | Switch kg/lb if supported | Display and saved canonical value remain correct. | [ ] |
 | TRN-006 | Add Front, Side and Back photos | Correct angle/date association and local file display. | [ ] |
 | TRN-007 | Add another photo for same date/angle | Existing-photo replacement behavior is clear and safe. | [ ] |
-| TRN-008 | Delete one photo and confirm | Only selected photo and file are removed. | [ ] |
+| TRN-008 | Delete one photo and confirm | Only selected photo and file are removed; if the DB delete fails, the original image is restored and the photo remains available. | [ ] |
 | TRN-009 | Cancel photo deletion | Photo remains. | [ ] |
 | TRN-010 | Deny camera/photo permission | User receives a clear fallback/error; app does not crash. | [ ] |
 | TRN-011 | Pull to refresh | Refresh indicator remains until data load completes. | [ ] |
