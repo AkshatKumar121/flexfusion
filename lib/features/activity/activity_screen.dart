@@ -15,6 +15,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   List<Map<String,Object?>> _logs=[];
   Map<String,Object?>? _healthDay;
   bool _loading=true,_syncing=false;
+  String _healthStatus='Checking Apple Health…';
   int _refreshGeneration=0;
   int _syncGeneration=0;
   String _key(DateTime d)=>'${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
@@ -48,7 +49,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
       setState(() => _syncing = true);
     }
     try {
-      final data=await _health.readDailySummary(requestedDate);
+      final result=await _health.readDailySummary(requestedDate);
+      final data=result.data;
       if (data != null) {
         await AppDatabase.instance.saveHealthActivitySummary(
           date: requestedKey,
@@ -64,7 +66,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
           _key(_date) != requestedKey) {
         return;
       }
-      setState(()=>_healthDay=saved);
+      setState(()=>{_healthDay=saved,_healthStatus=result.statusMessage});
     } finally {
       if(mounted && syncGeneration == _syncGeneration) {
         setState(()=>_syncing=false);
@@ -111,7 +113,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
           Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[_heading('DAILY MOVEMENT'),Text(today?'TODAY':_key(_date),style:const TextStyle(color:AppColors.green,fontSize:10,fontWeight:FontWeight.w700))]),
           const SizedBox(height:18),Row(children:[Expanded(child:_metric(Icons.directions_walk,'$_steps','STEPS')),Expanded(child:_metric(Icons.timer_outlined,'$_minutes','ACTIVE MIN'))]),
           const SizedBox(height:18),Row(children:[Expanded(child:_metric(Icons.route,_km.toStringAsFixed(2),'KM')),Expanded(child:_metric(Icons.local_fire_department,_kcal.round().toString(),'ACTIVE KCAL'))]),
-          const SizedBox(height:12),Text(_healthDay!=null?'Apple Health · read-only sync':'Manual tracking · Apple Health unavailable or not authorised',style:const TextStyle(color:AppColors.grey,fontSize:10))])),
+          const SizedBox(height:12),Text(_healthStatus,style:const TextStyle(color:AppColors.grey,fontSize:10))])),
         const SizedBox(height:14),SizedBox(height:48,child:ElevatedButton.icon(onPressed:()=>_openForm(),icon:const Icon(Icons.add),label:const Text('LOG AN ACTIVITY',style:TextStyle(fontWeight:FontWeight.w800,letterSpacing:1)),style:ElevatedButton.styleFrom(backgroundColor:AppColors.green,foregroundColor:Colors.black))),
         const SizedBox(height:22),Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[_heading('ACTIVITY ENTRIES'),Text('${_logs.length} LOGGED',style:const TextStyle(color:AppColors.grey,fontSize:10,fontWeight:FontWeight.w700))]),const SizedBox(height:10),
         if(_logs.isEmpty)_panel(const Padding(padding:EdgeInsets.symmetric(vertical:18),child:Center(child:Text('No manual activities logged for this day.',style:TextStyle(color:AppColors.grey,fontSize:12)))))
