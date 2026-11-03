@@ -32,6 +32,42 @@ void main() {
     }
   });
 
+  test('training streak includes days that reach the 10000-step goal', () async {
+    final db = await appDatabase.database;
+    await appDatabase.saveHealthActivitySummary(
+      date: '2026-10-30',
+      steps: 10000,
+    );
+    await appDatabase.saveHealthActivitySummary(
+      date: '2026-10-31',
+      steps: 9999,
+    );
+    await appDatabase.saveActivityLog(
+      activityType: 'Walking',
+      activityDate: '2026-11-01',
+      durationMinutes: 20,
+      steps: 6000,
+    );
+    await appDatabase.saveActivityLog(
+      activityType: 'Walking',
+      activityDate: '2026-11-01',
+      durationMinutes: 15,
+      steps: 4000,
+    );
+    await db.insert('workouts', {
+      'started_at': '2026-11-02T07:00:00',
+      'completed_at': '2026-11-02T08:00:00',
+      'session_name': 'Completed workout',
+      'status': 'completed',
+    });
+
+    final data = await appDatabase.getTrainingStreakData();
+
+    expect(data['step_goal_days'], containsAll(['2026-10-30', '2026-11-01']));
+    expect(data['step_goal_days'], isNot(contains('2026-10-31')));
+    expect(data['workout_days'], contains('2026-11-02'));
+  });
+
   test('nutrition streak returns configured targets when today has no food logs', () async {
     await appDatabase.saveNutritionTargets(
       calories: 1800,
