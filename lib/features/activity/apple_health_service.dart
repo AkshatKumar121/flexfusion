@@ -7,7 +7,8 @@ class AppleHealthService {
   if(kIsWeb||defaultTargetPlatform!=TargetPlatform.iOS)return null;
   try {
    await _health.configure();
-   if(!await _health.requestAuthorization(_types))return null;
+   final hasReadAccess=await _health.hasPermissions(_types)??false;
+   if(!hasReadAccess&&!await _health.requestAuthorization(_types))return null;
    final start=DateTime(date.year,date.month,date.day),end=DateTime(date.year,date.month,date.day).add(const Duration(days:1));
    final steps=await _health.getTotalStepsInInterval(start,end);
    final points=_health.removeDuplicates(await _health.getHealthDataFromTypes(types:_types.where((t)=>t!=HealthDataType.STEPS).toList(),startTime:start,endTime:end));
