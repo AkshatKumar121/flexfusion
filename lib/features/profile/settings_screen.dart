@@ -466,16 +466,12 @@ class _SettingsActionRow extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  final Color? titleColor;
-  final bool showDivider;
 
   const _SettingsActionRow({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.titleColor,
-    this.showDivider = true,
   });
 
   @override
@@ -485,13 +481,11 @@ class _SettingsActionRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          border: showDivider
-              ? Border(bottom: BorderSide(color: AppColors.border))
-              : null,
+          border: Border(bottom: BorderSide(color: AppColors.border)),
         ),
         child: Row(
           children: [
-            Icon(icon, color: titleColor ?? AppColors.white, size: 23),
+            Icon(icon, color: AppColors.white, size: 23),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -500,7 +494,7 @@ class _SettingsActionRow extends StatelessWidget {
                   Text(
                     title,
                     style: GoogleFonts.inter(
-                      color: titleColor ?? AppColors.white,
+                      color: AppColors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
