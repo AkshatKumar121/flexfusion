@@ -185,6 +185,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   }
   Future<void> _finish() async {
     var rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
+    if (!mounted) return;
     final pending = <Map<String, Object?>>[];
     for (final row in rows) {
       final id = row['id'] as int;
