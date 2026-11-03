@@ -18,7 +18,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
   String _key(DateTime d)=>'${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
   @override void initState(){super.initState();_refresh();}
   Future<void> _refresh() async {
-    if(mounted)setState(()=>_loading=true);
+    if (mounted) {
+      setState(() => _loading = true);
+    }
     final key=_key(_date);
     final logs=await AppDatabase.instance.getActivityLogs(key);
     final saved=await AppDatabase.instance.getHealthActivitySummary(key);
@@ -127,7 +129,7 @@ class _ActivityFormState extends State<_ActivityForm>{
   }
   @override Widget build(BuildContext context)=>SafeArea(child:Padding(padding:EdgeInsets.fromLTRB(18,18,18,MediaQuery.of(context).viewInsets.bottom+18),child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
     Text(widget.row==null?'LOG ACTIVITY':'EDIT ACTIVITY',style:GoogleFonts.inter(color:Colors.white,fontSize:15,fontWeight:FontWeight.w800,letterSpacing:1)),const SizedBox(height:16),
-    DropdownButtonFormField<String>(value:_type,dropdownColor:AppColors.card,decoration:_dec('Activity type'),items:widget.types.map((t)=>DropdownMenuItem(value:t,child:Text(t,style:const TextStyle(color:Colors.white)))).toList(),onChanged:(v)=>setState(()=>_type=v??_type)),
+    DropdownButtonFormField<String>(initialValue:_type,dropdownColor:AppColors.card,decoration:_dec('Activity type'),items:widget.types.map((t)=>DropdownMenuItem(value:t,child:Text(t,style:const TextStyle(color:Colors.white)))).toList(),onChanged:(v)=>setState(()=>_type=v??_type)),
     const SizedBox(height:12),Row(children:[Expanded(child:_field(_duration,'Duration (minutes)',numeric:true)),const SizedBox(width:10),Expanded(child:OutlinedButton.icon(onPressed:()async{final t=await showTimePicker(context:context,initialTime:_time);if(t!=null)setState(()=>_time=t);},icon:const Icon(Icons.access_time),label:Text(_time.format(context)),style:OutlinedButton.styleFrom(foregroundColor:AppColors.green)))]),
     const SizedBox(height:12),Row(children:[Expanded(child:_field(_distance,'Distance (km)',numeric:true)),const SizedBox(width:10),Expanded(child:_field(_steps,'Steps (optional)',numeric:true))]),
     const SizedBox(height:12),_field(_calories,'Active calories (optional)',numeric:true),const SizedBox(height:12),_field(_notes,'Notes (optional)',lines:2),
