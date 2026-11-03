@@ -46,13 +46,11 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
           }
           final data = snapshot.data!;
           final workoutDays = (data['workout_days'] as List).cast<String>().toSet();
-          final activityDays = (data['activity_days'] as List).cast<String>().toSet();
           final stepGoalDays = (data['step_goal_days'] as List).cast<String>().toSet();
           final healthSteps = (data['health_steps'] as Map).cast<String, int>();
           final manualSteps = (data['manual_steps'] as Map).cast<String, int>();
           final activeDays = {
             ...workoutDays,
-            ...activityDays,
             ...stepGoalDays,
           };
           final todayKey = _key(_today);
@@ -61,7 +59,7 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
           final weekStart = _today.subtract(Duration(days: _today.weekday - 1));
           final week = List.generate(7, (i) => weekStart.add(Duration(days: i)));
           final weekWorkoutCount = week.where((d) => workoutDays.contains(_key(d))).length;
-          final weekActivityCount = week.where((d) => activityDays.contains(_key(d)) || stepGoalDays.contains(_key(d))).length;
+          final weekActivityCount = week.where((d) => stepGoalDays.contains(_key(d))).length;
           var streak = 0;
           var cursor = activeDays.contains(todayKey) ? _today : _today.subtract(const Duration(days: 1));
           while (activeDays.contains(_key(cursor))) {
