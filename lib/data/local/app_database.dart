@@ -15,7 +15,7 @@ class AppDatabase {
       : this._(databasePathOverride: databasePath);
 
   static final AppDatabase instance = AppDatabase._();
-  static const int schemaVersion = 5;
+  static const int schemaVersion = 6;
   final String? _databasePathOverride;
   Database? _database;
 
@@ -294,6 +294,8 @@ class AppDatabase {
         session_name TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'in_progress',
         notes TEXT,
+        paused_at TEXT,
+        paused_seconds INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (plan_id) REFERENCES workout_plans(id) ON DELETE SET NULL,
         FOREIGN KEY (plan_day_id) REFERENCES workout_plan_days(id) ON DELETE SET NULL
       )
@@ -319,6 +321,11 @@ class AppDatabase {
   }
 
   Future<void> _upgradeSchema(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE workouts ADD COLUMN paused_at TEXT');
+      await db.execute('ALTER TABLE workouts ADD COLUMN paused_seconds INTEGER NOT NULL DEFAULT 0');
+    }
+
     if (oldVersion < 5) {
     await db.execute('''CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, activity_type TEXT NOT NULL, activity_date TEXT NOT NULL, started_at TEXT, duration_minutes INTEGER NOT NULL DEFAULT 0, distance_km REAL, steps INTEGER, active_calories REAL, notes TEXT, source TEXT NOT NULL DEFAULT 'manual', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON activity_logs(activity_date, started_at)');
@@ -1713,6 +1720,43 @@ class AppDatabase {
     return {...sequenceDays[nextIndex], 'plan_name': plan['name'], 'plan_id': plan['id']};
   }
 
+
+  Future<void> pauseWorkoutSession(int workoutId) async {
+    final db = await database;
+    await db.update(
+      'workouts',
+      {'paused_at': DateTime.now().toIso8601String()},
+      where: "id = ? AND status = 'in_progress' AND paused_at IS NULL",
+      whereArgs: [workoutId],
+    );
+  }
+
+  Future<void> resumeWorkoutSession(int workoutId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        'workouts',
+        columns: ['paused_at', 'paused_seconds'],
+        where: "id = ? AND status = 'in_progress'",
+        whereArgs: [workoutId],
+        limit: 1,
+      );
+      if (rows.isEmpty || rows.first['paused_at'] == null) return;
+      final pausedAt = DateTime.tryParse(rows.first['paused_at'] as String);
+      if (pausedAt == null) return;
+      final previousPausedSeconds = rows.first['paused_seconds'] as int? ?? 0;
+      final addedSeconds = DateTime.now().difference(pausedAt).inSeconds;
+      await txn.update(
+        'workouts',
+        {
+          'paused_at': null,
+          'paused_seconds': previousPausedSeconds + (addedSeconds > 0 ? addedSeconds : 0),
+        },
+        where: 'id = ?',
+        whereArgs: [workoutId],
+      );
+    });
+  }
 
   Future<Map<String, Object?>> getWorkoutSessionSummary(int workoutId) async {
     final db = await database;
