@@ -555,6 +555,7 @@ class ExerciseLibraryScreen extends StatefulWidget {
 
 class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
   late Future<List<Map<String, Object?>>> _future;
+  String _searchQuery = '';
   @override
   void initState() { super.initState(); _reload(); }
   void _reload() { _future = AppDatabase.instance.getExercises(); }
@@ -599,34 +600,75 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
         final exercises = snapshot.data!;
         if (exercises.isEmpty) return Center(child: Text('Your library is empty. Add your first exercise.', style: GoogleFonts.inter(color: AppColors.grey)));
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-          itemCount: exercises.length,
-          itemBuilder: (context, index) {
-            final item = exercises[index];
-            return Card(
-              color: AppColors.card,
-              child: ListTile(
-                title: Text(item['name'] as String, style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w600)),
-                subtitle: Text('${item['muscle_group'] ?? 'Other'} • ${item['equipment'] ?? 'Equipment not set'}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
-                onTap: () => _editExercise(item),
-                trailing: (item['is_custom'] as int? ?? 0) == 1
-                    ? IconButton(
-                        icon: const Icon(Icons.delete_outline, color: AppColors.grey),
-                        tooltip: 'Delete custom exercise',
-                        onPressed: () async {
-                          await AppDatabase.instance.deleteExercise(item['id'] as int);
-                          if (mounted) setState(_reload);
-                        },
-                      )
-                    : const Tooltip(
-                        message: 'Built-in exercise',
-                        child: Icon(Icons.lock_outline, color: AppColors.grey, size: 18),
+        final query = _searchQuery.trim().toLowerCase();
+        final filteredExercises = exercises.where((item) {
+          if (query.isEmpty) return true;
+          return [
+            item['name'],
+            item['muscle_group'],
+            item['equipment'],
+            item['instructions'],
+          ].any((value) => (value?.toString() ?? '').toLowerCase().contains(query));
+        }).toList();
+
+        return Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: TextField(
+              onChanged: (value) => setState(() => _searchQuery = value),
+              style: GoogleFonts.inter(color: AppColors.white, fontSize: 13),
+              decoration: InputDecoration(
+                hintText: 'Search exercises, muscle groups, equipment...',
+                hintStyle: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
+                prefixIcon: const Icon(Icons.search, color: AppColors.grey),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        icon: const Icon(Icons.close, color: AppColors.grey),
+                        onPressed: () => setState(() => _searchQuery = ''),
                       ),
+                filled: true,
+                fillColor: AppColors.card,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.green)),
               ),
-            );
-          },
-        );
+            ),
+          ),
+          Expanded(
+            child: filteredExercises.isEmpty
+                ? Center(child: Text('No exercises match "$_searchQuery".', style: GoogleFonts.inter(color: AppColors.grey)))
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    itemCount: filteredExercises.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredExercises[index];
+                      return Card(
+                        color: AppColors.card,
+                        child: ListTile(
+                          title: Text(item['name'] as String, style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w600)),
+                          subtitle: Text('${item['muscle_group'] ?? 'Other'} • ${item['equipment'] ?? 'Equipment not set'}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
+                          onTap: () => _editExercise(item),
+                          trailing: (item['is_custom'] as int? ?? 0) == 1
+                              ? IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: AppColors.grey),
+                                  tooltip: 'Delete custom exercise',
+                                  onPressed: () async {
+                                    await AppDatabase.instance.deleteExercise(item['id'] as int);
+                                    if (mounted) setState(_reload);
+                                  },
+                                )
+                              : const Tooltip(
+                                  message: 'Built-in exercise',
+                                  child: Icon(Icons.lock_outline, color: AppColors.grey, size: 18),
+                                ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ]);
       },
     ),
   );
