@@ -647,6 +647,7 @@ class TrainScreenState extends State<TrainScreen> {
       return;
     }
     await AppDatabase.instance.saveBodyWeight(date: _dateKey(DateTime.now()), weightKg: value);
+    FocusScope.of(context).unfocus();
     _weightController.clear();
     refreshTrainScreen();
     _showInfo('Weight saved', 'Today’s weigh-in has been saved.');
