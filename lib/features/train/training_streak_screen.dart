@@ -47,15 +47,20 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
           final data = snapshot.data!;
           final workoutDays = (data['workout_days'] as List).cast<String>().toSet();
           final activityDays = (data['activity_days'] as List).cast<String>().toSet();
+          final stepGoalDays = (data['step_goal_days'] as List).cast<String>().toSet();
           final healthSteps = (data['health_steps'] as Map).cast<String, int>();
           final manualSteps = (data['manual_steps'] as Map).cast<String, int>();
-          final activeDays = {...workoutDays, ...activityDays};
+          final activeDays = {
+            ...workoutDays,
+            ...activityDays,
+            ...stepGoalDays,
+          };
           final todayKey = _key(_today);
           final steps = healthSteps[todayKey] ?? manualSteps[todayKey] ?? 0;
           final weekStart = _today.subtract(Duration(days: _today.weekday - 1));
           final week = List.generate(7, (i) => weekStart.add(Duration(days: i)));
           final weekWorkoutCount = week.where((d) => workoutDays.contains(_key(d))).length;
-          final weekActivityCount = week.where((d) => activityDays.contains(_key(d))).length;
+          final weekActivityCount = week.where((d) => activityDays.contains(_key(d)) || stepGoalDays.contains(_key(d))).length;
           var streak = 0;
           var cursor = activeDays.contains(todayKey) ? _today : _today.subtract(const Duration(days: 1));
           while (activeDays.contains(_key(cursor))) {
@@ -168,7 +173,7 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              Text('A day counts toward your streak when you complete a workout or log an activity. Steps are shown separately from Apple Health when available.',
+              Text('A day counts toward your streak when you complete a workout, log an activity, or reach 10,000 steps. Steps are shown separately from Apple Health when available.',
                 style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11, height: 1.5)),
             ],
           );
