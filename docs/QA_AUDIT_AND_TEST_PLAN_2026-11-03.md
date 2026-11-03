@@ -3,7 +3,7 @@
 **Date:** 2026-11-03  
 **Branch:** `flexfusion_v1`  
 **Audit scope:** Current repository tree and application source at the branch head used for this review.  
-**Status:** Static source review documented; runtime/build verification and device testing are pending.
+**Status:** Static source review documented; first local database test run recorded on 2026-11-03. Runtime/build verification and device testing remain pending.
 
 ---
 
@@ -47,6 +47,8 @@ Severity definitions: **P0** = release blocker/data-loss risk; **P1** = major fu
 | AUD-006 | P2 | Activity form | Numeric inputs use `tryParse` with fallback values. Invalid text can be silently treated as zero/null instead of being rejected with a field-level validation message. | Add input format validation and test blank, malformed, decimal, zero and negative values. |
 | AUD-007 | P2 | Apple Health | HealthKit errors are caught and converted to `null` without preserving/logging a diagnostic reason. This makes permission, configuration and data-read failures difficult to distinguish during support/testing. | Add safe diagnostic logging and user-facing states for unavailable, denied, syncing and sync-failed; never expose sensitive Health data in logs. |
 | AUD-008 | P2 | Automated tests | The repository currently has database-focused tests, but no visible widget/integration tests for the main screens, workout flows, HealthKit behavior or navigation. | Add widget tests for critical flows and integration/device test coverage for plugins and platform permissions. |
+| AUD-009 | P2 | Database tests | Fresh-schema test still expects schema version 4 although the application schema is now version 6. The assertion is stale and causes a false failure. | Update schema-version assertions and migration test names/expectations to the current schema version. |
+| AUD-010 | P1 | Database migration | Confirmed by local test run: upgrading a version-2 database fails with `no such table: workouts` because the v6 migration alters `workouts` before the older-schema migration creates/checks workout tables. | Reorder/guard migration steps and add upgrade tests from each supported historical schema version while verifying existing data is preserved. |
 
 ### Audit notes / risks to verify
 
@@ -310,9 +312,9 @@ Implemented areas:
 
 | ID | Test case | Expected result | Status / notes |
 |---|---|---|---|
-| DB-001 | Fresh database creation | All expected tables/indexes are created. | [ ] |
+| DB-001 | Fresh database creation | All expected tables/indexes are created and `PRAGMA user_version` equals the current schema version (6). | **Fail — test assertion is stale: expected 4, actual 6.** |
 | DB-002 | Upgrade a v5 database to v6 | Pause fields are added and existing records remain. | [ ] |
-| DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | [ ] |
+| DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | **Fail — v2→v6 currently errors: no such table `workouts`.** |
 | DB-004 | Force-close during writes | Database remains consistent on next launch. | [ ] |
 | DB-005 | Insert/update/delete each entity | Correct rows are changed; no orphan records. | [ ] |
 | DB-006 | Verify foreign-key cascade/set-null behavior | Related records follow documented rules. | [ ] |
@@ -344,7 +346,7 @@ Use one row per test run. Link screenshots/videos or note the evidence filename.
 
 | Run ID | Date/time | App commit | Device / OS | Test IDs | Pass | Fail | Blocked | Notes / evidence |
 |---|---|---|---|---|---:|---:|---:|---|
-| RUN-001 | — | — | — | — | 0 | 0 | 0 | Not started |
+| RUN-001 | 2026-11-03 | Local branch commit not supplied | Mac (Flutter test / sqflite FFI) | Database suite | 9 | 2 | 0 | Failed: stale schema-version assertion (expected 4, actual 6); v2→current migration fails because `workouts` table is missing during v6 ALTER TABLE. Full output supplied in chat. |
 
 ## 5. Bug / issue register
 
@@ -352,7 +354,8 @@ Create one record for every failure. Do not combine unrelated bugs.
 
 | Bug ID | Severity | Screen / area | Steps to reproduce | Expected | Actual | Evidence | Status | Fix commit | Retest |
 |---|---|---|---|---|---|---|---|---|---|
-| BUG-001 | — | — | — | — | — | — | Open | — | Pending |
+| BUG-001 | P1 | SQLite migration v2→v6 | Run `flutter test`; legacy v2 upgrade test opens database | Migration completes and preserves existing food logs; workout schema is created/upgraded | `no such table: workouts` while adding `paused_at` | Terminal output 2026-11-03 | Confirmed / Open | — | Pending |
+| BUG-002 | P2 | Database test expectation | Run `flutter test` on fresh database | Test expects current schema version 6 | Test expects 4; actual schema version is 6 | Terminal output 2026-11-03 | Confirmed / Open | — | Pending |
 
 Severity guidance:
 - **Blocker:** app cannot launch/use a core feature, data corruption/loss, security/privacy issue.
