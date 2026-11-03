@@ -1844,11 +1844,21 @@ class AppDatabase {
       FROM activity_health_daily
       WHERE steps IS NOT NULL
     """);
+    final manualSteps = await db.rawQuery("""
+      SELECT activity_date AS day, SUM(steps) AS steps
+      FROM activity_logs
+      WHERE steps IS NOT NULL
+      GROUP BY activity_date
+    """);
     return {
       'workout_days': workouts.map((row) => row['day'] as String).toList(),
       'activity_days': activities.map((row) => row['day'] as String).toList(),
       'health_steps': {
         for (final row in health)
+          row['day'] as String: (row['steps'] as num).toInt(),
+      },
+      'manual_steps': {
+        for (final row in manualSteps)
           row['day'] as String: (row['steps'] as num).toInt(),
       },
     };
