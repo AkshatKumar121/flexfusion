@@ -274,8 +274,10 @@ class HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 28),
 
               // TRAIN AND EAT SECTION
-              Row(
-                children: [
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Expanded(
                     child: _DashboardCard(
                       icon: Icons.fitness_center,
@@ -313,14 +315,17 @@ class HomeScreenState extends State<HomeScreen> {
                       buttonText: 'LOG MEAL',
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 14),
 
               // WEIGHT AND PROTEIN CARDS
-              Row(
-                children: [
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Expanded(
                     child: _MetricCard(
                       title: 'WEIGHT',
@@ -344,7 +349,8 @@ class HomeScreenState extends State<HomeScreen> {
                       accentColor: AppColors.green,
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 14),
