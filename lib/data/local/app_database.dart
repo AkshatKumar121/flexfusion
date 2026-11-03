@@ -1881,25 +1881,41 @@ class AppDatabase {
   Future<List<Map<String, Object?>>> getNutritionStreakDays() async {
     final db = await database;
     return db.rawQuery("""
+      WITH daily_logs AS (
+        SELECT
+          log_date AS day,
+          SUM(calories) AS calories,
+          SUM(protein_g) AS protein
+        FROM food_logs
+        GROUP BY log_date
+      ),
+      streak_days AS (
+        SELECT day, calories, protein FROM daily_logs
+        UNION ALL
+        SELECT date('now', 'localtime') AS day, 0 AS calories, 0 AS protein
+        WHERE NOT EXISTS (
+          SELECT 1 FROM daily_logs
+          WHERE day = date('now', 'localtime')
+        )
+      )
       SELECT
-        f.log_date AS day,
-        SUM(f.calories) AS calories,
-        SUM(f.protein_g) AS protein,
+        streak_days.day AS day,
+        streak_days.calories AS calories,
+        streak_days.protein AS protein,
         COALESCE(
           (SELECT nt.calorie_target FROM nutrition_targets nt
-           WHERE nt.effective_from <= f.log_date
+           WHERE nt.effective_from <= streak_days.day
            ORDER BY nt.effective_from DESC, nt.id DESC LIMIT 1),
           2200
         ) AS calorie_target,
         COALESCE(
           (SELECT nt.protein_target_g FROM nutrition_targets nt
-           WHERE nt.effective_from <= f.log_date
+           WHERE nt.effective_from <= streak_days.day
            ORDER BY nt.effective_from DESC, nt.id DESC LIMIT 1),
           180
         ) AS protein_target
-      FROM food_logs f
-      GROUP BY f.log_date
-      ORDER BY f.log_date DESC
+      FROM streak_days
+      ORDER BY streak_days.day DESC
     """);
   }
 
