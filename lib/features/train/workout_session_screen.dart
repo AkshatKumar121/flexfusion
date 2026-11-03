@@ -144,6 +144,9 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   Timer? _timer;
   Timer? _workoutTimer;
   DateTime? _startedAt;
+  DateTime? _pausedAt;
+  int _pausedSeconds = 0;
+  bool _isPaused = false;
   Duration _elapsed = Duration.zero;
   int _rest = 0;
   @override
@@ -157,15 +160,42 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     final summary = await AppDatabase.instance.getWorkoutSessionSummary(widget.workoutId);
     final startedAt = DateTime.tryParse(summary['started_at'] as String? ?? '');
     if (!mounted || startedAt == null) return;
+    final pausedAt = DateTime.tryParse(summary['paused_at'] as String? ?? '');
+    final pausedSeconds = summary['paused_seconds'] as int? ?? 0;
+    final isPaused = pausedAt != null;
+    final effectiveEnd = isPaused ? pausedAt : DateTime.now();
+    final elapsed = effectiveEnd.difference(startedAt) - Duration(seconds: pausedSeconds);
     setState(() {
       _startedAt = startedAt;
-      _elapsed = DateTime.now().difference(startedAt);
+      _pausedAt = pausedAt;
+      _pausedSeconds = pausedSeconds;
+      _isPaused = isPaused;
+      _elapsed = elapsed.isNegative ? Duration.zero : elapsed;
     });
     _workoutTimer?.cancel();
-    _workoutTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    if (!isPaused) {
+      _workoutTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        final current = DateTime.now().difference(startedAt) - Duration(seconds: _pausedSeconds);
+        setState(() => _elapsed = current.isNegative ? Duration.zero : current);
+      });
+    }
+  }
+
+  Future<void> _toggleWorkoutPause() async {
+    if (_isPaused) {
+      await AppDatabase.instance.resumeWorkoutSession(widget.workoutId);
       if (!mounted) return;
-      setState(() => _elapsed = DateTime.now().difference(startedAt));
-    });
+      await _loadWorkoutStartTime();
+    } else {
+      await AppDatabase.instance.pauseWorkoutSession(widget.workoutId);
+      if (!mounted) return;
+      _workoutTimer?.cancel();
+      setState(() {
+        _isPaused = true;
+        _pausedAt = DateTime.now();
+      });
+    }
   }
 
   String _formatDuration(Duration duration) {
@@ -276,9 +306,9 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
     final done = rows.where((r) => (r['completed'] as int? ?? 0) == 1).length;
     if (!mounted) return;
-    final sessionDuration = _startedAt == null
+    final sessionDuration = _isPaused || _startedAt == null
         ? _elapsed
-        : DateTime.now().difference(_startedAt!);
+        : DateTime.now().difference(_startedAt!) - Duration(seconds: _pausedSeconds);
     final confirm = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
       backgroundColor: AppColors.card, title: const Text('Finish workout?'),
       content: Text('You completed $done of ${rows.length} sets.\n\nTime spent: ${_formatDuration(sessionDuration)}\n\nSave this session to history?'),
@@ -313,7 +343,12 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
             leading: const Icon(Icons.timer_outlined, color: AppColors.green, size: 25),
             title: Text('WORKOUT DURATION', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
             subtitle: Text(_formatDuration(_elapsed), style: GoogleFonts.inter(color: AppColors.white, fontSize: 25, fontWeight: FontWeight.w800, fontFeatures: const [])),
-            trailing: const Icon(Icons.fiber_manual_record, color: AppColors.green, size: 10),
+            trailing: TextButton.icon(
+              onPressed: _toggleWorkoutPause,
+              icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause, size: 18),
+              label: Text(_isPaused ? 'RESUME' : 'PAUSE'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.green),
+            ),
           ),
         ),
         if (_rest > 0) Card(color: AppColors.card, child: ListTile(leading: const Icon(Icons.timer, color: AppColors.green), title: const Text('REST TIMER'), trailing: Text('${(_rest ~/ 60).toString().padLeft(2, '0')}:${(_rest % 60).toString().padLeft(2, '0')}'), onTap: () { _timer?.cancel(); setState(() => _rest = 0); })),
