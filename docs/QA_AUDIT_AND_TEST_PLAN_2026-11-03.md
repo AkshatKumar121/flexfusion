@@ -353,6 +353,7 @@ Use one row per test run. Link screenshots/videos or note the evidence filename.
 | RUN-004 | 2026-11-03 | `flexfusion_v1` before `d8efaba` | Mac (Flutter test / sqflite FFI) | DB-001 fresh-schema test | 0 | 1 | 0 | Reproduced stale test assertion: expected schema version 4, actual 6. Test title and assertion corrected in `d8efaba`; retest pending. |
 | RUN-005 | 2026-11-03 | `1a2e306` | Mac (Flutter test / sqflite FFI) | DB-002 v5→v6 migration and DB-001 fresh-schema retest | 2 | 0 | 0 | User confirmed both targeted tests passed after pulling the fix/test commits. |
 | RUN-006 | 2026-11-03 | `42c008a` | Mac (Flutter test / sqflite FFI) | DB-003 v4→v6 migration | 1 | 0 | 0 | User confirmed targeted v4→v6 migration test passed; activity tables and pause columns were created while existing workout data was preserved. |
+| RUN-007 | 2026-11-03 | `609b314` | Mac (Flutter test / sqflite FFI) | DB-003 v3→v6 migration | — | — | — | Added regression test simulating v3 without workout-module or activity tables and verifying v6 tables/columns are present after upgrade. Awaiting local run. |
 
 ## 5. Bug / issue register
 
