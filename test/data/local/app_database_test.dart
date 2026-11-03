@@ -306,6 +306,145 @@ void main() {
     expect(logs.single['calories'], 156);
   });
 
+  test('version 1 database upgrades all modules to version 6 and preserves food logs', () async {
+    final databasePath = p.join(tempDirectory.path, 'test.db');
+    final oldDb = await openDatabase(
+      databasePath,
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE foods (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            brand TEXT,
+            serving_basis_g REAL NOT NULL DEFAULT 100,
+            calories_per_basis REAL NOT NULL,
+            protein_per_basis_g REAL NOT NULL,
+            carbs_per_basis_g REAL NOT NULL,
+            fat_per_basis_g REAL NOT NULL,
+            is_custom INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE food_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            log_date TEXT NOT NULL,
+            meal_type TEXT NOT NULL,
+            food_id INTEGER,
+            food_name_snapshot TEXT NOT NULL,
+            quantity_g REAL NOT NULL,
+            calories REAL NOT NULL,
+            protein_g REAL NOT NULL,
+            carbs_g REAL NOT NULL,
+            fat_g REAL NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE user_profile (
+            id INTEGER PRIMARY KEY,
+            display_name TEXT NOT NULL DEFAULT '',
+            date_of_birth TEXT,
+            height_value REAL,
+            height_unit TEXT NOT NULL DEFAULT 'cm',
+            current_goal TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+      },
+    );
+
+    final now = DateTime.now().toIso8601String();
+    final foodId = await oldDb.insert('foods', {
+      'name': 'V1 Legacy Oats',
+      'serving_basis_g': 100,
+      'calories_per_basis': 389,
+      'protein_per_basis_g': 16.9,
+      'carbs_per_basis_g': 66.3,
+      'fat_per_basis_g': 6.9,
+      'is_custom': 1,
+      'created_at': now,
+      'updated_at': now,
+    });
+    await oldDb.insert('food_logs', {
+      'log_date': '2026-11-01',
+      'meal_type': 'BREAKFAST',
+      'food_id': foodId,
+      'food_name_snapshot': 'V1 Legacy Oats',
+      'quantity_g': 40,
+      'calories': 155.6,
+      'protein_g': 6.76,
+      'carbs_g': 26.52,
+      'fat_g': 2.76,
+      'created_at': now,
+      'updated_at': now,
+    });
+    await oldDb.close();
+
+    final upgradedDb = await appDatabase.database;
+    final version = await upgradedDb.rawQuery('PRAGMA user_version');
+    expect(version.single['user_version'], 6);
+
+    final profileColumns = await upgradedDb.rawQuery('PRAGMA table_info(user_profile)');
+    expect(profileColumns.map((column) => column['name']), contains('age'));
+
+    final foodColumns = await upgradedDb.rawQuery('PRAGMA table_info(foods)');
+    expect(foodColumns.map((column) => column['name']), containsAll([
+      'base_unit',
+      'source',
+      'source_id',
+      'barcode',
+      'category_id',
+      'preparation_state',
+      'verification_status',
+      'is_active',
+    ]));
+
+    final logColumns = await upgradedDb.rawQuery('PRAGMA table_info(food_logs)');
+    expect(logColumns.map((column) => column['name']), containsAll([
+      'quantity_value',
+      'quantity_unit',
+      'base_quantity',
+      'base_unit',
+      'serving_name_snapshot',
+    ]));
+
+    final tables = await upgradedDb.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table'",
+    );
+    final tableNames = tables.map((row) => row['name'] as String).toSet();
+    expect(tableNames, containsAll([
+      'app_settings',
+      'exercises',
+      'workout_plans',
+      'workouts',
+      'workout_sets',
+      'activity_logs',
+      'activity_health_daily',
+    ]));
+
+    final workoutColumns = await upgradedDb.rawQuery('PRAGMA table_info(workouts)');
+    expect(workoutColumns.map((column) => column['name']),
+        containsAll(['paused_at', 'paused_seconds']));
+
+    final preservedFoods = await upgradedDb.query('foods', where: 'is_custom = 1');
+    expect(preservedFoods, hasLength(1));
+    expect(preservedFoods.single['name'], 'V1 Legacy Oats');
+
+    final logs = await upgradedDb.query('food_logs');
+    expect(logs, hasLength(1));
+    expect(logs.single['food_name_snapshot'], 'V1 Legacy Oats');
+    expect(logs.single['quantity_g'], 40);
+    expect(logs.single['quantity_value'], 40);
+    expect(logs.single['base_quantity'], 40);
+    expect(logs.single['quantity_unit'], 'g');
+    expect(logs.single['calories'], 155.6);
+  });
+
   test('version 2 database upgrades to version 6 without losing food logs', () async {
     final databasePath = p.join(tempDirectory.path, 'test.db');
     final oldDb = await openDatabase(
