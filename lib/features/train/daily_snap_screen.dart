@@ -377,7 +377,7 @@ class _DailySnapScreenState extends State<DailySnapScreen> {
                                       child: Column(children: [
                                         Expanded(child: kIsWeb
                                             ? Container(color: AppColors.surface, child: const Icon(Icons.image, color: AppColors.grey))
-                                            : Image.file(File(path), width: 92, fit: BoxFit.cover, errorBuilder: (_, _, _) => Container(color: AppColors.surface, child: const Icon(Icons.broken_image_outlined, color: AppColors.grey)))),
+                                            : Image.file(File(path), width: 92, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(color: AppColors.surface, child: const Icon(Icons.broken_image_outlined, color: AppColors.grey)))),
                                         Container(width: double.infinity, color: AppColors.surface, padding: const EdgeInsets.symmetric(vertical: 5), child: Text(angle, textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9, fontWeight: FontWeight.w700))),
                                       ]),
                                     ),
