@@ -23,6 +23,7 @@ class TrainScreenState extends State<TrainScreen> {
   final _weightController = TextEditingController();
   final _picker = ImagePicker();
   late Future<_TrainData> _dataFuture;
+  _TrainData? _cachedTrainData;
   final Set<int> _deletedProgressPhotoIds = <int>{};
   late DateTime _selectedDay;
 
@@ -46,11 +47,17 @@ class TrainScreenState extends State<TrainScreen> {
     );
   }
 
+  Future<_TrainData> _loadDataAndCache() async {
+    final data = await _loadData();
+    _cachedTrainData = data;
+    return data;
+  }
+
   @override
   void initState() {
     super.initState();
     _selectedDay = _today;
-    _dataFuture = _loadData();
+    _dataFuture = _loadDataAndCache();
   }
 
   String _formatDate(DateTime date) =>
@@ -85,7 +92,7 @@ class TrainScreenState extends State<TrainScreen> {
 
   Future<void> refreshTrainScreen() async {
     if (!mounted) return;
-    final refreshedData = _loadData();
+    final refreshedData = _loadDataAndCache();
     setState(() => _dataFuture = refreshedData);
     await refreshedData;
   }
@@ -94,8 +101,9 @@ class TrainScreenState extends State<TrainScreen> {
   Widget build(BuildContext context) {
     return FutureBuilder<_TrainData>(
       future: _dataFuture,
+      initialData: _cachedTrainData,
       builder: (context, snapshot) {
-        final data = snapshot.data;
+        final data = snapshot.data ?? _cachedTrainData;
         final latestWeight = (data?.latestWeight?['weight_value'] as num?)?.toDouble();
         final workoutCount = data?.weekly['workouts'] as int? ?? 0;
         final days = (data?.weekly['daily'] as List<dynamic>?) ?? const [];
@@ -108,6 +116,7 @@ class TrainScreenState extends State<TrainScreen> {
               backgroundColor: AppColors.card,
               onRefresh: refreshTrainScreen,
               child: SingleChildScrollView(
+                key: const PageStorageKey<String>('train_screen_scroll'),
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
                 child: Column(
