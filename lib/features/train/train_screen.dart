@@ -706,8 +706,9 @@ class TrainScreenState extends State<TrainScreen> {
     if (source == null || !mounted) return;
 
     final picked = await _picker.pickImage(source: source, imageQuality: 88);
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
     final directory = await getApplicationDocumentsDirectory();
+    if (!mounted) return;
     final date = _dateKey(DateTime.now());
     final fileName = 'progress_${date}_${angle}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     File? saved;
@@ -726,6 +727,7 @@ class TrainScreenState extends State<TrainScreen> {
           // Keep the newly saved photo even if cleanup of the old file fails.
         }
       }
+      if (!mounted) return;
       refreshTrainScreen();
       _showInfo('Photo saved', 'Your $angle progress photo is saved on this device.');
     } catch (_) {
@@ -736,6 +738,7 @@ class TrainScreenState extends State<TrainScreen> {
           // Best-effort cleanup after a failed save.
         }
       }
+      if (!mounted) return;
       _showInfo('Photo not saved', 'Please check photo permissions and available device storage, then try again.');
     }
   }
