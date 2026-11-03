@@ -1864,4 +1864,29 @@ class AppDatabase {
     };
   }
 
+  Future<List<Map<String, Object?>>> getNutritionStreakDays() async {
+    final db = await database;
+    return db.rawQuery("""
+      SELECT
+        f.log_date AS day,
+        SUM(f.calories) AS calories,
+        SUM(f.protein_g) AS protein,
+        COALESCE(
+          (SELECT nt.calorie_target FROM nutrition_targets nt
+           WHERE nt.effective_from <= f.log_date
+           ORDER BY nt.effective_from DESC, nt.id DESC LIMIT 1),
+          2200
+        ) AS calorie_target,
+        COALESCE(
+          (SELECT nt.protein_target_g FROM nutrition_targets nt
+           WHERE nt.effective_from <= f.log_date
+           ORDER BY nt.effective_from DESC, nt.id DESC LIMIT 1),
+          180
+        ) AS protein_target
+      FROM food_logs f
+      GROUP BY f.log_date
+      ORDER BY f.log_date DESC
+    """);
+  }
+
 }
