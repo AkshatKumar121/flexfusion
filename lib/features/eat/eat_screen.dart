@@ -17,6 +17,7 @@ class EatScreenState extends State<EatScreen> {
     return DateTime(now.year, now.month, now.day);
   }
   bool _isLoading = true;
+  int _loadGeneration = 0;
   double calorieTarget = 2200;
   double proteinTarget = 180;
   double carbsTarget = 190;
@@ -58,11 +59,16 @@ class EatScreenState extends State<EatScreen> {
   Future<void> refreshEatScreen() => _loadData(showLoading: false);
 
   Future<void> _loadData({bool showLoading = true}) async {
+    final requestedDate = _date;
+    final generation = ++_loadGeneration;
     if (showLoading && mounted) setState(() => _isLoading = true);
     try {
       final db = AppDatabase.instance;
-      final rows = await db.getFoodLogsForDate(_date);
+      final rows = await db.getFoodLogsForDate(requestedDate);
       final targets = await db.getNutritionTargets();
+      // A later date selection or refresh owns the screen now. Never let an
+      // older asynchronous read overwrite the currently selected day's data.
+      if (!mounted || generation != _loadGeneration || requestedDate != _date) return;
       if (targets != null) {
         calorieTarget = (targets['calorie_target'] as num).toDouble();
         proteinTarget = (targets['protein_target_g'] as num).toDouble();
@@ -86,7 +92,9 @@ class EatScreenState extends State<EatScreen> {
     } catch (error) {
       debugPrint('Could not load meal entries from SQLite: $error');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -97,6 +105,7 @@ class EatScreenState extends State<EatScreen> {
   double get fat => all.fold(0, (s, f) => s + f.fat);
 
   Future<void> addFood(String meal) async {
+    final requestedDate = _date;
     if (!_canEditSelectedDate) return;
     final result = await showModalBottomSheet<LoggedFood>(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
@@ -104,7 +113,7 @@ class EatScreenState extends State<EatScreen> {
     );
     if (result != null && mounted) {
       final id = await AppDatabase.instance.insertFoodLog(
-        date: _date,
+        date: requestedDate,
         meal: meal,
         name: result.name,
         foodId: result.foodId,
@@ -114,7 +123,7 @@ class EatScreenState extends State<EatScreen> {
         carbs: result.carbs,
         fat: result.fat,
       );
-      if (!mounted) return;
+      if (!mounted || _date != requestedDate) return;
       setState(() => meals[meal]!.add(result.copyWith(id: id)));
     }
   }
