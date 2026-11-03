@@ -321,17 +321,6 @@ class AppDatabase {
   }
 
   Future<void> _upgradeSchema(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 6) {
-      await db.execute('ALTER TABLE workouts ADD COLUMN paused_at TEXT');
-      await db.execute('ALTER TABLE workouts ADD COLUMN paused_seconds INTEGER NOT NULL DEFAULT 0');
-    }
-
-    if (oldVersion < 5) {
-    await db.execute('''CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, activity_type TEXT NOT NULL, activity_date TEXT NOT NULL, started_at TEXT, duration_minutes INTEGER NOT NULL DEFAULT 0, distance_km REAL, steps INTEGER, active_calories REAL, notes TEXT, source TEXT NOT NULL DEFAULT 'manual', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)''');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON activity_logs(activity_date, started_at)');
-    await db.execute('''CREATE TABLE IF NOT EXISTS activity_health_daily (activity_date TEXT PRIMARY KEY, steps INTEGER, distance_km REAL, active_calories REAL, exercise_minutes REAL, synced_at TEXT NOT NULL)''');
-    }
-
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE user_profile ADD COLUMN age INTEGER');
     }
@@ -352,9 +341,11 @@ class AppDatabase {
       await db.execute("UPDATE food_logs SET quantity_value = quantity_g, base_quantity = quantity_g, base_unit = 'g', quantity_unit = 'g' WHERE quantity_value IS NULL");
       await _createEatV1Tables(db);
     }
+
+    // Bring legacy databases up to the workout-module baseline before v6
+    // adds session pause columns. Older v2/v3 installs may not have any
+    // workout tables yet.
     if (oldVersion < 4) {
-      // Some legacy databases did not yet contain the settings table.
-      // Create it before post-open catalogue seeding and workout sequence use.
       await db.execute('''
         CREATE TABLE IF NOT EXISTS app_settings (
           key TEXT PRIMARY KEY,
@@ -362,18 +353,41 @@ class AppDatabase {
           updated_at TEXT NOT NULL
         )
       ''');
-      final workoutSetsTable = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sets'",
+      final workoutTables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workouts'",
       );
-      if (workoutSetsTable.isEmpty) {
-        // Older installations may predate the workout module entirely.
+      if (workoutTables.isEmpty) {
         await _createWorkoutTables(db);
       } else {
+        final workoutSetTables = await db.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sets'",
+        );
+        if (workoutSetTables.isEmpty) {
+          throw StateError('Legacy database has workouts but is missing workout_sets; refusing an unsafe migration.');
+        }
         final columns = await db.rawQuery('PRAGMA table_info(workout_sets)');
         final hasRestSeconds = columns.any((column) => column['name'] == 'rest_seconds');
         if (!hasRestSeconds) {
           await db.execute('ALTER TABLE workout_sets ADD COLUMN rest_seconds INTEGER NOT NULL DEFAULT 90');
         }
+      }
+    }
+
+    if (oldVersion < 5) {
+      await db.execute('''CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, activity_type TEXT NOT NULL, activity_date TEXT NOT NULL, started_at TEXT, duration_minutes INTEGER NOT NULL DEFAULT 0, distance_km REAL, steps INTEGER, active_calories REAL, notes TEXT, source TEXT NOT NULL DEFAULT 'manual', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON activity_logs(activity_date, started_at)');
+      await db.execute('''CREATE TABLE IF NOT EXISTS activity_health_daily (activity_date TEXT PRIMARY KEY, steps INTEGER, distance_km REAL, active_calories REAL, exercise_minutes REAL, synced_at TEXT NOT NULL)''');
+    }
+
+    if (oldVersion < 6) {
+      final workoutColumns = await db.rawQuery('PRAGMA table_info(workouts)');
+      final hasPausedAt = workoutColumns.any((column) => column['name'] == 'paused_at');
+      final hasPausedSeconds = workoutColumns.any((column) => column['name'] == 'paused_seconds');
+      if (!hasPausedAt) {
+        await db.execute('ALTER TABLE workouts ADD COLUMN paused_at TEXT');
+      }
+      if (!hasPausedSeconds) {
+        await db.execute('ALTER TABLE workouts ADD COLUMN paused_seconds INTEGER NOT NULL DEFAULT 0');
       }
     }
   }
