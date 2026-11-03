@@ -420,6 +420,42 @@ void main() {
     expect(logs.single['calories'], 318);
   });
 
+  test('version 5 database upgrades pause fields to version 6 and preserves workouts', () async {
+    final db = await appDatabase.database;
+    final now = DateTime.now().toIso8601String();
+    final workoutId = await db.insert('workouts', {
+      'started_at': now,
+      'session_name': 'Legacy v5 workout',
+      'status': 'in_progress',
+      'notes': 'Keep this workout',
+    });
+
+    // Convert the freshly-created schema into a v5 fixture: retain all v5
+    // tables/data but remove the two columns introduced in v6.
+    await db.execute('ALTER TABLE workouts DROP COLUMN paused_at');
+    await db.execute('ALTER TABLE workouts DROP COLUMN paused_seconds');
+    await db.execute('PRAGMA user_version = 5');
+    await appDatabase.closeForTesting();
+
+    final upgradedDb = await appDatabase.database;
+    final version = await upgradedDb.rawQuery('PRAGMA user_version');
+    expect(version.single['user_version'], 6);
+
+    final columns = await upgradedDb.rawQuery('PRAGMA table_info(workouts)');
+    final names = columns.map((column) => column['name'] as String).toSet();
+    expect(names, containsAll(['paused_at', 'paused_seconds']));
+
+    final workout = (await upgradedDb.query(
+      'workouts',
+      where: 'id = ?',
+      whereArgs: [workoutId],
+    )).single;
+    expect(workout['session_name'], 'Legacy v5 workout');
+    expect(workout['notes'], 'Keep this workout');
+    expect(workout['paused_at'], isNull);
+    expect(workout['paused_seconds'], 0);
+  });
+
   test('only one workout session can be in progress at a time', () async {
     final firstId = await appDatabase.startWorkoutSession(
       sessionName: 'First session',
