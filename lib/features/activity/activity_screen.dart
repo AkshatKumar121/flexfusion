@@ -66,7 +66,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
           _key(_date) != requestedKey) {
         return;
       }
-      setState(()=>{_healthDay=saved,_healthStatus=result.statusMessage});
+      setState(() {
+        _healthDay = saved;
+        _healthStatus = result.statusMessage;
+      });
     } finally {
       if(mounted && syncGeneration == _syncGeneration) {
         setState(()=>_syncing=false);
