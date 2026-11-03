@@ -565,7 +565,32 @@ class AppDatabase {
   Future<void> _migrateLegacyMealLogs(Database db) async {
     const migrationKey = 'flexfusion_sqlite_meal_migration_v1_complete';
     final preferences = await SharedPreferences.getInstance();
-    if (preferences.getBool(migrationKey) == true) return;
+
+    // Keep the completion marker in SQLite so imported rows and the marker
+    // commit atomically. SharedPreferences alone leaves a crash window where
+    // rows are committed but the marker is not, causing duplicate imports.
+    final completed = await db.query(
+      'app_settings',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [migrationKey],
+      limit: 1,
+    );
+    if (completed.isNotEmpty) return;
+
+    // Upgrade installations that used the old preference-only marker.
+    if (preferences.getBool(migrationKey) == true) {
+      await db.insert(
+        'app_settings',
+        {
+          'key': migrationKey,
+          'value': '1',
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      return;
+    }
 
     final keys = preferences.getKeys()
         .where((key) => key.startsWith('flexfusion_meals_'))
@@ -573,6 +598,17 @@ class AppDatabase {
       ..sort();
 
     await db.transaction((txn) async {
+      // Recheck inside the transaction in case another initialization path
+      // completed this migration while the preference keys were collected.
+      final marker = await txn.query(
+        'app_settings',
+        columns: ['value'],
+        where: 'key = ?',
+        whereArgs: [migrationKey],
+        limit: 1,
+      );
+      if (marker.isNotEmpty) return;
+
       for (final key in keys) {
         final date = key.substring('flexfusion_meals_'.length);
         final raw = preferences.getString(key);
@@ -583,6 +619,7 @@ class AppDatabase {
             final entries = decoded[meal] as List<dynamic>? ?? [];
             for (final value in entries) {
               final item = value as Map<String, dynamic>;
+              final timestamp = DateTime.now().toIso8601String();
               await txn.insert('food_logs', {
                 'log_date': date,
                 'meal_type': meal,
@@ -597,8 +634,8 @@ class AppDatabase {
                 'protein_g': (item['protein'] as num?)?.toDouble() ?? 0,
                 'carbs_g': (item['carbs'] as num?)?.toDouble() ?? 0,
                 'fat_g': (item['fat'] as num?)?.toDouble() ?? 0,
-                'created_at': DateTime.now().toIso8601String(),
-                'updated_at': DateTime.now().toIso8601String(),
+                'created_at': timestamp,
+                'updated_at': timestamp,
               });
             }
           }
@@ -606,9 +643,19 @@ class AppDatabase {
           debugPrint('Skipped invalid legacy meal data for $date: $error');
         }
       }
+
+      await txn.insert(
+        'app_settings',
+        {
+          'key': migrationKey,
+          'value': '1',
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     });
 
-    // Mark complete only after the database transaction succeeds.
+    // Retain the old marker for compatibility, but SQLite is authoritative.
     await preferences.setBool(migrationKey, true);
   }
 
