@@ -1828,4 +1828,30 @@ class AppDatabase {
     return rows.isEmpty ? null : rows.first;
   }
 
+  Future<Map<String, Object?>> getTrainingStreakData() async {
+    final db = await database;
+    final workouts = await db.rawQuery("""
+      SELECT DISTINCT substr(completed_at, 1, 10) AS day
+      FROM workouts
+      WHERE status = 'completed' AND completed_at IS NOT NULL
+    """);
+    final activities = await db.rawQuery("""
+      SELECT DISTINCT activity_date AS day
+      FROM activity_logs
+    """);
+    final health = await db.rawQuery("""
+      SELECT activity_date AS day, steps
+      FROM activity_health_daily
+      WHERE steps IS NOT NULL
+    """);
+    return {
+      'workout_days': workouts.map((row) => row['day'] as String).toList(),
+      'activity_days': activities.map((row) => row['day'] as String).toList(),
+      'health_steps': {
+        for (final row in health)
+          row['day'] as String: (row['steps'] as num).toInt(),
+      },
+    };
+  }
+
 }
