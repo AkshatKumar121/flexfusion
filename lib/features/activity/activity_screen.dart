@@ -150,10 +150,37 @@ class _ActivityFormState extends State<_ActivityForm>{
   InputDecoration _dec(String s)=>InputDecoration(labelText:s,labelStyle:const TextStyle(color:AppColors.grey),filled:true,fillColor:AppColors.background,border:OutlineInputBorder(borderRadius:BorderRadius.circular(9)));
   Widget _field(TextEditingController c,String label,{bool numeric=false,int lines=1})=>TextField(controller:c,maxLines:lines,keyboardType:numeric?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,style:const TextStyle(color:Colors.white),decoration:_dec(label));
   Future<void> _save()async{
-    final duration=int.tryParse(_duration.text.trim())??0;final distance=double.tryParse(_distance.text.trim());final steps=int.tryParse(_steps.text.trim());final calories=double.tryParse(_calories.text.trim());
-    if(duration<0||(distance!=null&&distance<0)||(steps!=null&&steps<0)||(calories!=null&&calories<0)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Values cannot be negative.')));return;}
-    if(duration==0&&(distance??0)==0&&(steps??0)==0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Enter duration, distance, or steps.')));return;}
-    setState(()=>_saving=true);final started=DateTime(widget.date.year,widget.date.month,widget.date.day,_time.hour,_time.minute).toIso8601String();
+    final durationText=_duration.text.trim();
+    final distanceText=_distance.text.trim();
+    final stepsText=_steps.text.trim();
+    final caloriesText=_calories.text.trim();
+
+    final duration=durationText.isEmpty?0:int.tryParse(durationText);
+    final distance=distanceText.isEmpty?null:double.tryParse(distanceText);
+    final steps=stepsText.isEmpty?null:int.tryParse(stepsText);
+    final calories=caloriesText.isEmpty?null:double.tryParse(caloriesText);
+
+    String? error;
+    if(duration==null){
+      error='Enter duration as a whole number of minutes.';
+    }else if(distanceText.isNotEmpty&&(distance==null||!distance.isFinite)){
+      error='Enter a valid distance in kilometres.';
+    }else if(stepsText.isNotEmpty&&steps==null){
+      error='Enter steps as a whole number.';
+    }else if(caloriesText.isNotEmpty&&(calories==null||!calories.isFinite)){
+      error='Enter a valid active-calorie value.';
+    }else if(duration<0||(distance!=null&&distance<0)||(steps!=null&&steps<0)||(calories!=null&&calories<0)){
+      error='Values cannot be negative.';
+    }else if(duration==0&&(distance??0)==0&&(steps??0)==0){
+      error='Enter duration, distance, or steps.';
+    }
+    if(error!=null){
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(error)));
+      return;
+    }
+
+    setState(()=>_saving=true);
+    final started=DateTime(widget.date.year,widget.date.month,widget.date.day,_time.hour,_time.minute).toIso8601String();
     await widget.onSave({'type':_type,'started':started,'duration':duration,'distance':distance,'steps':steps,'calories':calories,'notes':_notes.text.trim()});
     if(mounted)Navigator.pop(context);
   }
