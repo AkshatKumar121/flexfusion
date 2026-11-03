@@ -61,6 +61,20 @@ Severity definitions: **P0** = release blocker/data-loss risk; **P1** = major fu
 | EAT-012 | Change selected date while food data is loading | Only the most recently selected date is displayed; a late response for an older date cannot overwrite it. | Fix committed; manual retest pending. |
 | EAT-013 | Open Add Food, change selected date before saving picker result | Food is saved to the date that was selected when Add Food was opened; current screen does not append that item to a different date. | Fix committed; manual retest pending. |
 
+### Second-pass regression review (source-level)
+
+| Review | Result | Verification still required |
+|---|---|---|
+| AUD-001 / AUD-009 / AUD-010 / AUD-012 — nutrition streak fallback and database migrations | Source and regression-test coverage remain present; no regression identified in this pass. | User-reported automated test pass remains the latest runtime evidence; rerun `flutter test` on current branch. |
+| AUD-002 / AUD-007 — Activity and Apple Health | Captured-date persistence, stale-result guards, one-time authorization attempt and visible status handling remain present; no new source regression identified. | iPhone date-switch, permission-state and sync checks. |
+| AUD-003 — Settings reset | Incomplete destructive reset action remains hidden. | Confirm absent on device. |
+| AUD-005 — Training streak goal | Configured daily step goal remains the source for threshold/progress; workout completion remains an alternative qualifying activity. | Rerun tests and verify custom goal in Profile/Streak UI. |
+| AUD-006 — Activity form validation | Explicit parsing and rejection of invalid/non-finite/negative values remain present. | Manual invalid-input checks on device. |
+| AUD-011 — Progress photo deletion | Reversible rename-before-row-delete flow remains present. | Exercise file/DB failure path if practical and verify normal delete on device. |
+| AUD-013 — Eat selected-date race | Date snapshot and generation guards remain present. | Verify EAT-012 and EAT-013 on device. |
+
+**Scope note:** This was a source-level regression review of the listed fixes, not a fresh execution of Flutter commands or a physical-device test. No prior finding is marked device-verified by this review.
+
 ### Audit notes / risks to verify
 
 - HealthKit read permissions and returned data vary by iOS device, user permission state, data source and date range. Verify on a real iPhone; simulator/source review is insufficient.
