@@ -17,6 +17,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, Object?>? _profile;
   Map<String, Object?>? _targets;
   double? _weight;
+  int _stepGoal = 10000;
   String _weightUnit = 'kg';
   String _heightUnit = 'cm';
   bool _isLoading = true;
@@ -35,6 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final units = await Future.wait([
       db.getAppSetting('weight_unit', defaultValue: 'kg'),
       db.getAppSetting('height_unit', defaultValue: 'cm'),
+      db.getAppSetting('daily_step_goal', defaultValue: '10000'),
     ]);
     if (!mounted) return;
     setState(() {
@@ -43,6 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _weight = (weight?['weight_value'] as num?)?.toDouble();
       _weightUnit = units[0];
       _heightUnit = units[1];
+      _stepGoal = int.tryParse(units[2]) ?? 10000;
       _fitnessGoal = profile?['current_goal'] as String?;
       _isLoading = false;
     });
@@ -111,18 +114,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final protein = TextEditingController(text: (_targets?['protein_target_g'] ?? 180).toString());
     final carbs = TextEditingController(text: (_targets?['carbs_target_g'] ?? 190).toString());
     final fat = TextEditingController(text: (_targets?['fat_target_g'] ?? 65).toString());
+    final stepGoal = TextEditingController(text: _stepGoal.toString());
 
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.card,
-        title: Text('Daily nutrition targets', style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
+        title: Text('Daily targets', style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             _editField(calories, 'Daily calories (kcal)', numeric: true),
             _editField(protein, 'Protein target (g)', numeric: true),
             _editField(carbs, 'Carbs target (g)', numeric: true),
             _editField(fat, 'Fat target (g)', numeric: true),
+            _editField(stepGoal, 'Daily step goal (steps)', numeric: true),
           ]),
         ),
         actions: [
@@ -131,10 +136,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: Colors.black),
             onPressed: () async {
               final values = [calories, protein, carbs, fat].map((c) => double.tryParse(c.text.trim())).toList();
-              if (values.any((v) => v == null || v <= 0)) {
+              final parsedStepGoal = int.tryParse(stepGoal.text.trim());
+              if (values.any((v) => v == null || v <= 0) || parsedStepGoal == null || parsedStepGoal <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid nutrition targets.')));
                 return;
               }
+              await AppDatabase.instance.saveAppSetting('daily_step_goal', parsedStepGoal.toString());
               await AppDatabase.instance.saveNutritionTargets(
                 calories: values[0]!,
                 protein: values[1]!,
@@ -148,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-    for (final controller in [calories, protein, carbs, fat]) {
+    for (final controller in [calories, protein, carbs, fat, stepGoal]) {
       controller.dispose();
     }
     if (saved == true) await _loadProfile();
