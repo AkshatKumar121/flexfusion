@@ -528,14 +528,65 @@ class TrainScreenState extends State<TrainScreen> {
                     final photo = entry.value[index];
                     final path = photo['local_file_path'] as String;
                     final angle = (photo['angle'] as String? ?? '').toUpperCase();
-                    return GestureDetector(
-                      onTap: () => _openProgressPhoto(path, dateLabel(entry.key), angle),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(9),
-                        child: SizedBox(
-                          width: 92,
-                          child: Column(
-                            children: [
+                    return SizedBox(
+                      width: 92,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: GestureDetector(
+                              onTap: () => _openProgressPhoto(path, dateLabel(entry.key), angle),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(9),
+                                child: Column(
+                                  children: [
+                                    Expanded(
+                                      child: kIsWeb
+                                          ? Container(color: AppColors.surface, child: const Icon(Icons.image, color: AppColors.grey))
+                                          : Image.file(
+                                              File(path),
+                                              width: 92,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) => Container(
+                                                color: AppColors.surface,
+                                                child: const Icon(Icons.broken_image_outlined, color: AppColors.grey),
+                                              ),
+                                            ),
+                                    ),
+                                    Container(
+                                      width: double.infinity,
+                                      color: AppColors.surface,
+                                      padding: const EdgeInsets.symmetric(vertical: 5),
+                                      child: Text(
+                                        angle,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9, fontWeight: FontWeight.w700),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Material(
+                              color: Colors.black.withValues(alpha: 0.72),
+                              shape: const CircleBorder(),
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: () => _deleteProgressPhoto(photo),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(5),
+                                  child: Icon(Icons.delete_outline, color: Colors.white, size: 16),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+/*
                               Expanded(
                                 child: kIsWeb
                                     ? Container(color: AppColors.surface, child: const Icon(Icons.image, color: AppColors.grey))
@@ -558,12 +609,6 @@ class TrainScreenState extends State<TrainScreen> {
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9, fontWeight: FontWeight.w700),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
                   },
                 ),
               ),
@@ -572,6 +617,43 @@ class TrainScreenState extends State<TrainScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _deleteProgressPhoto(Map<String, Object?> photo) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text('Delete progress photo?', style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w700)),
+        content: Text(
+          'This will permanently delete this photo from this device and remove its record from FlexFusion.',
+          style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('DELETE', style: TextStyle(color: AppColors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final path = photo['local_file_path'] as String?;
+    try {
+      await AppDatabase.instance.deleteProgressPhoto(photo['id'] as int);
+      if (path != null && path.isNotEmpty) {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      }
+      if (!mounted) return;
+      refreshTrainScreen();
+      _showInfo('Photo deleted', 'The photo and its local database record have been deleted.');
+    } catch (_) {
+      if (!mounted) return;
+      _showInfo('Delete failed', 'FlexFusion could not fully delete this photo. Please try again.');
+    }
   }
 
   void _openProgressPhoto(String path, String date, String angle) {
