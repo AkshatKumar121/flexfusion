@@ -17,8 +17,8 @@ class TrainScreen extends StatefulWidget {
 
 class TrainScreenState extends State<TrainScreen> {
   final _weightController = TextEditingController();
-  late Future<_TrainData> _dataFuture;
-  _TrainData? _cachedTrainData;
+  _TrainData? _trainData;
+  int _loadGeneration = 0;
   late DateTime _selectedDay;
 
   DateTime get _today {
@@ -39,17 +39,22 @@ class TrainScreenState extends State<TrainScreen> {
     );
   }
 
-  Future<_TrainData> _loadDataAndCache() async {
-    final data = await _loadData();
-    _cachedTrainData = data;
-    return data;
+  Future<void> _loadInitialData() async {
+    final generation = ++_loadGeneration;
+    try {
+      final data = await _loadData();
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() => _trainData = data);
+    } catch (error) {
+      debugPrint('Could not load Train dashboard data: $error');
+    }
   }
 
   @override
   void initState() {
     super.initState();
     _selectedDay = _today;
-    _dataFuture = _loadDataAndCache();
+    _loadInitialData();
   }
 
   String _formatDate(DateTime date) =>
@@ -84,23 +89,25 @@ class TrainScreenState extends State<TrainScreen> {
 
   Future<void> refreshTrainScreen() async {
     if (!mounted) return;
-    final refreshedData = _loadDataAndCache();
-    setState(() => _dataFuture = refreshedData);
-    await refreshedData;
+    final generation = ++_loadGeneration;
+    try {
+      final refreshedData = await _loadData();
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() => _trainData = refreshedData);
+    } catch (error) {
+      debugPrint('Could not refresh Train dashboard data: $error');
+      _showInfo('Refresh failed', 'Please try again.');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_TrainData>(
-      future: _dataFuture,
-      initialData: _cachedTrainData,
-      builder: (context, snapshot) {
-        final data = snapshot.data ?? _cachedTrainData;
-        final latestWeight = (data?.latestWeight?['weight_value'] as num?)?.toDouble();
-        final workoutCount = data?.weekly['workouts'] as int? ?? 0;
-        final days = (data?.weekly['daily'] as List<dynamic>?) ?? const [];
+    final data = _trainData;
+    final latestWeight = (data?.latestWeight?['weight_value'] as num?)?.toDouble();
+    final workoutCount = data?.weekly['workouts'] as int? ?? 0;
+    final days = (data?.weekly['daily'] as List<dynamic>?) ?? const [];
 
-        return Scaffold(
+    return Scaffold(
           backgroundColor: AppColors.background,
           body: SafeArea(
             child: RefreshIndicator(
@@ -236,8 +243,6 @@ class TrainScreenState extends State<TrainScreen> {
               ),
             ),
           ),
-        );
-      },
     );
   }
 
