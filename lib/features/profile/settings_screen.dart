@@ -262,14 +262,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'Restore from a previously exported file',
             onTap: () => _showNotReady('Data restore'),
           ),
-          _SettingsActionRow(
-            icon: Icons.delete_outline,
-            title: 'Reset App Data',
-            subtitle: 'Remove all your data from this device',
-            titleColor: AppColors.red,
-            showDivider: false,
-            onTap: _confirmReset,
-          ),
+          // Reset is intentionally hidden until a complete, tested reset
+          // flow can remove database records and local progress-photo files safely.
         ],
       ),
     );
@@ -281,40 +275,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _confirmReset() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.card,
-        title: const Text(
-          'Reset app data?',
-          style: TextStyle(color: AppColors.white),
-        ),
-        content: const Text(
-          'This action will permanently remove locally stored app data. '
-          'Reset functionality is not connected yet.',
-          style: TextStyle(color: AppColors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
-              'Continue',
-              style: TextStyle(color: AppColors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      _showNotReady('Reset app data');
-    }
-  }
 }
 
 class _SettingsCard extends StatelessWidget {
