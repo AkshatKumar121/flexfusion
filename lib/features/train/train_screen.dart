@@ -51,9 +51,11 @@ class TrainScreenState extends State<TrainScreen> {
     super.dispose();
   }
 
-  void refreshTrainScreen() {
+  Future<void> refreshTrainScreen() async {
     if (!mounted) return;
-    setState(() => _dataFuture = _loadData());
+    final refreshedData = _loadData();
+    setState(() => _dataFuture = refreshedData);
+    await refreshedData;
   }
 
   @override
@@ -76,7 +78,7 @@ class TrainScreenState extends State<TrainScreen> {
             child: RefreshIndicator(
               color: AppColors.green,
               backgroundColor: AppColors.card,
-              onRefresh: () async => refreshTrainScreen(),
+              onRefresh: refreshTrainScreen,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
@@ -227,31 +229,37 @@ class TrainScreenState extends State<TrainScreen> {
         ),
         const SizedBox(height: 20),
         Container(height: 1, color: const Color(0xFF292929)),
-        Align(
-          alignment: Alignment.centerRight,
-          child: IconButton(
-            onPressed: () async {
-              final selected = await showDatePicker(
-                context: context,
-                initialDate: DateTime.now(),
-                firstDate: DateTime(2020),
-                lastDate: DateTime.now(),
-                builder: (context, child) => Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.dark(
-                      primary: AppColors.green,
-                      surface: AppColors.card,
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                onPressed: () async {
+                  final selected = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime.now(),
+                    builder: (context, child) => Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: const ColorScheme.dark(
+                          primary: AppColors.green,
+                          surface: AppColors.card,
+                        ),
+                      ),
+                      child: child!,
                     ),
-                  ),
-                  child: child!,
-                ),
-              );
-              if (selected != null && mounted) {
-                _showInfo('Workout calendar', 'Calendar view will be added with workout planning.');
-              }
-            },
-            icon: const Icon(Icons.calendar_month_outlined, color: AppColors.white),
-            tooltip: 'Calendar',
+                  );
+                  if (selected != null && mounted) {
+                    _showInfo('Workout calendar', 'Calendar view will be added with workout planning.');
+                  }
+                },
+                icon: const Icon(Icons.calendar_month_outlined, color: AppColors.green),
+                tooltip: 'Calendar',
+              ),
+            ],
           ),
         ),
       ],
