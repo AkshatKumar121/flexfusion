@@ -312,22 +312,71 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
       context: context,
       backgroundColor: AppColors.card,
       isScrollControlled: true,
-      builder: (context) => SafeArea(child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.72,
-        child: Column(children: [
-          Padding(padding: const EdgeInsets.all(16), child: Text('Choose exercise', style: GoogleFonts.inter(color: AppColors.white, fontSize: 17, fontWeight: FontWeight.w700))),
-          Expanded(child: exercises.isEmpty
-            ? Center(child: Text('Add exercises in Exercise Library first.', style: GoogleFonts.inter(color: AppColors.grey)))
-            : ListView.builder(itemCount: exercises.length, itemBuilder: (_, i) {
-                final exercise = exercises[i];
-                return ListTile(
-                  title: Text(exercise['name'] as String, style: GoogleFonts.inter(color: AppColors.white)),
-                  subtitle: Text('${exercise['muscle_group'] ?? 'Other'} • ${exercise['equipment'] ?? 'Equipment not set'}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
-                  onTap: () => Navigator.pop(context, exercise),
-                );
-              })),
-        ]),
-      )),
+      builder: (context) {
+        var searchQuery = '';
+        return StatefulBuilder(builder: (context, setSheetState) {
+          final query = searchQuery.trim().toLowerCase();
+          final filteredExercises = exercises.where((exercise) {
+            if (query.isEmpty) return true;
+            return [
+              exercise['name'],
+              exercise['muscle_group'],
+              exercise['equipment'],
+              exercise['instructions'],
+            ].any((value) => (value?.toString() ?? '').toLowerCase().contains(query));
+          }).toList();
+
+          return SafeArea(child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.78,
+            child: Column(children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                child: Text('Choose exercise', style: GoogleFonts.inter(color: AppColors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: TextField(
+                  autofocus: false,
+                  onChanged: (value) => setSheetState(() => searchQuery = value),
+                  style: GoogleFonts.inter(color: AppColors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Search exercises, muscle groups, equipment...',
+                    hintStyle: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
+                    prefixIcon: const Icon(Icons.search, color: AppColors.grey),
+                    suffixIcon: searchQuery.isEmpty ? null : IconButton(
+                      tooltip: 'Clear search',
+                      icon: const Icon(Icons.close, color: AppColors.grey),
+                      onPressed: () => setSheetState(() => searchQuery = ''),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.green)),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: exercises.isEmpty
+                    ? Center(child: Text('Add exercises in Exercise Library first.', style: GoogleFonts.inter(color: AppColors.grey)))
+                    : filteredExercises.isEmpty
+                        ? Center(child: Text('No exercises match "$searchQuery".', style: GoogleFonts.inter(color: AppColors.grey)))
+                        : ListView.builder(
+                            itemCount: filteredExercises.length,
+                            itemBuilder: (_, i) {
+                              final exercise = filteredExercises[i];
+                              return ListTile(
+                                title: Text(exercise['name'] as String, style: GoogleFonts.inter(color: AppColors.white)),
+                                subtitle: Text('${exercise['muscle_group'] ?? 'Other'} • ${exercise['equipment'] ?? 'Equipment not set'}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
+                                onTap: () => Navigator.pop(context, exercise),
+                              );
+                            },
+                          ),
+              ),
+            ]),
+          ));
+        });
+      },
     );
     if (selected == null || !mounted) return;
     final setsController = TextEditingController(text: '3');
