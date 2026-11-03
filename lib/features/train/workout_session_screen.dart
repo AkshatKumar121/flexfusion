@@ -144,7 +144,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   Timer? _timer;
   Timer? _workoutTimer;
   DateTime? _startedAt;
-  DateTime? _pausedAt;
   int _pausedSeconds = 0;
   bool _isPaused = false;
   Duration _elapsed = Duration.zero;
@@ -167,7 +166,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     final elapsed = effectiveEnd.difference(startedAt) - Duration(seconds: pausedSeconds);
     setState(() {
       _startedAt = startedAt;
-      _pausedAt = pausedAt;
       _pausedSeconds = pausedSeconds;
       _isPaused = isPaused;
       _elapsed = elapsed.isNegative ? Duration.zero : elapsed;
@@ -193,7 +191,6 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       _workoutTimer?.cancel();
       setState(() {
         _isPaused = true;
-        _pausedAt = DateTime.now();
       });
     }
   }
