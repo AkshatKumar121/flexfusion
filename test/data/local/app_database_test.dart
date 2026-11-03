@@ -481,6 +481,17 @@ void main() {
     expect(photos.single['local_file_path'], '/tmp/front-second.jpg');
   });
 
+  test('weekly progress day labels match their actual dates', () async {
+    final progress = await appDatabase.getWeeklyProgressDetails();
+    final daily = progress['daily'] as List<Map<String, Object?>>;
+    expect(daily, hasLength(7));
+    for (final row in daily) {
+      final date = DateTime.parse(row['date'] as String);
+      final expected = const ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1];
+      expect(row['day'], expected);
+    }
+  });
+
   test('foreign key check reports no violations', () async {
     final db = await appDatabase.database;
     final violations = await db.rawQuery('PRAGMA foreign_key_check');
