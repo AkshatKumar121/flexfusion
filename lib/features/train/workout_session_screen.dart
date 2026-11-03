@@ -142,13 +142,46 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   final Map<int, TextEditingController> _reps = {};
   final Map<int, TextEditingController> _weights = {};
   Timer? _timer;
+  Timer? _workoutTimer;
+  DateTime? _startedAt;
+  Duration _elapsed = Duration.zero;
   int _rest = 0;
   @override
-  void initState() { super.initState(); _reload(); }
+  void initState() {
+    super.initState();
+    _reload();
+    _loadWorkoutStartTime();
+  }
+
+  Future<void> _loadWorkoutStartTime() async {
+    final summary = await AppDatabase.instance.getWorkoutSessionSummary(widget.workoutId);
+    final startedAt = DateTime.tryParse(summary['started_at'] as String? ?? '');
+    if (!mounted || startedAt == null) return;
+    setState(() {
+      _startedAt = startedAt;
+      _elapsed = DateTime.now().difference(startedAt);
+    });
+    _workoutTimer?.cancel();
+    _workoutTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _elapsed = DateTime.now().difference(startedAt));
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
   void _reload() { _sets = AppDatabase.instance.getWorkoutSessionSets(widget.workoutId); }
   @override
   void dispose() {
     _timer?.cancel();
+    _workoutTimer?.cancel();
     for (final c in _reps.values) { c.dispose(); }
     for (final c in _weights.values) { c.dispose(); }
     super.dispose();
@@ -243,12 +276,16 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
     final done = rows.where((r) => (r['completed'] as int? ?? 0) == 1).length;
     if (!mounted) return;
+    final sessionDuration = _startedAt == null
+        ? _elapsed
+        : DateTime.now().difference(_startedAt!);
     final confirm = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
       backgroundColor: AppColors.card, title: const Text('Finish workout?'),
-      content: Text('You completed $done of ${rows.length} sets. Save this session to history?'),
+      content: Text('You completed $done of ${rows.length} sets.\n\nTime spent: ${_formatDuration(sessionDuration)}\n\nSave this session to history?'),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('KEEP TRAINING')), ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('FINISH'))]));
     if (confirm == true) {
       await AppDatabase.instance.finishWorkoutSession(widget.workoutId);
+      _workoutTimer?.cancel();
       if (mounted) {
         // Return to the screen that opened the workout launcher. The launcher
         // closes itself as well, so the user lands directly on TRAIN/HOME.
@@ -270,6 +307,15 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       final groups = <String, List<Map<String, Object?>>>{};
       for (final row in snap.data!) { groups.putIfAbsent(row['exercise_name_snapshot'] as String, () => []).add(row); }
       return ListView(padding: const EdgeInsets.all(16), children: [
+        Card(
+          color: AppColors.card,
+          child: ListTile(
+            leading: const Icon(Icons.timer_outlined, color: AppColors.green, size: 25),
+            title: Text('WORKOUT DURATION', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+            subtitle: Text(_formatDuration(_elapsed), style: GoogleFonts.inter(color: AppColors.white, fontSize: 25, fontWeight: FontWeight.w800, fontFeatures: const [])),
+            trailing: const Icon(Icons.fiber_manual_record, color: AppColors.green, size: 10),
+          ),
+        ),
         if (_rest > 0) Card(color: AppColors.card, child: ListTile(leading: const Icon(Icons.timer, color: AppColors.green), title: const Text('REST TIMER'), trailing: Text('${(_rest ~/ 60).toString().padLeft(2, '0')}:${(_rest % 60).toString().padLeft(2, '0')}'), onTap: () { _timer?.cancel(); setState(() => _rest = 0); })),
         if (groups.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('Add exercises to begin.')),
         for (final group in groups.entries) Card(color: AppColors.card, child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
