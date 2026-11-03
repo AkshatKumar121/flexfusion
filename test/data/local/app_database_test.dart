@@ -32,10 +32,10 @@ void main() {
     }
   });
 
-  test('fresh database creates the complete V1 schema at version 4', () async {
+  test('fresh database creates the complete V1 schema at version 6', () async {
     final db = await appDatabase.database;
     final version = await db.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 4);
+    expect(version.single['user_version'], 6);
 
     final rows = await db.rawQuery(
       "SELECT name FROM sqlite_master WHERE type = 'table'",
