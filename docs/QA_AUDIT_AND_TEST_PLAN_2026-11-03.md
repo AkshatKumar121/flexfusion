@@ -44,7 +44,7 @@ Severity definitions: **P0** = release blocker/data-loss risk; **P1** = major fu
 | AUD-002 | P1 | Activity / Apple Health | **Confirmed by source review:** Health sync used mutable `_date` after awaiting HealthKit, allowing a date change during sync to save the result under the wrong day. | Fixed by capturing the requested date/key before the async read, persisting only under that key, allowing a new date's sync to supersede stale UI updates, and guarding refresh results. Awaiting user retest. |
 | AUD-003 | P1 | Settings | “Reset App Data” was presented in Settings but did not actually reset data. | **Mitigated:** removed the incomplete destructive action from Settings until a complete, tested reset can safely clear database records and local progress-photo files. Reset is not currently offered in V1. Verify it is absent on device. |
 | AUD-004 | P1 / migration risk | SQLite migration | The version upgrade path adds pause columns to `workouts` for every database below v6 before the later legacy checks that can create missing workout tables. Older installations without the `workouts` table may fail during upgrade. | Add migration tests from every supported schema version (especially v1–v5); make migrations table/column-aware and idempotent. |
-| AUD-005 | P2 | Training streak | Streak-day aggregation currently counts completed workouts and manual activity-log dates. Apple Health daily summaries are queried for steps but are not included when deciding whether a day counts as an activity day. Users with HealthKit-only movement may see steps but not an activity streak checkmark. | Decide and document whether HealthKit movement counts; if yes, include qualifying HealthKit days using an explicit threshold (e.g. exercise minutes or steps). |
+| AUD-005 | P2 | Training streak | Step-goal days from Apple Health/manual step logs were not included in streak calculation. | **Fix committed:** a day now qualifies when a workout is completed, a manual activity is logged (existing behaviour), or the displayed 10,000-step goal is reached through Apple Health or summed manual steps. Automated DB regression test added; awaiting user test run. |
 | AUD-006 | P2 | Activity form | Numeric inputs use `tryParse` with fallback values. Invalid text can be silently treated as zero/null instead of being rejected with a field-level validation message. | Add input format validation and test blank, malformed, decimal, zero and negative values. |
 | AUD-007 | P2 | Apple Health | HealthKit errors are caught and converted to `null` without preserving/logging a diagnostic reason. This makes permission, configuration and data-read failures difficult to distinguish during support/testing. | Add safe diagnostic logging and user-facing states for unavailable, denied, syncing and sync-failed; never expose sensitive Health data in logs. |
 | AUD-008 | P2 | Automated tests | The repository currently has database-focused tests, but no visible widget/integration tests for the main screens, workout flows, HealthKit behavior or navigation. | Add widget tests for critical flows and integration/device test coverage for plugins and platform permissions. |
@@ -249,11 +249,13 @@ Implemented areas:
 | STR-002 | Complete a workout today | Today is marked complete and streak updates. | [ ] |
 | STR-003 | Log a manual activity today | Today is marked complete and streak updates. | [ ] |
 | STR-004 | Have both workout and activity on same day | Day counts once, not twice. | [ ] |
-| STR-005 | Have HealthKit steps only, no manual activity | Verify agreed rule for whether this counts; current implementation does not count HealthKit-only movement. | [ ] |
-| STR-006 | Consecutive workout/activity days | Streak increments once per calendar day. | [ ] |
-| STR-007 | Miss a day | Streak resets according to last completed day convention. | [ ] |
-| STR-008 | Cross Sunday/Monday | Weekday row and dates align correctly. | [ ] |
-| STR-009 | No Health permissions/data | Screen still works and manual data remains available. | [ ] |
+| STR-005 | Have HealthKit steps only, no manual activity | Day counts when HealthKit steps reach 10,000; below-goal steps alone do not count. | [ ] |
+| STR-006 | Have manual steps reach 10,000 across multiple logs | Day counts once the summed manual steps reach 10,000. | [ ] |
+| STR-007 | Complete a workout below the step goal | Day still counts as active. | [ ] |
+| STR-008 | Consecutive workout/activity days | Streak increments once per calendar day. | [ ] |
+| STR-009 | Miss a day | Streak resets according to last completed day convention. | [ ] |
+| STR-010 | Cross Sunday/Monday | Weekday row and dates align correctly. | [ ] |
+| STR-011 | No Health permissions/data | Screen still works and manual data remains available. | [ ] |
 
 ### I. Activity — manual logging and Apple Health
 
