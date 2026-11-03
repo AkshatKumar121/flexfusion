@@ -28,9 +28,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
     }
     final logs=await AppDatabase.instance.getActivityLogs(requestedKey);
     final saved=await AppDatabase.instance.getHealthActivitySummary(requestedKey);
-    if(!mounted ||
+    if (!mounted ||
         refreshGeneration != _refreshGeneration ||
-        _key(_date) != requestedKey) return;
+        _key(_date) != requestedKey) {
+      return;
+    }
     setState((){_logs=logs;_healthDay=saved;_loading=false;});
     await _syncHealth(requestedDate);
   }
@@ -57,9 +59,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
         );
       }
       final saved=await AppDatabase.instance.getHealthActivitySummary(requestedKey);
-      if(!mounted ||
+      if (!mounted ||
           syncGeneration != _syncGeneration ||
-          _key(_date) != requestedKey) return;
+          _key(_date) != requestedKey) {
+        return;
+      }
       setState(()=>_healthDay=saved);
     } finally {
       if(mounted && syncGeneration == _syncGeneration) {
