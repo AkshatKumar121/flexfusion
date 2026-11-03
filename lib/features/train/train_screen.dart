@@ -132,7 +132,7 @@ class TrainScreenState extends State<TrainScreen> {
                           child: _buildMetricCard(
                             'WORKOUTS',
                             workoutCount.toString(),
-                            'this week',
+                            'last 7 days',
                             Icons.fitness_center,
                             AppColors.green,
                           ),
@@ -312,7 +312,7 @@ class TrainScreenState extends State<TrainScreen> {
           Row(
             children: [
               Text(
-                'THIS WEEK',
+                'LAST 7 DAYS',
                 style: GoogleFonts.inter(
                   color: AppColors.white,
                   fontSize: 12,
@@ -710,22 +710,34 @@ class TrainScreenState extends State<TrainScreen> {
     final directory = await getApplicationDocumentsDirectory();
     final date = _dateKey(DateTime.now());
     final fileName = 'progress_${date}_${angle}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final saved = await File(picked.path).copy('${directory.path}/$fileName');
-    final previousPath = await AppDatabase.instance.saveProgressPhoto(
-      date: date,
-      angle: angle,
-      localFilePath: saved.path,
-    );
-    if (previousPath != null && previousPath != saved.path) {
-      try {
-        final previousFile = File(previousPath);
-        if (await previousFile.exists()) await previousFile.delete();
-      } catch (_) {
-        // Keep the newly saved photo even if cleanup of the old file fails.
+    File? saved;
+    try {
+      saved = await File(picked.path).copy('${directory.path}/$fileName');
+      final previousPath = await AppDatabase.instance.saveProgressPhoto(
+        date: date,
+        angle: angle,
+        localFilePath: saved.path,
+      );
+      if (previousPath != null && previousPath != saved.path) {
+        try {
+          final previousFile = File(previousPath);
+          if (await previousFile.exists()) await previousFile.delete();
+        } catch (_) {
+          // Keep the newly saved photo even if cleanup of the old file fails.
+        }
       }
+      refreshTrainScreen();
+      _showInfo('Photo saved', 'Your $angle progress photo is saved on this device.');
+    } catch (_) {
+      if (saved != null) {
+        try {
+          if (await saved.exists()) await saved.delete();
+        } catch (_) {
+          // Best-effort cleanup after a failed save.
+        }
+      }
+      _showInfo('Photo not saved', 'Please check photo permissions and available device storage, then try again.');
     }
-    refreshTrainScreen();
-    _showInfo('Photo saved', 'Your $angle progress photo is saved on this device.');
   }
 
   void _showInfo(String title, String message) {
