@@ -23,8 +23,9 @@
 - [x] Dependencies, lint configuration and iOS/Android declarations
 - [x] Existing automated test inventory
 - [ ] Run `flutter pub get`
-- [ ] Run `flutter analyze`
+- [x] Run `flutter analyze` — passed 2026-11-03, no issues found.
 - [ ] Run `flutter test`
+- [x] iOS debug build — passed 2026-11-03 with `--no-codesign`; physical-device launch/signing still pending.
 - [ ] Build and launch on a physical iPhone
 - [ ] Physical-device HealthKit permission/sync verification
 - [ ] Android build/device verification
@@ -347,6 +348,8 @@ Use one row per test run. Link screenshots/videos or note the evidence filename.
 | Run ID | Date/time | App commit | Device / OS | Test IDs | Pass | Fail | Blocked | Notes / evidence |
 |---|---|---|---|---|---:|---:|---:|---|
 | RUN-001 | 2026-11-03 | Local branch commit not supplied | Mac (Flutter test / sqflite FFI) | Database suite | 9 | 2 | 0 | Failed: stale schema-version assertion (expected 4, actual 6); v2→current migration fails because `workouts` table is missing during v6 ALTER TABLE. Full output supplied in chat. |
+| RUN-002 | 2026-11-03 | Local branch commit not supplied | Mac | `flutter analyze` | 1 | 0 | 0 | Passed: “No issues found!” (1.9s). |
+| RUN-003 | 2026-11-03 | Local branch commit not supplied | Mac / iOS device target | `flutter build ios --debug --no-codesign` | 1 | 0 | 0 | Passed: Xcode build completed and `build/ios/iphoneos/Runner.app` was produced. Codesigning was disabled; physical-device install/launch and signing remain unverified. |
 
 ## 5. Bug / issue register
 
