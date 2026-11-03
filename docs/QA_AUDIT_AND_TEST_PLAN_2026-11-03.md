@@ -51,7 +51,7 @@ Severity definitions: **P0** = release blocker/data-loss risk; **P1** = major fu
 | AUD-009 | P2 | Database tests | Fresh-schema test expected schema version 4 although the application schema is version 6. | **Fixed:** assertion updated to version 6; included in the user-reported 20/20 passing automated test run. |
 | AUD-010 | P1 | Database migration | Version-2 upgrade previously failed with `no such table: workouts` during the v6 migration. | **Fixed and retested:** migration order/guards updated; v1→v6 through v5→v6 tests passed, and the user reports 20/20 automated tests passing. |
 | AUD-011 | P2 | Train / progress photo deletion | Photo deletion removed the SQLite row before deleting the local image. If filesystem deletion failed, the app reported failure although the database record was already gone, potentially leaving an orphaned image. | **Fix committed:** image is first renamed to a temporary pending-delete path; the DB row is then deleted; if the DB operation fails, the image is restored. Final temporary-file cleanup is best-effort and logged. Awaiting analyzer and device retest. |
-| AUD-012 | P2 | Legacy meal-log migration / interrupted startup | SQLite rows were committed before the completion flag was saved in SharedPreferences. A crash in that gap could cause the same legacy meals to be imported again on next launch. | **Fix committed:** SQLite `app_settings` marker is written in the same transaction as imported rows and is authoritative; a regression test simulates loss of the preference marker after commit. Awaiting user test run. |
+| AUD-012 | P2 | Legacy meal-log migration / interrupted startup | SQLite rows were committed before the completion flag was saved in SharedPreferences. A crash in that gap could cause the same legacy meals to be imported again on next launch. | **Fixed / automated retest passed:** SQLite `app_settings` marker is written in the same transaction as imported rows and is authoritative; user confirmed the updated test suite passed. |
 
 ### Audit notes / risks to verify
 
@@ -363,6 +363,7 @@ Use one row per test run. Link screenshots/videos or note the evidence filename.
 | RUN-008 | 2026-11-03 | `1b756fcd` | Mac (Flutter test / sqflite FFI) | DB-003 v1→v6 migration | 1 | 0 | 0 | User confirmed targeted v1→v6 migration test passed; existing food/log data and all migrated schema modules verified. |
 | RUN-009 | 2026-11-03 | `e6497b1` | Mac (Flutter test / sqflite FFI) | AUD-001 empty-day nutrition targets regression test | 1 | 0 | 0 | User confirmed targeted test passed after pulling the fix. |
 | RUN-010 | 2026-11-03 | `flexfusion_v1` (exact commit not supplied) | Mac (Flutter test) | Full automated test suite | 20 | 0 | 0 | User reported all 20 tests passed. Exact terminal command and commit SHA were not supplied; device/manual QA remains pending. |
+| RUN-011 | 2026-11-03 | `flexfusion_v1` after `f4ce42b` / `55afff4` | Mac (Flutter test) | AUD-012 interrupted legacy meal migration regression + full suite | Pass (count not supplied) | 0 reported | 0 reported | User confirmed tests passed after pulling the crash-safe migration and regression test. Exact command and commit SHA not supplied. |
 
 ## 5. Bug / issue register
 
