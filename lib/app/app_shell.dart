@@ -21,9 +21,14 @@ class _AppShellState extends State<AppShell> {
 
   late final List<Widget> _screens = [
     TrainScreen(key: _trainScreenKey),
-    HomeScreen(key: _homeScreenKey),
+    HomeScreen(key: _homeScreenKey, onOpenEat: _openEatTab),
     EatScreen(key: _eatScreenKey),
   ];
+
+  void _openEatTab() {
+    setState(() => _selectedIndex = 2);
+    _eatScreenKey.currentState?.refreshEatScreen();
+  }
 
   @override
   Widget build(BuildContext context) {
