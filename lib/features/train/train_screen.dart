@@ -679,22 +679,50 @@ class TrainScreenState extends State<TrainScreen> {
     final photoId = photo['id'] as int;
     final path = photo['local_file_path'] as String?;
 
-    // Remove the tile immediately after confirmation, without waiting for disk/DB I/O.
+    // Hide the tile while the file and database record are removed safely.
     setState(() => _deletedProgressPhotoIds.add(photoId));
+    String? pendingPath;
     try {
-      await AppDatabase.instance.deleteProgressPhoto(photoId);
       if (path != null && path.isNotEmpty) {
         final file = File(path);
-        if (await file.exists()) await file.delete();
+        if (await file.exists()) {
+          pendingPath = '$path.delete_pending';
+          await file.rename(pendingPath);
+        }
+      }
+
+      try {
+        await AppDatabase.instance.deleteProgressPhoto(photoId);
+      } catch (_) {
+        // Restore the original file if the database record could not be deleted.
+        if (pendingPath != null) {
+          final pendingFile = File(pendingPath);
+          if (await pendingFile.exists()) {
+            await pendingFile.rename(path!);
+          }
+        }
+        rethrow;
+      }
+
+      // The DB record is now gone. Cleanup failure must not report the
+      // deletion as failed or attempt to restore a record that no longer exists.
+      if (pendingPath != null) {
+        try {
+          final pendingFile = File(pendingPath);
+          if (await pendingFile.exists()) await pendingFile.delete();
+        } catch (error) {
+          debugPrint('[ProgressPhoto] Deleted photo left a pending file: $error');
+        }
       }
       if (!mounted) return;
       refreshTrainScreen();
       _showInfo('Photo deleted', 'The photo and its local database record have been deleted.');
-    } catch (_) {
+    } catch (error) {
+      debugPrint('[ProgressPhoto] Photo deletion failed: $error');
       if (!mounted) return;
       setState(() => _deletedProgressPhotoIds.remove(photoId));
       refreshTrainScreen();
-      _showInfo('Delete failed', 'FlexFusion could not fully delete this photo. Please try again.');
+      _showInfo('Delete failed', 'The photo could not be deleted. Please try again.');
     }
   }
 
