@@ -23,6 +23,12 @@ class TrainScreenState extends State<TrainScreen> {
   final _picker = ImagePicker();
   late Future<_TrainData> _dataFuture;
   final Set<int> _deletedProgressPhotoIds = <int>{};
+  late DateTime _selectedDay;
+
+  DateTime get _today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
 
   String _dateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -42,7 +48,32 @@ class TrainScreenState extends State<TrainScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedDay = _today;
     _dataFuture = _loadData();
+  }
+
+  String _formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDay,
+      firstDate: DateTime(2000),
+      lastDate: _today,
+      helpText: 'SELECT TRAINING LOG DATE',
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.green,
+            surface: AppColors.card,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _selectedDay = DateTime(picked.year, picked.month, picked.day));
   }
 
   @override
@@ -60,10 +91,6 @@ class TrainScreenState extends State<TrainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final dateLabel =
-        '${_weekday(now.weekday)}, ${now.day} ${_month(now.month)} ${now.year}';
-
     return FutureBuilder<_TrainData>(
       future: _dataFuture,
       builder: (context, snapshot) {
@@ -90,7 +117,7 @@ class TrainScreenState extends State<TrainScreen> {
                     Text(
                       'YOUR TRAINING SPACE',
                       style: GoogleFonts.inter(
-                        color: AppColors.grey,
+                        color: AppColors.green,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.3,
@@ -105,13 +132,34 @@ class TrainScreenState extends State<TrainScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      dateLabel,
-                      style: GoogleFonts.inter(
-                        color: AppColors.green,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 18),
+                    InkWell(
+                      onTap: _selectDate,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+                        decoration: BoxDecoration(
+                          color: AppColors.card,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_month_outlined, color: AppColors.green, size: 19),
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: Text(
+                                _selectedDay == _today
+                                    ? 'TODAY • ${_formatDate(_selectedDay)}'
+                                    : _formatDate(_selectedDay),
+                                style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            Text('CHANGE DATE', style: GoogleFonts.inter(color: AppColors.green, fontSize: 9, fontWeight: FontWeight.w800)),
+                            const SizedBox(width: 5),
+                            const Icon(Icons.chevron_right, color: AppColors.grey, size: 18),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 22),
@@ -229,39 +277,6 @@ class TrainScreenState extends State<TrainScreen> {
         ),
         const SizedBox(height: 20),
         Container(height: 1, color: const Color(0xFF292929)),
-        Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: () async {
-                  final selected = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                    builder: (context, child) => Theme(
-                      data: Theme.of(context).copyWith(
-                        colorScheme: const ColorScheme.dark(
-                          primary: AppColors.green,
-                          surface: AppColors.card,
-                        ),
-                      ),
-                      child: child!,
-                    ),
-                  );
-                  if (selected != null && mounted) {
-                    _showInfo('Workout calendar', 'Calendar view will be added with workout planning.');
-                  }
-                },
-                icon: const Icon(Icons.calendar_month_outlined, color: AppColors.green),
-                tooltip: 'Calendar',
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -438,7 +453,7 @@ class TrainScreenState extends State<TrainScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Today’s weight', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
+          Text(_selectedDay == _today ? 'Today’s weight' : 'Weight • ${_formatDate(_selectedDay)}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -739,12 +754,12 @@ class TrainScreenState extends State<TrainScreen> {
       _showInfo('Check weight', 'Enter a valid weight in kg.');
       return;
     }
-    await AppDatabase.instance.saveBodyWeight(date: _dateKey(DateTime.now()), weightKg: value);
+    await AppDatabase.instance.saveBodyWeight(date: _dateKey(_selectedDay), weightKg: value);
     if (!mounted) return;
     FocusScope.of(context).unfocus();
     _weightController.clear();
     refreshTrainScreen();
-    _showInfo('Weight saved', 'Today’s weigh-in has been saved.');
+    _showInfo('Weight saved', 'Your ${_formatDate(_selectedDay)} weigh-in has been saved.');
   }
 
   Future<void> _addProgressPhoto() async {
@@ -803,7 +818,7 @@ class TrainScreenState extends State<TrainScreen> {
     if (picked == null || !mounted) return;
     final directory = await getApplicationDocumentsDirectory();
     if (!mounted) return;
-    final date = _dateKey(DateTime.now());
+    final date = _dateKey(_selectedDay);
     final fileName = 'progress_${date}_${angle}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     File? saved;
     try {
