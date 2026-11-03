@@ -1871,15 +1871,21 @@ class AppDatabase {
         WHERE steps IS NOT NULL
         GROUP BY activity_date
       )
-      SELECT
-        COALESCE(health.activity_date, manual_daily.activity_date) AS day
+      SELECT health.activity_date AS day
       FROM activity_health_daily health
-      FULL OUTER JOIN manual_daily
+      LEFT JOIN manual_daily
         ON manual_daily.activity_date = health.activity_date
       WHERE CASE
         WHEN health.steps > 0 THEN health.steps
         ELSE COALESCE(manual_daily.steps, 0)
       END >= 10000
+      UNION
+      SELECT manual_daily.activity_date AS day
+      FROM manual_daily
+      LEFT JOIN activity_health_daily health
+        ON health.activity_date = manual_daily.activity_date
+      WHERE health.activity_date IS NULL
+        AND manual_daily.steps >= 10000
     """);
     return {
       'workout_days': workouts.map((row) => row['day'] as String).toList(),
