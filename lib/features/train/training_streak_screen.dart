@@ -145,7 +145,7 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                       Text('$steps / $stepGoal', style: GoogleFonts.inter(color: AppColors.white, fontSize: 42, fontWeight: FontWeight.w800, height: 1)),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
-                        child: Text('/10,000', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 20)),
+                        child: Text('/$stepGoal', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 20)),
                       ),
                       const Spacer(),
                       Text('${(progress * 100).round()}%', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 22, fontWeight: FontWeight.w600)),
@@ -172,7 +172,7 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              Text('A day counts toward your streak when you complete a workout, log an activity, or reach your daily step goal of $stepGoal steps. Steps are shown separately from Apple Health when available.',
+              Text('A day counts toward your streak when you complete a workout or reach your daily step goal of $stepGoal steps. Steps are shown separately from Apple Health when available.',
                 style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11, height: 1.5)),
             ],
           );
