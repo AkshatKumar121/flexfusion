@@ -514,6 +514,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          Text(
+            '$_stepGoal steps',
+            style: GoogleFonts.inter(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          Text(
+            'DAILY STEP GOAL',
+            style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
+          ),
           const SizedBox(height: 18),
           Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 14),
