@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
+import '../train/training_streak_screen.dart';
 
 class EatScreen extends StatefulWidget {
   const EatScreen({super.key});
@@ -195,6 +196,21 @@ class EatScreenState extends State<EatScreen> {
         const SizedBox(width: 13),
         Transform.translate(offset: const Offset(0, 1), child: Text('TRAINER', style: GoogleFonts.inter(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w500, letterSpacing: 5))),
       ])),
+      const Spacer(),
+      IconButton(
+        tooltip: 'Workout and activity streak',
+        visualDensity: VisualDensity.compact,
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const TrainingStreakScreen(),
+          ),
+        ),
+        icon: const Icon(
+          Icons.local_fire_department_rounded,
+          color: Color(0xFFFF3D70),
+          size: 29,
+        ),
+      ),
     ]),
     const SizedBox(height: 20),
     Container(height: 1, color: const Color(0xFF292929)),
