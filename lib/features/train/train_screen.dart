@@ -22,6 +22,7 @@ class TrainScreen extends StatefulWidget {
 class TrainScreenState extends State<TrainScreen> {
   final _weightController = TextEditingController();
   final _picker = ImagePicker();
+  final ScrollController _scrollController = ScrollController();
   late Future<_TrainData> _dataFuture;
   _TrainData? _cachedTrainData;
   final Set<int> _deletedProgressPhotoIds = <int>{};
@@ -87,6 +88,7 @@ class TrainScreenState extends State<TrainScreen> {
   @override
   void dispose() {
     _weightController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -95,6 +97,9 @@ class TrainScreenState extends State<TrainScreen> {
     final refreshedData = _loadDataAndCache();
     setState(() => _dataFuture = refreshedData);
     await refreshedData;
+    if (mounted && _scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
   }
 
   @override
@@ -116,7 +121,7 @@ class TrainScreenState extends State<TrainScreen> {
               backgroundColor: AppColors.card,
               onRefresh: refreshTrainScreen,
               child: SingleChildScrollView(
-                key: const PageStorageKey<String>('train_screen_scroll'),
+                controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
                 child: Column(
