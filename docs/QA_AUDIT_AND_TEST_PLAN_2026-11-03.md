@@ -52,6 +52,14 @@ Severity definitions: **P0** = release blocker/data-loss risk; **P1** = major fu
 | AUD-010 | P1 | Database migration | Version-2 upgrade previously failed with `no such table: workouts` during the v6 migration. | **Fixed and retested:** migration order/guards updated; v1→v6 through v5→v6 tests passed, and the user reports 20/20 automated tests passing. |
 | AUD-011 | P2 | Train / progress photo deletion | Photo deletion removed the SQLite row before deleting the local image. If filesystem deletion failed, the app reported failure although the database record was already gone, potentially leaving an orphaned image. | **Fix committed:** image is first renamed to a temporary pending-delete path; the DB row is then deleted; if the DB operation fails, the image is restored. Final temporary-file cleanup is best-effort and logged. Awaiting analyzer and device retest. |
 | AUD-012 | P2 | Legacy meal-log migration / interrupted startup | SQLite rows were committed before the completion flag was saved in SharedPreferences. A crash in that gap could cause the same legacy meals to be imported again on next launch. | **Fixed / automated retest passed:** SQLite `app_settings` marker is written in the same transaction as imported rows and is authoritative; user confirmed the updated test suite passed. |
+| AUD-013 | P2 | Eat / selected-date async race | Food-log reads and the food picker used mutable `_date` across asynchronous waits. Switching dates while a read or picker was open could display stale meal data or save an entry to a different day than the one where Add Food was tapped. | **Fix committed:** each load captures its requested date and generation; stale reads cannot overwrite the current selection. Add Food saves to the date selected when the picker opened and only updates the visible list if that date is still selected. Awaiting analyzer, automated tests and manual date-switch retest. |
+
+### Second-pass audit test additions
+
+| ID | Test case | Expected result | Status / notes |
+|---|---|---|---|
+| EAT-012 | Change selected date while food data is loading | Only the most recently selected date is displayed; a late response for an older date cannot overwrite it. | Fix committed; manual retest pending. |
+| EAT-013 | Open Add Food, change selected date before saving picker result | Food is saved to the date that was selected when Add Food was opened; current screen does not append that item to a different date. | Fix committed; manual retest pending. |
 
 ### Audit notes / risks to verify
 
