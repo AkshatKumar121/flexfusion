@@ -68,6 +68,24 @@ void main() {
     expect(data['workout_days'], contains('2026-11-02'));
   });
 
+  test('training streak uses the configured daily step goal', () async {
+    await appDatabase.saveAppSetting('daily_step_goal', '7000');
+    await appDatabase.saveHealthActivitySummary(
+      date: '2026-10-30',
+      steps: 7000,
+    );
+    await appDatabase.saveHealthActivitySummary(
+      date: '2026-10-31',
+      steps: 6999,
+    );
+
+    final data = await appDatabase.getTrainingStreakData();
+
+    expect(data['step_goal'], 7000);
+    expect(data['step_goal_days'], contains('2026-10-30'));
+    expect(data['step_goal_days'], isNot(contains('2026-10-31')));
+  });
+
   test('nutrition streak returns configured targets when today has no food logs', () async {
     await appDatabase.saveNutritionTargets(
       calories: 1800,
