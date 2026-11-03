@@ -306,7 +306,7 @@ void main() {
     expect(logs.single['calories'], 156);
   });
 
-  test('version 2 database upgrades to version 4 without losing food logs', () async {
+  test('version 2 database upgrades to version 6 without losing food logs', () async {
     final databasePath = p.join(tempDirectory.path, 'test.db');
     final oldDb = await openDatabase(
       databasePath,
@@ -388,7 +388,7 @@ void main() {
 
     final upgradedDb = await appDatabase.database;
     final version = await upgradedDb.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 4);
+    expect(version.single['user_version'], 6);
 
     final workoutTables = await upgradedDb.rawQuery(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sets'",
