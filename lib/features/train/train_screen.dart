@@ -577,8 +577,6 @@ class TrainScreenState extends State<TrainScreen> {
     );
   }
 
-  String _weekday(int day) => const ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][day - 1];
-  String _month(int month) => const ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][month - 1];
 }
 
 class _TrainData {
