@@ -610,10 +610,19 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                 title: Text(item['name'] as String, style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w600)),
                 subtitle: Text('${item['muscle_group'] ?? 'Other'} • ${item['equipment'] ?? 'Equipment not set'}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
                 onTap: () => _editExercise(item),
-                trailing: IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.grey), onPressed: () async {
-                  await AppDatabase.instance.deleteExercise(item['id'] as int);
-                  if (mounted) setState(_reload);
-                }),
+                trailing: (item['is_custom'] as int? ?? 0) == 1
+                    ? IconButton(
+                        icon: const Icon(Icons.delete_outline, color: AppColors.grey),
+                        tooltip: 'Delete custom exercise',
+                        onPressed: () async {
+                          await AppDatabase.instance.deleteExercise(item['id'] as int);
+                          if (mounted) setState(_reload);
+                        },
+                      )
+                    : const Tooltip(
+                        message: 'Built-in exercise',
+                        child: Icon(Icons.lock_outline, color: AppColors.grey, size: 18),
+                      ),
               ),
             );
           },
