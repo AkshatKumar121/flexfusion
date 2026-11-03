@@ -40,7 +40,7 @@ Severity definitions: **P0** = release blocker/data-loss risk; **P1** = major fu
 
 | ID | Severity | Area | Finding | Recommended action |
 |---|---|---|---|---|
-| AUD-001 | P1 | Eat / Nutrition streak | **Confirmed by user reproduction:** with configured targets of 1,800 kcal / 150 g protein and no food logs today, the streak screen displayed 2,200 kcal / 180 g. | Fixed by returning a zero-value current-day streak row with effective saved targets even when no food logs exist; regression test added. Awaiting user test. |
+| AUD-001 | P1 | Eat / Nutrition streak | **Confirmed by user reproduction:** with configured targets of 1,800 kcal / 150 g protein and no food logs today, the streak screen displayed 2,200 kcal / 180 g. | Fixed by returning a zero-value current-day streak row with effective saved targets even when no food logs exist; regression test added. **Retest passed — user confirmed targeted regression test and screen behaviour.** |
 | AUD-002 | P1 | Activity / Apple Health | Health sync reads the selected date, awaits HealthKit, then uses the mutable selected date again when saving. If the user changes dates while a sync is in flight, data from the first date could be saved under the second date. | Capture the requested date/key before awaiting and use that immutable key for read, save and refresh; ignore stale responses. |
 | AUD-003 | P1 | Settings | “Reset App Data” is presented in Settings but the confirmation explicitly says reset is not connected; confirming only shows a “will be implemented” message. The visible action currently does not reset data. | Either implement a safe reset with a second destructive confirmation and backup warning, or hide/disable the action until implemented. |
 | AUD-004 | P1 / migration risk | SQLite migration | The version upgrade path adds pause columns to `workouts` for every database below v6 before the later legacy checks that can create missing workout tables. Older installations without the `workouts` table may fail during upgrade. | Add migration tests from every supported schema version (especially v1–v5); make migrations table/column-aware and idempotent. |
@@ -355,6 +355,7 @@ Use one row per test run. Link screenshots/videos or note the evidence filename.
 | RUN-006 | 2026-11-03 | `42c008a` | Mac (Flutter test / sqflite FFI) | DB-003 v4→v6 migration | 1 | 0 | 0 | User confirmed targeted v4→v6 migration test passed; activity tables and pause columns were created while existing workout data was preserved. |
 | RUN-007 | 2026-11-03 | `609b314` | Mac (Flutter test / sqflite FFI) | DB-003 v3→v6 migration | 1 | 0 | 0 | User confirmed targeted v3→v6 migration test passed. |
 | RUN-008 | 2026-11-03 | `1b756fcd` | Mac (Flutter test / sqflite FFI) | DB-003 v1→v6 migration | 1 | 0 | 0 | User confirmed targeted v1→v6 migration test passed; existing food/log data and all migrated schema modules verified. |
+| RUN-009 | 2026-11-03 | `e6497b1` | Mac (Flutter test / sqflite FFI) | AUD-001 empty-day nutrition targets regression test | 1 | 0 | 0 | User confirmed targeted test passed after pulling the fix. |
 
 ## 5. Bug / issue register
 
@@ -362,7 +363,7 @@ Create one record for every failure. Do not combine unrelated bugs.
 
 | Bug ID | Severity | Screen / area | Steps to reproduce | Expected | Actual | Evidence | Status | Fix commit | Retest |
 |---|---|---|---|---|---|---|---|---|---|
-| BUG-003 | P1 | Nutrition streak uses fallback targets on empty current day | Configure targets different from 2,200 kcal / 180 g, leave today without food logs, open Eat → Nutrition Streak | Streak should show configured targets with zero logged intake | Reproduced by user; query now supplies today's row and effective targets even without logs; regression test added | Fix committed; awaiting retest | `079df09`, `e6497b1` | Pending — user retest |
+| BUG-003 | P1 | Nutrition streak uses fallback targets on empty current day | Configure targets different from 2,200 kcal / 180 g, leave today without food logs, open Eat → Nutrition Streak | Streak should show configured targets with zero logged intake | Reproduced by user; query now supplies today's row and effective targets even without logs; regression test added | Fixed / Retest passed | `079df09`, `e6497b1` | Pass — user confirmed targeted test and screen behaviour |
 | BUG-001 | P1 | SQLite migration v2→v6 | Run targeted v2→v6 migration test using a temporary database | Migration completes and preserves existing food logs; workout schema is created/upgraded | Pre-fix: `no such table: workouts` while adding `paused_at`; after migration-order/column guards, targeted test passes | Terminal output 2026-11-03; user confirmed post-fix pass | Fixed / Retest passed | `5dac8c9` (migration), `69d1a8c` (test) | Pass — targeted test |
 | BUG-002 | P2 | Database test expectation | Run `flutter test` on fresh database | Test expects current schema version 6 | Test expected 4; actual schema version is 6 | Terminal output 2026-11-03 | Fixed / Retest passed | `d8efaba` | Pass — user confirmed targeted test |
 
