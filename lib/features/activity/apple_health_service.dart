@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppleHealthReadResult {
   final Map<String, Object?>? data;
@@ -9,13 +10,13 @@ class AppleHealthReadResult {
     required this.data,
     required this.statusMessage,
   });
-
-  bool get isSuccess => data != null;
 }
 
 class AppleHealthService {
   final Health _health = Health();
 
+  static const _authorizationRequestedKey =
+      'apple_health_authorization_requested';
   static const List<HealthDataType> _types = [
     HealthDataType.STEPS,
     HealthDataType.DISTANCE_WALKING_RUNNING,
@@ -33,19 +34,29 @@ class AppleHealthService {
 
     try {
       await _health.configure();
-      final hasReadAccess = await _health.hasPermissions(_types) ?? false;
-      if (!hasReadAccess && !await _health.requestAuthorization(_types)) {
-        debugPrint(
-          '[AppleHealth] Read permission was not granted. '
-          'Manual activity tracking remains available.',
-        );
-        return const AppleHealthReadResult(
-          data: null,
-          statusMessage:
-              'Apple Health permission not granted. Manual tracking is available.',
-        );
+      final preferences = await SharedPreferences.getInstance();
+      final authorizationWasRequested =
+          preferences.getBool(_authorizationRequestedKey) ?? false;
+
+      if (!authorizationWasRequested) {
+        final granted = await _health.requestAuthorization(_types);
+        await preferences.setBool(_authorizationRequestedKey, true);
+        if (!granted) {
+          debugPrint(
+            '[AppleHealth] Authorization was not granted. '
+            'User can manage access in the Apple Health app.',
+          );
+          return const AppleHealthReadResult(
+            data: null,
+            statusMessage:
+                'Apple Health access is unavailable. Open Health → Profile → Apps and Services → FlexFusion to review access. Manual tracking is available.',
+          );
+        }
       }
 
+      // HealthKit intentionally does not reveal read-denial state to apps.
+      // Continue reading after the first authorization attempt; an empty
+      // result can mean either no recorded data or unavailable read access.
       final start = DateTime(date.year, date.month, date.day);
       final end = start.add(const Duration(days: 1));
       final steps = await _health.getTotalStepsInInterval(start, end);
@@ -67,15 +78,23 @@ class AppleHealthService {
                     : 0),
           );
 
+      final data = <String, Object?>{
+        'steps': steps,
+        'distance_km':
+            total(HealthDataType.DISTANCE_WALKING_RUNNING) / 1000,
+        'active_calories': total(HealthDataType.ACTIVE_ENERGY_BURNED),
+        'exercise_minutes': total(HealthDataType.EXERCISE_TIME),
+      };
+      final hasAnyData = (steps ?? 0) > 0 ||
+          (data['distance_km'] as double) > 0 ||
+          (data['active_calories'] as double) > 0 ||
+          (data['exercise_minutes'] as double) > 0;
+
       return AppleHealthReadResult(
-        data: {
-          'steps': steps,
-          'distance_km':
-              total(HealthDataType.DISTANCE_WALKING_RUNNING) / 1000,
-          'active_calories': total(HealthDataType.ACTIVE_ENERGY_BURNED),
-          'exercise_minutes': total(HealthDataType.EXERCISE_TIME),
-        },
-        statusMessage: 'Apple Health · synced',
+        data: data,
+        statusMessage: hasAnyData
+            ? 'Apple Health · synced'
+            : 'No Health data returned. If you expected values, review FlexFusion access in the Health app. Manual tracking is available.',
       );
     } catch (error, stackTrace) {
       debugPrint('[AppleHealth] Daily summary sync failed: $error');
@@ -86,7 +105,7 @@ class AppleHealthService {
       return const AppleHealthReadResult(
         data: null,
         statusMessage:
-            'Apple Health sync failed. Check Health permissions and try again.',
+            'Apple Health sync failed. Review Health access and try again.',
       );
     }
   }
