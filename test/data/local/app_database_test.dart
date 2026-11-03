@@ -420,6 +420,78 @@ void main() {
     expect(logs.single['calories'], 318);
   });
 
+  test('only one workout session can be in progress at a time', () async {
+    final firstId = await appDatabase.startWorkoutSession(
+      sessionName: 'First session',
+    );
+
+    await expectLater(
+      appDatabase.startWorkoutSession(sessionName: 'Second session'),
+      throwsA(isA<StateError>()),
+    );
+
+    final active = await appDatabase.getInProgressWorkout();
+    expect(active?['id'], firstId);
+    expect(active?['session_name'], 'First session');
+  });
+
+  test('finishing a workout advances its sequence only once', () async {
+    final planId = await appDatabase.createWorkoutPlan('Sequence test');
+    await appDatabase.setActiveWorkoutPlan(planId);
+    final firstDayId = await appDatabase.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Day 1',
+      dayOrder: 1,
+    );
+    final secondDayId = await appDatabase.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Day 2',
+      dayOrder: 2,
+    );
+
+    final workoutId = await appDatabase.startWorkoutSession(
+      planId: planId,
+      planDayId: firstDayId,
+      sessionName: 'Day 1',
+    );
+    await appDatabase.finishWorkoutSession(workoutId);
+    await appDatabase.finishWorkoutSession(workoutId);
+
+    final suggested = await appDatabase.getSuggestedWorkoutDay();
+    expect(suggested?['id'], secondDayId);
+  });
+
+  test('replacing a progress photo returns the previous local path', () async {
+    final firstPrevious = await appDatabase.saveProgressPhoto(
+      date: '2026-11-03',
+      angle: 'front',
+      localFilePath: '/tmp/front-first.jpg',
+    );
+    expect(firstPrevious, isNull);
+
+    final secondPrevious = await appDatabase.saveProgressPhoto(
+      date: '2026-11-03',
+      angle: 'front',
+      localFilePath: '/tmp/front-second.jpg',
+    );
+    expect(secondPrevious, '/tmp/front-first.jpg');
+
+    final photos = await appDatabase.getProgressPhotos();
+    expect(photos, hasLength(1));
+    expect(photos.single['local_file_path'], '/tmp/front-second.jpg');
+  });
+
+  test('weekly progress day labels match their actual dates', () async {
+    final progress = await appDatabase.getWeeklyProgressDetails();
+    final daily = progress['daily'] as List<Map<String, Object?>>;
+    expect(daily, hasLength(7));
+    for (final row in daily) {
+      final date = DateTime.parse(row['date'] as String);
+      final expected = const ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1];
+      expect(row['day'], expected);
+    }
+  });
+
   test('foreign key check reports no violations', () async {
     final db = await appDatabase.database;
     final violations = await db.rawQuery('PRAGMA foreign_key_check');

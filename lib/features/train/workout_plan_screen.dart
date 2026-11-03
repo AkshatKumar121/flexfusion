@@ -206,6 +206,19 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
   }
 
   Future<void> _startDay(Map<String, Object?> day) async {
+    final active = await AppDatabase.instance.getInProgressWorkout();
+    if (!mounted) return;
+    if (active != null) {
+      await Navigator.push(context, MaterialPageRoute<void>(
+        builder: (_) => WorkoutSessionScreen(
+          workoutId: active['id'] as int,
+          title: active['session_name'] as String,
+        ),
+      ));
+      if (mounted) await _refresh();
+      return;
+    }
+
     final id = await AppDatabase.instance.startWorkoutSession(
       planId: widget.plan['id'] as int,
       planDayId: day['id'] as int,

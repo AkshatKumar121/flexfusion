@@ -1075,22 +1075,32 @@ class AppDatabase {
     );
   }
 
-  Future<void> saveProgressPhoto({
+  Future<String?> saveProgressPhoto({
     required String date,
     required String angle,
     required String localFilePath,
   }) async {
     final db = await database;
-    await db.insert(
-      'progress_photos',
-      {
-        'photo_date': date,
-        'angle': angle,
-        'local_file_path': localFilePath,
-        'created_at': DateTime.now().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    return db.transaction((txn) async {
+      final existing = await txn.query(
+        'progress_photos',
+        columns: ['local_file_path'],
+        where: 'photo_date = ? AND angle = ?',
+        whereArgs: [date, angle],
+        limit: 1,
+      );
+      await txn.insert(
+        'progress_photos',
+        {
+          'photo_date': date,
+          'angle': angle,
+          'local_file_path': localFilePath,
+          'created_at': DateTime.now().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      return existing.isEmpty ? null : existing.first['local_file_path'] as String?;
+    });
   }
 
 
@@ -1375,6 +1385,17 @@ class AppDatabase {
     final db = await database;
     final now = DateTime.now().toIso8601String();
     return db.transaction((txn) async {
+      final active = await txn.query(
+        'workouts',
+        columns: ['id'],
+        where: "status = 'in_progress'",
+        limit: 1,
+      );
+      if (active.isNotEmpty) {
+        throw StateError(
+          'A workout is already in progress. Resume or abandon it before starting another.',
+        );
+      }
       final workoutId = await txn.insert('workouts', {
         'plan_id': planId,
         'plan_day_id': planDayId,
@@ -1482,15 +1503,62 @@ class AppDatabase {
 
   Future<void> finishWorkoutSession(int workoutId, {String? notes}) async {
     final db = await database;
-    final rows = await db.query('workouts', columns: ['plan_id', 'plan_day_id'], where: 'id = ?', whereArgs: [workoutId], limit: 1);
-    await db.update('workouts', {
-      'status': 'completed',
-      'completed_at': DateTime.now().toIso8601String(),
-      'notes': notes,
-    }, where: 'id = ?', whereArgs: [workoutId]);
-    if (rows.isNotEmpty && rows.first['plan_id'] != null && rows.first['plan_day_id'] != null) {
-      await advanceWorkoutPlanSequence(rows.first['plan_id'] as int, rows.first['plan_day_id'] as int);
-    }
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        'workouts',
+        columns: ['status', 'plan_id', 'plan_day_id'],
+        where: 'id = ?',
+        whereArgs: [workoutId],
+        limit: 1,
+      );
+      if (rows.isEmpty || rows.first['status'] != 'in_progress') return;
+
+      final updated = await txn.update(
+        'workouts',
+        {
+          'status': 'completed',
+          'completed_at': DateTime.now().toIso8601String(),
+          'notes': notes,
+        },
+        where: "id = ? AND status = 'in_progress'",
+        whereArgs: [workoutId],
+      );
+      if (updated == 0) return;
+
+      final planId = rows.first['plan_id'] as int?;
+      final dayId = rows.first['plan_day_id'] as int?;
+      if (planId == null || dayId == null) return;
+
+      final currentRows = await txn.query(
+        'workout_plan_days',
+        columns: ['schedule_type'],
+        where: 'id = ?',
+        whereArgs: [dayId],
+        limit: 1,
+      );
+      if (currentRows.isEmpty || currentRows.first['schedule_type'] == 'weekday') return;
+
+      final days = await txn.query(
+        'workout_plan_days',
+        where: "plan_id = ? AND schedule_type != 'weekday'",
+        whereArgs: [planId],
+        orderBy: 'day_order, id',
+      );
+      if (days.isEmpty) return;
+
+      final currentIndex = days.indexWhere((day) => day['id'] == dayId);
+      final next = days[(currentIndex < 0 ? 0 : currentIndex + 1) % days.length];
+      final key = 'workout_plan_sequence_$planId';
+      await txn.insert(
+        'app_settings',
+        {
+          'key': key,
+          'value': (next['id'] as int).toString(),
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    });
   }
 
   Future<void> deleteWorkoutSession(int workoutId) async {

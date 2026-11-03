@@ -26,11 +26,34 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
     });
   }
   Future<void> _start({Map<String, Object?>? day, String? name}) async {
-    final title = name ?? day?['label'] as String? ?? 'Workout';
-    final id = await AppDatabase.instance.startWorkoutSession(
-      planId: day?['plan_id'] as int?, planDayId: day?['id'] as int?, sessionName: title);
+    final active = await AppDatabase.instance.getInProgressWorkout();
     if (!mounted) return;
-    await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => WorkoutSessionScreen(workoutId: id, title: title, onFinished: _finishAndCloseLauncher)));
+    final title = active?['session_name'] as String? ??
+        name ?? day?['label'] as String? ?? 'Workout';
+    final id = active?['id'] as int? ?? await AppDatabase.instance.startWorkoutSession(
+      planId: day?['plan_id'] as int?,
+      planDayId: day?['id'] as int?,
+      sessionName: title,
+    );
+    if (!mounted) return;
+    await Navigator.push(context, MaterialPageRoute<void>(
+      builder: (_) => WorkoutSessionScreen(
+        workoutId: id,
+        title: title,
+        onFinished: _finishAndCloseLauncher,
+      ),
+    ));
+    if (mounted) setState(_load);
+  }
+
+  Future<void> _resume(Map<String, Object?> row) async {
+    await Navigator.push(context, MaterialPageRoute<void>(
+      builder: (_) => WorkoutSessionScreen(
+        workoutId: row['id'] as int,
+        title: row['session_name'] as String,
+        onFinished: _finishAndCloseLauncher,
+      ),
+    ));
     if (mounted) setState(_load);
   }
   Future<void> _logRestDay(Map<String, Object?> day) async {
@@ -56,7 +79,7 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
       FutureBuilder<Map<String, Object?>?>(future: _active, builder: (context, s) {
         final row = s.data;
         if (row == null) return const SizedBox.shrink();
-        return _tile('Workout in progress', row['session_name'] as String, 'RESUME', () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => WorkoutSessionScreen(workoutId: row['id'] as int, title: row['session_name'] as String, onFinished: _finishAndCloseLauncher))));
+        return _tile('Workout in progress', row['session_name'] as String, 'RESUME', () => _resume(row));
       }),
       FutureBuilder<Map<String, Object?>?>(future: _suggested, builder: (context, s) {
         if (s.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
@@ -113,12 +136,31 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   TextEditingController _controller(Map<int, TextEditingController> map, int id, String value) => map.putIfAbsent(id, () => TextEditingController(text: value));
   Future<void> _save(Map<String, Object?> row, bool done) async {
     final id = row['id'] as int;
-    await AppDatabase.instance.updateWorkoutSet(id: id,
-      reps: int.tryParse(_controller(_reps, id, '${row['actual_reps'] ?? 0}').text) ?? 0,
-      weight: double.tryParse(_controller(_weights, id, row['actual_weight']?.toString() ?? '').text),
-      completed: done);
+    final reps = int.tryParse(
+      _controller(_reps, id, '${row['actual_reps'] ?? 0}').text.trim(),
+    );
+    final weightText = _controller(
+      _weights,
+      id,
+      row['actual_weight']?.toString() ?? '',
+    ).text.trim();
+    final weight = weightText.isEmpty ? null : double.tryParse(weightText);
+    if (reps == null || reps <= 0 ||
+        (weightText.isNotEmpty && (weight == null || weight < 0))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter valid reps and a non-negative weight.')),
+      );
+      return;
+    }
+    await AppDatabase.instance.updateWorkoutSet(
+      id: id,
+      reps: reps,
+      weight: weight,
+      completed: done,
+    );
+    if (!mounted) return;
     if (done) _startRest(row['rest_seconds'] as int? ?? 90);
-    if (mounted) setState(_reload);
+    setState(_reload);
   }
   void _startRest(int seconds) {
     _timer?.cancel(); setState(() => _rest = seconds);
@@ -143,13 +185,38 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   }
   Future<void> _finish() async {
     var rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
+    final pending = <Map<String, Object?>>[];
     for (final row in rows) {
       final id = row['id'] as int;
+      final reps = int.tryParse(
+        _controller(_reps, id, '${row['actual_reps'] ?? 0}').text.trim(),
+      );
+      final weightText = _controller(
+        _weights,
+        id,
+        row['actual_weight']?.toString() ?? '',
+      ).text.trim();
+      final weight = weightText.isEmpty ? null : double.tryParse(weightText);
+      if (reps == null || reps <= 0 ||
+          (weightText.isNotEmpty && (weight == null || weight < 0))) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fix invalid reps or weight before finishing.')),
+        );
+        return;
+      }
+      pending.add({
+        'id': id,
+        'reps': reps,
+        'weight': weight,
+        'completed': (row['completed'] as int? ?? 0) == 1,
+      });
+    }
+    for (final set in pending) {
       await AppDatabase.instance.updateWorkoutSet(
-        id: id,
-        reps: int.tryParse(_controller(_reps, id, '${row['actual_reps'] ?? 0}').text) ?? 0,
-        weight: double.tryParse(_controller(_weights, id, row['actual_weight']?.toString() ?? '').text),
-        completed: (row['completed'] as int? ?? 0) == 1,
+        id: set['id'] as int,
+        reps: set['reps'] as int,
+        weight: set['weight'] as double?,
+        completed: set['completed'] as bool,
       );
     }
     rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
