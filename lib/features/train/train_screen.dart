@@ -332,7 +332,7 @@ class TrainScreenState extends State<TrainScreen> {
             children: List.generate(7, (index) {
               final day = index < days.length ? days[index] as Map : <String, dynamic>{};
               final completed = (day['workouts'] as int? ?? 0) > 0;
-              final label = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][index];
+              final label = (day['day'] as String?) ?? '—';
               return Expanded(
                 child: Column(
                   children: [
@@ -711,11 +711,19 @@ class TrainScreenState extends State<TrainScreen> {
     final date = _dateKey(DateTime.now());
     final fileName = 'progress_${date}_${angle}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final saved = await File(picked.path).copy('${directory.path}/$fileName');
-    await AppDatabase.instance.saveProgressPhoto(
+    final previousPath = await AppDatabase.instance.saveProgressPhoto(
       date: date,
       angle: angle,
       localFilePath: saved.path,
     );
+    if (previousPath != null && previousPath != saved.path) {
+      try {
+        final previousFile = File(previousPath);
+        if (await previousFile.exists()) await previousFile.delete();
+      } catch (_) {
+        // Keep the newly saved photo even if cleanup of the old file fails.
+      }
+    }
     refreshTrainScreen();
     _showInfo('Photo saved', 'Your $angle progress photo is saved on this device.');
   }
