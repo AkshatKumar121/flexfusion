@@ -15,35 +15,55 @@ class _ActivityScreenState extends State<ActivityScreen> {
   List<Map<String,Object?>> _logs=[];
   Map<String,Object?>? _healthDay;
   bool _loading=true,_syncing=false;
+  int _refreshGeneration=0;
+  int _syncGeneration=0;
   String _key(DateTime d)=>'${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
   @override void initState(){super.initState();_refresh();}
   Future<void> _refresh() async {
+    final refreshGeneration = ++_refreshGeneration;
+    final requestedDate = DateTime(_date.year, _date.month, _date.day);
+    final requestedKey = _key(requestedDate);
     if (mounted) {
       setState(() => _loading = true);
     }
-    final key=_key(_date);
-    final logs=await AppDatabase.instance.getActivityLogs(key);
-    final saved=await AppDatabase.instance.getHealthActivitySummary(key);
-    if(!mounted)return;
+    final logs=await AppDatabase.instance.getActivityLogs(requestedKey);
+    final saved=await AppDatabase.instance.getHealthActivitySummary(requestedKey);
+    if(!mounted ||
+        refreshGeneration != _refreshGeneration ||
+        _key(_date) != requestedKey) return;
     setState((){_logs=logs;_healthDay=saved;_loading=false;});
-    await _syncHealth();
+    await _syncHealth(requestedDate);
   }
-  Future<void> _syncHealth() async {
-    if(_syncing)return;
-    setState(()=>_syncing=true);
-    final data=await _health.readDailySummary(_date);
-    if (data != null) {
-      await AppDatabase.instance.saveHealthActivitySummary(
-        date: _key(_date),
-        steps: data['steps'] as int?,
-        distanceKm: (data['distance_km'] as num?)?.toDouble(),
-        activeCalories: (data['active_calories'] as num?)?.toDouble(),
-        exerciseMinutes: (data['exercise_minutes'] as num?)?.toDouble(),
-      );
+  Future<void> _syncHealth([DateTime? date]) async {
+    final requestedDate = DateTime(
+      (date ?? _date).year,
+      (date ?? _date).month,
+      (date ?? _date).day,
+    );
+    final requestedKey = _key(requestedDate);
+    final syncGeneration = ++_syncGeneration;
+    if(mounted) setState(()=>_syncing=true);
+    try {
+      final data=await _health.readDailySummary(requestedDate);
+      if (data != null) {
+        await AppDatabase.instance.saveHealthActivitySummary(
+          date: requestedKey,
+          steps: data['steps'] as int?,
+          distanceKm: (data['distance_km'] as num?)?.toDouble(),
+          activeCalories: (data['active_calories'] as num?)?.toDouble(),
+          exerciseMinutes: (data['exercise_minutes'] as num?)?.toDouble(),
+        );
+      }
+      final saved=await AppDatabase.instance.getHealthActivitySummary(requestedKey);
+      if(!mounted ||
+          syncGeneration != _syncGeneration ||
+          _key(_date) != requestedKey) return;
+      setState(()=>_healthDay=saved);
+    } finally {
+      if(mounted && syncGeneration == _syncGeneration) {
+        setState(()=>_syncing=false);
+      }
     }
-    final saved=await AppDatabase.instance.getHealthActivitySummary(_key(_date));
-    if(!mounted)return;
-    setState((){_healthDay=saved;_syncing=false;});
   }
   int get _steps=>_healthDay?['steps'] is num&&(_healthDay!['steps'] as num)>0?(_healthDay!['steps'] as num).round():_logs.fold<int>(0,(s,r)=>s+((r['steps'] as num?)?.toInt()??0));
   double get _km=>_healthDay?['distance_km'] is num&&(_healthDay!['distance_km'] as num)>0?(_healthDay!['distance_km'] as num).toDouble():_logs.fold<double>(0,(s,r)=>s+((r['distance_km'] as num?)?.toDouble()??0));
