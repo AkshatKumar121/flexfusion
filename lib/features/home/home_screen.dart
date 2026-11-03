@@ -835,7 +835,7 @@ class _DashboardCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 18),
+          const Spacer(),
 
           InkWell(
             onTap: onTap,
