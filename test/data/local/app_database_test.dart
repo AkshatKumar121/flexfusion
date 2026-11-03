@@ -32,6 +32,26 @@ void main() {
     }
   });
 
+  test('nutrition streak returns configured targets when today has no food logs', () async {
+    await appDatabase.saveNutritionTargets(
+      calories: 1800,
+      protein: 150,
+      carbs: 190,
+      fat: 60,
+    );
+
+    final rows = await appDatabase.getNutritionStreakDays();
+    final now = DateTime.now();
+    final today =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final todayRow = rows.singleWhere((row) => row['day'] == today);
+
+    expect(todayRow['calories'], 0);
+    expect(todayRow['protein'], 0);
+    expect(todayRow['calorie_target'], 1800);
+    expect(todayRow['protein_target'], 150);
+  });
+
   test('fresh database creates the complete V1 schema at version 6', () async {
     final db = await appDatabase.database;
     final version = await db.rawQuery('PRAGMA user_version');
