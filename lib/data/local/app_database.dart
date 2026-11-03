@@ -1844,6 +1844,7 @@ class AppDatabase {
 
   Future<Map<String, Object?>> getTrainingStreakData() async {
     final db = await database;
+    final stepGoal = int.tryParse(await getAppSetting('daily_step_goal', defaultValue: '10000')) ?? 10000;
     final workouts = await db.rawQuery("""
       SELECT DISTINCT substr(completed_at, 1, 10) AS day
       FROM workouts
@@ -1878,18 +1879,19 @@ class AppDatabase {
       WHERE CASE
         WHEN health.steps > 0 THEN health.steps
         ELSE COALESCE(manual_daily.steps, 0)
-      END >= 10000
+      END >= ?
       UNION
       SELECT manual_daily.activity_date AS day
       FROM manual_daily
       LEFT JOIN activity_health_daily health
         ON health.activity_date = manual_daily.activity_date
       WHERE health.activity_date IS NULL
-        AND manual_daily.steps >= 10000
-    """);
+        AND manual_daily.steps >= ?
+    """, [stepGoal, stepGoal]);
     return {
       'workout_days': workouts.map((row) => row['day'] as String).toList(),
       'activity_days': activities.map((row) => row['day'] as String).toList(),
+      'step_goal': stepGoal,
       'step_goal_days': stepGoalDays.map((row) => row['day'] as String).toList(),
       'health_steps': {
         for (final row in health)
