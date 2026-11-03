@@ -314,7 +314,7 @@ Implemented areas:
 | ID | Test case | Expected result | Status / notes |
 |---|---|---|---|
 | DB-001 | Fresh database creation | All expected tables/indexes are created and `PRAGMA user_version` equals the current schema version (6). | Test assertion corrected to expect version 6; targeted retest pending. |
-| DB-002 | Upgrade a v5 database to v6 | Pause fields are added and existing records remain. | [ ] |
+| DB-002 | Upgrade a v5 database to v6 | Pause fields are added and existing records remain. | New automated regression test added; local run pending. |
 | DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | **Fail — v2→v6 currently errors: no such table `workouts`.** |
 | DB-004 | Force-close during writes | Database remains consistent on next launch. | [ ] |
 | DB-005 | Insert/update/delete each entity | Correct rows are changed; no orphan records. | [ ] |
@@ -351,6 +351,7 @@ Use one row per test run. Link screenshots/videos or note the evidence filename.
 | RUN-002 | 2026-11-03 | Local branch commit not supplied | Mac | `flutter analyze` | 1 | 0 | 0 | Passed: “No issues found!” (1.9s). |
 | RUN-003 | 2026-11-03 | Local branch commit not supplied | Mac / iOS device target | `flutter build ios --debug --no-codesign` | 1 | 0 | 0 | Passed: Xcode build completed and `build/ios/iphoneos/Runner.app` was produced. Codesigning was disabled; physical-device install/launch and signing remain unverified. |
 | RUN-004 | 2026-11-03 | `flexfusion_v1` before `d8efaba` | Mac (Flutter test / sqflite FFI) | DB-001 fresh-schema test | 0 | 1 | 0 | Reproduced stale test assertion: expected schema version 4, actual 6. Test title and assertion corrected in `d8efaba`; retest pending. |
+| RUN-005 | 2026-11-03 | `1a2e306` | Mac (Flutter test / sqflite FFI) | DB-002 v5→v6 migration | — | — | — | Added regression fixture that removes v6 pause columns from a fresh schema, sets user_version=5, then verifies migration adds columns and preserves an existing workout. Local execution pending. |
 
 ## 5. Bug / issue register
 
