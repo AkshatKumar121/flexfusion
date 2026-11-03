@@ -75,28 +75,48 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background,
     appBar: AppBar(backgroundColor: AppColors.background, foregroundColor: AppColors.white, title: const Text('START WORKOUT')),
-    body: ListView(padding: const EdgeInsets.all(18), children: [
-      FutureBuilder<Map<String, Object?>?>(future: _active, builder: (context, s) {
-        final row = s.data;
-        if (row == null) return const SizedBox.shrink();
-        return _tile('Workout in progress', row['session_name'] as String, 'RESUME', () => _resume(row));
-      }),
-      FutureBuilder<Map<String, Object?>?>(future: _suggested, builder: (context, s) {
-        if (s.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-        final day = s.data;
-        if (day == null) {
-          return _tile('No active plan', 'Create a plan to see your next session.', 'CREATE PLAN', () async {
-            await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()));
-            if (mounted) {
-              setState(_load);
-            }
-          });
+    body: FutureBuilder<Map<String, Object?>?>(
+      future: _active,
+      builder: (context, activeSnapshot) {
+        if (activeSnapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
         }
-        final rest = (day['is_rest_day'] as int? ?? 0) == 1;
-        return _tile('Your planned session', '${day['label']} • ${day['plan_name']}', rest ? 'LOG REST DAY' : 'START', rest ? () => _logRestDay(day) : () => _start(day: day));
-      }),
-      _tile('Unscheduled workout', 'Start a session outside your plan.', 'START FREE WORKOUT', _startFree),
-    ]),
+        final activeWorkout = activeSnapshot.data;
+        if (activeWorkout != null) {
+          // Only allow resuming the existing session until it is finished.
+          // This prevents creating another active session in parallel.
+          return ListView(
+            padding: const EdgeInsets.all(18),
+            children: [
+              _tile(
+                'Workout in progress',
+                activeWorkout['session_name'] as String,
+                'RESUME',
+                () => _resume(activeWorkout),
+              ),
+            ],
+          );
+        }
+
+        return ListView(padding: const EdgeInsets.all(18), children: [
+          FutureBuilder<Map<String, Object?>?>(future: _suggested, builder: (context, s) {
+            if (s.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+            final day = s.data;
+            if (day == null) {
+              return _tile('No active plan', 'Create a plan to see your next session.', 'CREATE PLAN', () async {
+                await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()));
+                if (mounted) {
+                  setState(_load);
+                }
+              });
+            }
+            final rest = (day['is_rest_day'] as int? ?? 0) == 1;
+            return _tile('Your planned session', '${day['label']} • ${day['plan_name']}', rest ? 'LOG REST DAY' : 'START', rest ? () => _logRestDay(day) : () => _start(day: day));
+          }),
+          _tile('Unscheduled workout', 'Start a session outside your plan.', 'START FREE WORKOUT', _startFree),
+        ]);
+      },
+    ),
   );
   Widget _tile(String title, String subtitle, String button, VoidCallback? onTap) => Container(
     margin: const EdgeInsets.only(bottom: 13), padding: const EdgeInsets.all(16),
