@@ -1864,9 +1864,21 @@ class AppDatabase {
       WHERE steps IS NOT NULL
       GROUP BY activity_date
     """);
+    final stepGoalDays = await db.rawQuery("""
+      SELECT activity_date AS day
+      FROM activity_health_daily
+      WHERE steps >= 10000
+      UNION
+      SELECT activity_date AS day
+      FROM activity_logs
+      WHERE steps IS NOT NULL
+      GROUP BY activity_date
+      HAVING SUM(steps) >= 10000
+    """);
     return {
       'workout_days': workouts.map((row) => row['day'] as String).toList(),
       'activity_days': activities.map((row) => row['day'] as String).toList(),
+      'step_goal_days': stepGoalDays.map((row) => row['day'] as String).toList(),
       'health_steps': {
         for (final row in health)
           row['day'] as String: (row['steps'] as num).toInt(),
