@@ -70,10 +70,13 @@ class HomeScreenState extends State<HomeScreen> {
     _dashboardFuture = _loadDashboardAndCache();
   }
 
-  void refreshDashboard() {
+  Future<void> refreshDashboard() async {
+    if (!mounted) return;
+    final future = _loadDashboardAndCache();
     setState(() {
-      _dashboardFuture = _loadDashboardAndCache();
+      _dashboardFuture = future;
     });
+    await future;
   }
 
   @override
@@ -135,7 +138,12 @@ class HomeScreenState extends State<HomeScreen> {
         return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: RefreshIndicator(
+          color: AppColors.green,
+          backgroundColor: AppColors.card,
+          onRefresh: refreshDashboard,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(
             horizontal: 20,
             vertical: 18,
@@ -545,6 +553,7 @@ class HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               if (data != null) _buildWeeklySummaryCard(data),
             ],
+          ),
           ),
         ),
       ),
