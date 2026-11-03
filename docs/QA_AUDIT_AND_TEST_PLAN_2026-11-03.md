@@ -315,7 +315,7 @@ Implemented areas:
 |---|---|---|---|
 | DB-001 | Fresh database creation | All expected tables/indexes are created and `PRAGMA user_version` equals the current schema version (6). | Test assertion corrected to expect version 6; targeted retest pending. |
 | DB-002 | Upgrade a v5 database to v6 | Pause fields are added and existing records remain. | **Pass — user confirmed targeted fresh-schema and v5→v6 migration tests.** |
-| DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | v2→v6 fix, v4→v6 and v5→v6 targeted migration tests all passed; remaining historical paths still need coverage. |
+| DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | v2→v6, v3→v6, v4→v6 and v5→v6 targeted tests passed. v1→v6 regression test has been added and is awaiting user execution. |
 | DB-004 | Force-close during writes | Database remains consistent on next launch. | [ ] |
 | DB-005 | Insert/update/delete each entity | Correct rows are changed; no orphan records. | [ ] |
 | DB-006 | Verify foreign-key cascade/set-null behavior | Related records follow documented rules. | [ ] |
@@ -354,6 +354,7 @@ Use one row per test run. Link screenshots/videos or note the evidence filename.
 | RUN-005 | 2026-11-03 | `1a2e306` | Mac (Flutter test / sqflite FFI) | DB-002 v5→v6 migration and DB-001 fresh-schema retest | 2 | 0 | 0 | User confirmed both targeted tests passed after pulling the fix/test commits. |
 | RUN-006 | 2026-11-03 | `42c008a` | Mac (Flutter test / sqflite FFI) | DB-003 v4→v6 migration | 1 | 0 | 0 | User confirmed targeted v4→v6 migration test passed; activity tables and pause columns were created while existing workout data was preserved. |
 | RUN-007 | 2026-11-03 | `609b314` | Mac (Flutter test / sqflite FFI) | DB-003 v3→v6 migration | 1 | 0 | 0 | User confirmed targeted v3→v6 migration test passed. |
+| RUN-008 | 2026-11-03 | `1b756fcd` | Mac (Flutter test / sqflite FFI) | DB-003 v1→v6 migration | Pending | Pending | Pending | Regression test added; awaiting user execution and result. |
 
 ## 5. Bug / issue register
 
