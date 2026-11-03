@@ -315,7 +315,7 @@ Implemented areas:
 |---|---|---|---|
 | DB-001 | Fresh database creation | All expected tables/indexes are created and `PRAGMA user_version` equals the current schema version (6). | Test assertion corrected to expect version 6; targeted retest pending. |
 | DB-002 | Upgrade a v5 database to v6 | Pause fields are added and existing records remain. | **Pass — user confirmed targeted fresh-schema and v5→v6 migration tests.** |
-| DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | **Fail — v2→v6 currently errors: no such table `workouts`.** |
+| DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | v2→v6 migration fix is retested and passed; dedicated v4→v6 and v5→v6 regression coverage is being run incrementally. |
 | DB-004 | Force-close during writes | Database remains consistent on next launch. | [ ] |
 | DB-005 | Insert/update/delete each entity | Correct rows are changed; no orphan records. | [ ] |
 | DB-006 | Verify foreign-key cascade/set-null behavior | Related records follow documented rules. | [ ] |
@@ -352,6 +352,7 @@ Use one row per test run. Link screenshots/videos or note the evidence filename.
 | RUN-003 | 2026-11-03 | Local branch commit not supplied | Mac / iOS device target | `flutter build ios --debug --no-codesign` | 1 | 0 | 0 | Passed: Xcode build completed and `build/ios/iphoneos/Runner.app` was produced. Codesigning was disabled; physical-device install/launch and signing remain unverified. |
 | RUN-004 | 2026-11-03 | `flexfusion_v1` before `d8efaba` | Mac (Flutter test / sqflite FFI) | DB-001 fresh-schema test | 0 | 1 | 0 | Reproduced stale test assertion: expected schema version 4, actual 6. Test title and assertion corrected in `d8efaba`; retest pending. |
 | RUN-005 | 2026-11-03 | `1a2e306` | Mac (Flutter test / sqflite FFI) | DB-002 v5→v6 migration and DB-001 fresh-schema retest | 2 | 0 | 0 | User confirmed both targeted tests passed after pulling the fix/test commits. |
+| RUN-006 | 2026-11-03 | `42c008a` | Mac (Flutter test / sqflite FFI) | DB-003 v4→v6 migration | — | — | — | Added regression test for v4 schema upgrade: recreates v4 state without activity tables or v6 pause columns, then verifies new tables, pause fields and workout preservation. Awaiting local run. |
 
 ## 5. Bug / issue register
 
