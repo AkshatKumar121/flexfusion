@@ -10,6 +10,7 @@ import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
 import 'workout_plan_screen.dart';
 import 'workout_session_screen.dart';
+import 'training_streak_screen.dart';
 
 class TrainScreen extends StatefulWidget {
   const TrainScreen({super.key});
@@ -271,6 +272,21 @@ class TrainScreenState extends State<TrainScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              tooltip: 'Workout and activity streak',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const TrainingStreakScreen(),
+                ),
+              ),
+              icon: const Icon(
+                Icons.local_fire_department_rounded,
+                color: Color(0xFFFF3D70),
+                size: 29,
               ),
             ),
           ],
