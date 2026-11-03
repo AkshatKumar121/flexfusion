@@ -54,10 +54,10 @@ class EatScreenState extends State<EatScreen> {
     await _loadData();
   }
 
-  Future<void> refreshEatScreen() => _loadData();
+  Future<void> refreshEatScreen() => _loadData(showLoading: false);
 
-  Future<void> _loadData() async {
-    if (mounted) setState(() => _isLoading = true);
+  Future<void> _loadData({bool showLoading = true}) async {
+    if (showLoading && mounted) setState(() => _isLoading = true);
     try {
       final db = AppDatabase.instance;
       final rows = await db.getFoodLogsForDate(_date);
@@ -125,7 +125,12 @@ class EatScreenState extends State<EatScreen> {
       backgroundColor: AppColors.background,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.green))
-          : SafeArea(child: SingleChildScrollView(
+          : SafeArea(child: RefreshIndicator(
+        color: AppColors.green,
+        backgroundColor: AppColors.card,
+        onRefresh: () => _loadData(showLoading: false),
+        child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _header(),
@@ -178,7 +183,7 @@ class EatScreenState extends State<EatScreen> {
           const SizedBox(height: 12),
           _mealCard('DINNER', 'Finish the day strong', Icons.nights_stay_outlined),
         ]),
-      )),
+      ))),
     );
   }
 
