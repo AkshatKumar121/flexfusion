@@ -22,6 +22,7 @@ class TrainScreenState extends State<TrainScreen> {
   final _weightController = TextEditingController();
   final _picker = ImagePicker();
   late Future<_TrainData> _dataFuture;
+  final Set<int> _deletedProgressPhotoIds = <int>{};
 
   String _dateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -146,7 +147,7 @@ class TrainScreenState extends State<TrainScreen> {
                     const SizedBox(height: 22),
                     _buildSectionTitle('PROGRESS PHOTOS', 'Track visual changes'),
                     const SizedBox(height: 12),
-                    _buildPhotoCard(data?.photos ?? const []),
+                    _buildPhotoCard((data?.photos ?? const []).where((photo) => !_deletedProgressPhotoIds.contains(photo['id'] as int)).toList()),
                     const SizedBox(height: 22),
                     _buildSectionTitle('YOUR WORKOUT TOOLS', 'Plan and review'),
                     const SizedBox(height: 12),
@@ -617,9 +618,13 @@ class TrainScreenState extends State<TrainScreen> {
     );
     if (confirmed != true || !mounted) return;
 
+    final photoId = photo['id'] as int;
     final path = photo['local_file_path'] as String?;
+
+    // Remove the tile immediately after confirmation, without waiting for disk/DB I/O.
+    setState(() => _deletedProgressPhotoIds.add(photoId));
     try {
-      await AppDatabase.instance.deleteProgressPhoto(photo['id'] as int);
+      await AppDatabase.instance.deleteProgressPhoto(photoId);
       if (path != null && path.isNotEmpty) {
         final file = File(path);
         if (await file.exists()) await file.delete();
@@ -629,6 +634,8 @@ class TrainScreenState extends State<TrainScreen> {
       _showInfo('Photo deleted', 'The photo and its local database record have been deleted.');
     } catch (_) {
       if (!mounted) return;
+      setState(() => _deletedProgressPhotoIds.remove(photoId));
+      refreshTrainScreen();
       _showInfo('Delete failed', 'FlexFusion could not fully delete this photo. Please try again.');
     }
   }
