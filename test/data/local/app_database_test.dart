@@ -581,12 +581,6 @@ void main() {
 
   test('version 3 database upgrades workout and activity tables to version 6', () async {
     final db = await appDatabase.database;
-    final now = DateTime.now().toIso8601String();
-    final workoutId = await db.insert('workouts', {
-      'started_at': now,
-      'session_name': 'Legacy v3 workout',
-      'status': 'in_progress',
-    });
 
     // Simulate the v3 schema: no v4 workout-module baseline,
     // no v5 activity tables, and no v6 pause columns.
