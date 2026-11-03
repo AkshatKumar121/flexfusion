@@ -57,6 +57,7 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
           };
           final todayKey = _key(_today);
           final steps = healthSteps[todayKey] ?? manualSteps[todayKey] ?? 0;
+          final stepGoal = (data['step_goal'] as num?)?.toInt() ?? 10000;
           final weekStart = _today.subtract(Duration(days: _today.weekday - 1));
           final week = List.generate(7, (i) => weekStart.add(Duration(days: i)));
           final weekWorkoutCount = week.where((d) => workoutDays.contains(_key(d))).length;
@@ -67,7 +68,7 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
             streak++;
             cursor = cursor.subtract(const Duration(days: 1));
           }
-          final progress = (steps / 10000).clamp(0.0, 1.0);
+          final progress = (steps / stepGoal).clamp(0.0, 1.0);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -143,7 +144,7 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                     _label('STEPS'),
                     const SizedBox(height: 12),
                     Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                      Text(steps.toString(), style: GoogleFonts.inter(color: AppColors.white, fontSize: 42, fontWeight: FontWeight.w800, height: 1)),
+                      Text('$steps / $stepGoal', style: GoogleFonts.inter(color: AppColors.white, fontSize: 42, fontWeight: FontWeight.w800, height: 1)),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text('/10,000', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 20)),
@@ -173,7 +174,7 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              Text('A day counts toward your streak when you complete a workout, log an activity, or reach 10,000 steps. Steps are shown separately from Apple Health when available.',
+              Text('A day counts toward your streak when you complete a workout, log an activity, or reach your daily step goal of $stepGoal steps. Steps are shown separately from Apple Health when available.',
                 style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11, height: 1.5)),
             ],
           );
