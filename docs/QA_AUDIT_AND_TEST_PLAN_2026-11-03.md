@@ -51,6 +51,7 @@ Severity definitions: **P0** = release blocker/data-loss risk; **P1** = major fu
 | AUD-009 | P2 | Database tests | Fresh-schema test expected schema version 4 although the application schema is version 6. | **Fixed:** assertion updated to version 6; included in the user-reported 20/20 passing automated test run. |
 | AUD-010 | P1 | Database migration | Version-2 upgrade previously failed with `no such table: workouts` during the v6 migration. | **Fixed and retested:** migration order/guards updated; v1→v6 through v5→v6 tests passed, and the user reports 20/20 automated tests passing. |
 | AUD-011 | P2 | Train / progress photo deletion | Photo deletion removed the SQLite row before deleting the local image. If filesystem deletion failed, the app reported failure although the database record was already gone, potentially leaving an orphaned image. | **Fix committed:** image is first renamed to a temporary pending-delete path; the DB row is then deleted; if the DB operation fails, the image is restored. Final temporary-file cleanup is best-effort and logged. Awaiting analyzer and device retest. |
+| AUD-012 | P2 | Legacy meal-log migration / interrupted startup | SQLite rows were committed before the completion flag was saved in SharedPreferences. A crash in that gap could cause the same legacy meals to be imported again on next launch. | **Fix committed:** SQLite `app_settings` marker is written in the same transaction as imported rows and is authoritative; a regression test simulates loss of the preference marker after commit. Awaiting user test run. |
 
 ### Audit notes / risks to verify
 
@@ -327,6 +328,7 @@ Implemented areas:
 | DB-008 | Reinstall/upgrade-in-place | Existing local data is preserved on app update. | [ ] |
 | DB-009 | Low storage / file deletion failure | Clear error/recovery behavior; DB and local files do not silently diverge. | [ ] |
 | DB-010 | Large food catalogue search | Search remains responsive and correct. | [ ] |
+| DB-011 | Legacy meal migration interrupted after SQLite commit | Reopening with legacy preference data but without the old preference marker must not duplicate imported meal rows; SQLite migration marker must exist. | **Automated regression test added; user run pending.** |
 
 ### L. Platform, permissions, accessibility and resilience
 
