@@ -420,6 +420,54 @@ void main() {
     expect(logs.single['calories'], 318);
   });
 
+  test('version 3 database upgrades workout and activity tables to version 6', () async {
+    final db = await appDatabase.database;
+    final now = DateTime.now().toIso8601String();
+    final workoutId = await db.insert('workouts', {
+      'started_at': now,
+      'session_name': 'Legacy v3 workout',
+      'status': 'in_progress',
+    });
+
+    // Simulate the v3 schema: no v4 workout-module baseline,
+    // no v5 activity tables, and no v6 pause columns.
+    await db.execute('DROP TABLE activity_health_daily');
+    await db.execute('DROP TABLE activity_logs');
+    await db.execute('DROP TABLE workout_sets');
+    await db.execute('DROP TABLE workouts');
+    await db.execute('DROP TABLE workout_plan_sets');
+    await db.execute('DROP TABLE workout_plan_exercises');
+    await db.execute('DROP TABLE workout_plan_days');
+    await db.execute('DROP TABLE workout_plans');
+    await db.execute('DROP TABLE exercises');
+    await db.execute('PRAGMA user_version = 3');
+    await appDatabase.closeForTesting();
+
+    final upgradedDb = await appDatabase.database;
+    final version = await upgradedDb.rawQuery('PRAGMA user_version');
+    expect(version.single['user_version'], 6);
+
+    final tables = await upgradedDb.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table'",
+    );
+    final names = tables.map((row) => row['name'] as String).toSet();
+    expect(names, containsAll([
+      'exercises',
+      'workout_plans',
+      'workout_plan_days',
+      'workout_plan_exercises',
+      'workout_plan_sets',
+      'workouts',
+      'workout_sets',
+      'activity_logs',
+      'activity_health_daily',
+    ]));
+
+    final workoutColumns = await upgradedDb.rawQuery('PRAGMA table_info(workouts)');
+    expect(workoutColumns.map((column) => column['name']),
+        containsAll(['paused_at', 'paused_seconds']));
+  });
+
   test('version 4 database upgrades activity tables and pause fields to version 6', () async {
     final db = await appDatabase.database;
     final now = DateTime.now().toIso8601String();
