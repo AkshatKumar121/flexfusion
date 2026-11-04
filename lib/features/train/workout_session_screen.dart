@@ -373,7 +373,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Widget
             ),
           ),
         ),
-        if (_restEndsAt != null) Card(color: AppColors.card, child: ListTile(leading: const Icon(Icons.timer, color: AppColors.green), title: Text(_restComplete ? 'REST COMPLETE' : 'REST TIMER'), trailing: _restComplete ? const Icon(Icons.check_circle, color: AppColors.green) : Text('${(_rest ~/ 60).toString().padLeft(2, '0')}:${(_rest % 60).toString().padLeft(2, '0')}'), onTap: _clearRestTimer)),
+        if (_restEndsAt != null) Card(color: AppColors.card, child: ListTile(leading: const Icon(Icons.timer, color: AppColors.green), title: Text(_restComplete ? 'REST COMPLETE' : 'REST TIMER'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [if (_restComplete) const Icon(Icons.check_circle, color: AppColors.green) else Text('${(_rest ~/ 60).toString().padLeft(2, '0')}:${(_rest % 60).toString().padLeft(2, '0')}'), const SizedBox(width: 8), IconButton(tooltip: 'Dismiss rest timer', onPressed: _clearRestTimer, icon: const Icon(Icons.close, color: AppColors.grey, size: 20))]))),
         if (groups.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('Add exercises to begin.')),
         for (final group in groups.entries) Card(color: AppColors.card, child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(group.key, style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
