@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
@@ -137,7 +138,8 @@ class WorkoutSessionScreen extends StatefulWidget {
   @override
   State<WorkoutSessionScreen> createState() => _WorkoutSessionScreenState();
 }
-class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
+class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with WidgetsBindingObserver {
+  static const MethodChannel _restChannel = MethodChannel('com.flexfusion/rest_timer');
   late Future<List<Map<String, Object?>>> _sets;
   final Map<int, TextEditingController> _reps = {};
   final Map<int, TextEditingController> _weights = {};
@@ -148,11 +150,16 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   bool _isPaused = false;
   Duration _elapsed = Duration.zero;
   int _rest = 0;
+  DateTime? _restEndsAt;
+  bool _restComplete = false;
+  bool _finishing = false;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _reload();
     _loadWorkoutStartTime();
+    _restoreRestTimer();
   }
 
   Future<void> _loadWorkoutStartTime() async {
@@ -177,6 +184,45 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
         final current = DateTime.now().difference(startedAt) - Duration(seconds: _pausedSeconds);
         setState(() => _elapsed = current.isNegative ? Duration.zero : current);
       });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadWorkoutStartTime();
+      _restoreRestTimer();
+    }
+  }
+
+  Future<void> _restoreRestTimer() async {
+    final end = await AppDatabase.instance.getWorkoutRestEnd(widget.workoutId);
+    if (!mounted) return;
+    _timer?.cancel();
+    if (end == null) {
+      setState(() { _restEndsAt = null; _rest = 0; _restComplete = false; });
+      return;
+    }
+    final remaining = end.difference(DateTime.now()).inSeconds;
+    setState(() {
+      _restEndsAt = end;
+      _rest = remaining > 0 ? remaining : 0;
+      _restComplete = remaining <= 0;
+    });
+    if (remaining > 0) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) => _refreshRestCountdown());
+    }
+  }
+
+  void _refreshRestCountdown() {
+    final end = _restEndsAt;
+    if (end == null || !mounted) return;
+    final remaining = end.difference(DateTime.now()).inSeconds;
+    if (remaining <= 0) {
+      _timer?.cancel();
+      setState(() { _rest = 0; _restComplete = true; });
+    } else {
+      setState(() => _rest = remaining);
     }
   }
 
@@ -207,6 +253,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
   void _reload() { _sets = AppDatabase.instance.getWorkoutSessionSets(widget.workoutId); }
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     _workoutTimer?.cancel();
     for (final c in _reps.values) { c.dispose(); }
@@ -242,14 +289,40 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     if (done) _startRest(row['rest_seconds'] as int? ?? 90);
     setState(_reload);
   }
-  void _startRest(int seconds) {
-    _timer?.cancel(); setState(() => _rest = seconds);
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (_rest <= 1) { t.cancel(); if (mounted) setState(() => _rest = 0); }
-      else if (mounted) {
-        setState(() => _rest--);
+  Future<void> _startRest(int seconds) async {
+    _timer?.cancel();
+    if (seconds <= 0) return;
+    final end = DateTime.now().add(Duration(seconds: seconds));
+    await AppDatabase.instance.saveWorkoutRestEnd(widget.workoutId, end);
+    if (!mounted) return;
+    setState(() { _restEndsAt = end; _rest = seconds; _restComplete = false; });
+    try {
+      final granted = await _restChannel.invokeMethod<bool>('requestPermission') ?? false;
+      if (granted) {
+        await _restChannel.invokeMethod<bool>('scheduleRest', {
+          'endAt': end.millisecondsSinceEpoch.toDouble(),
+        });
       }
-    });
+    } on PlatformException {
+      // The persisted countdown still works when notifications are unavailable.
+    } on MissingPluginException {
+      // Non-iOS platforms retain the in-app timer without native notifications.
+    }
+    if (!mounted) return;
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _refreshRestCountdown());
+  }
+
+  Future<void> _clearRestTimer() async {
+    _timer?.cancel();
+    await AppDatabase.instance.saveWorkoutRestEnd(widget.workoutId, null);
+    try {
+      await _restChannel.invokeMethod<bool>('cancelRest');
+    } on PlatformException {
+      // Ignore notification cleanup failures; clear the in-app timer regardless.
+    } on MissingPluginException {
+      // Native notifications are iOS-only.
+    }
+    if (mounted) setState(() { _restEndsAt = null; _rest = 0; _restComplete = false; });
   }
   Future<void> _addExercise() async {
     final library = await AppDatabase.instance.getExercises();
@@ -264,8 +337,10 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
     if (mounted) setState(_reload);
   }
   Future<void> _finish() async {
+    if (_finishing) return;
+    _finishing = true;
     var rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
-    if (!mounted) return;
+    if (!mounted) { _finishing = false; return; }
     final pending = <Map<String, Object?>>[];
     for (final row in rows) {
       final id = row['id'] as int;
@@ -283,6 +358,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Fix invalid reps or weight before finishing.')),
         );
+        _finishing = false;
         return;
       }
       pending.add({
@@ -311,6 +387,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
       content: Text('You completed $done of ${rows.length} sets.\n\nTime spent: ${_formatDuration(sessionDuration)}\n\nSave this session to history?'),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('KEEP TRAINING')), ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('FINISH'))]));
     if (confirm == true) {
+      await _clearRestTimer();
       await AppDatabase.instance.finishWorkoutSession(widget.workoutId);
       _workoutTimer?.cancel();
       if (mounted) {
@@ -322,6 +399,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
           Navigator.pop(context);
         }
       }
+    } else {
+      _finishing = false;
     }
   }
   @override
@@ -348,7 +427,7 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
             ),
           ),
         ),
-        if (_rest > 0) Card(color: AppColors.card, child: ListTile(leading: const Icon(Icons.timer, color: AppColors.green), title: const Text('REST TIMER'), trailing: Text('${(_rest ~/ 60).toString().padLeft(2, '0')}:${(_rest % 60).toString().padLeft(2, '0')}'), onTap: () { _timer?.cancel(); setState(() => _rest = 0); })),
+        if (_restEndsAt != null) Card(color: AppColors.card, child: ListTile(leading: const Icon(Icons.timer, color: AppColors.green), title: Text(_restComplete ? 'REST COMPLETE' : 'REST TIMER'), trailing: _restComplete ? const Icon(Icons.check_circle, color: AppColors.green) : Text('${(_rest ~/ 60).toString().padLeft(2, '0')}:${(_rest % 60).toString().padLeft(2, '0')}'), onTap: _clearRestTimer)),
         if (groups.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('Add exercises to begin.')),
         for (final group in groups.entries) Card(color: AppColors.card, child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(group.key, style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
@@ -356,9 +435,9 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
             final id = row['id'] as int;
             return Row(children: [
               SizedBox(width: 42, child: Text('SET ${row['set_order']}', style: const TextStyle(color: AppColors.grey, fontSize: 10))),
-              Expanded(child: TextField(controller: _controller(_reps, id, '${row['actual_reps'] ?? 0}'), keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Reps', isDense: true))),
+              Expanded(child: TextField(controller: _controller(_reps, id, '${row['actual_reps'] ?? 0}'), keyboardType: TextInputType.number, textInputAction: TextInputAction.next, onSubmitted: (_) => FocusScope.of(context).nextFocus(), onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(), decoration: const InputDecoration(labelText: 'Reps', isDense: true))),
               const SizedBox(width: 8),
-              Expanded(child: TextField(controller: _controller(_weights, id, row['actual_weight']?.toString() ?? ''), keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Weight kg', isDense: true))),
+              Expanded(child: TextField(controller: _controller(_weights, id, row['actual_weight']?.toString() ?? ''), keyboardType: const TextInputType.numberWithOptions(decimal: true), textInputAction: TextInputAction.done, onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(), onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(), decoration: const InputDecoration(labelText: 'Weight kg', isDense: true))),
               Checkbox(value: (row['completed'] as int? ?? 0) == 1, onChanged: (v) => _save(row, v ?? false), activeColor: AppColors.green),
             ]);
           }),
