@@ -41,7 +41,7 @@ The critical workflow suite verifies:
 | --- | --- | --- |
 | Train and plans | Plan creation, duplication, active session guard, session completion and history | Plan edit/delete UI journeys, empty states, malformed inputs |
 | Workout session | Set completion, volume summary, pause/resume persistence, rest timer persistence/cleanup | App background/foreground and process termination recovery; rapid repeated actions |
-| Workout analysis | Analysis data query window and set-level records | Assert calculation accuracy for volume, intensity and 7-day progressive-overload comparisons |
+| Workout analysis | Analysis data query window and set-level records | Pure calculation tests for date windows, unit conversion, Epley estimated 1RM, average recorded load per weighted set, and progression classifications |
 | Eat and nutrition | Food catalogue, custom food CRUD, food log CRUD, nutrition snapshots and macro aggregation | Full UI add/edit/delete journey, serving-unit conversion, target-boundary and empty states |
 | Weight | Daily upsert and latest-weight retrieval | UI add/edit/delete, chart range boundaries and trend calculation correctness |
 | Progress photos | Front/side/back records, same-angle replacement and deletion | UI capture/import permissions, missing-file handling, comparison and backup/restore |
