@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
 import 'workout_session_screen.dart';
+import 'widgets/plan_day_card.dart';
 
 class WorkoutPlanScreen extends StatefulWidget {
   const WorkoutPlanScreen({super.key});
@@ -451,7 +452,7 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
             itemCount: days.length,
             itemBuilder: (context, index) {
               final day = days[index];
-              return _PlanDayCard(
+              return PlanDayCard(
                 key: ValueKey(day['id']),
                 day: day,
                 index: index,
@@ -467,4 +468,3 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
     );
   }
 }
-import 'widgets/plan_day_card.dart';
