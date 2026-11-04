@@ -189,6 +189,79 @@ void main() {
     expect(matching.first['exercise_name_snapshot'], 'Dumbbell Row');
   });
 
+  test('workout analysis query includes the 14-day lower boundary and excludes tomorrow', () async {
+    final reference = DateTime(2026, 11, 4, 12);
+    final lowerBoundary = DateTime(2026, 10, 22);
+    final beforeBoundary = DateTime(2026, 10, 21, 23, 59);
+    final tomorrow = DateTime(2026, 11, 5);
+
+    Future<int> createCompletedWorkout(String name, DateTime startedAt) async {
+      final id = await database.startWorkoutSession(sessionName: name);
+      final db = await database.database;
+      await db.update(
+        'workouts',
+        {'started_at': startedAt.toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      await database.finishWorkoutSession(id);
+      return id;
+    }
+
+    final includedId = await createCompletedWorkout('Lower boundary', lowerBoundary);
+    final oldId = await createCompletedWorkout('Outside window', beforeBoundary);
+    final futureId = await createCompletedWorkout('Tomorrow', tomorrow);
+
+    final rows = await database.getWorkoutAnalysisRows(now: reference);
+    final ids = rows.map((row) => row['workout_id']).toSet();
+
+    expect(ids, contains(includedId));
+    expect(ids, isNot(contains(oldId)));
+    expect(ids, isNot(contains(futureId)));
+  });
+
+  test('workout analysis excludes abandoned sessions without completed sets but retains completed work', () async {
+    Future<int> createAbandonedWorkout(String name, {required bool completeSet}) async {
+      final id = await database.startWorkoutSession(sessionName: name);
+      final setId = await database.addExerciseToWorkout(
+        workoutId: id,
+        exerciseName: 'Analysis Test Press',
+        setCount: 1,
+        targetReps: 8,
+        targetWeight: 20,
+      );
+      if (completeSet) {
+        await database.updateWorkoutSet(
+          id: setId,
+          reps: 8,
+          weight: 20,
+          completed: true,
+        );
+      }
+      await database.abandonWorkoutSession(id);
+      return id;
+    }
+
+    final emptyAbandonedId = await createAbandonedWorkout(
+      'Abandoned without work',
+      completeSet: false,
+    );
+    final completedWorkId = await createAbandonedWorkout(
+      'Abandoned after completed set',
+      completeSet: true,
+    );
+
+    final rows = await database.getWorkoutAnalysisRows();
+    final ids = rows.map((row) => row['workout_id']).toSet();
+
+    expect(ids, isNot(contains(emptyAbandonedId)));
+    expect(ids, contains(completedWorkId));
+    final retainedSet = rows.firstWhere((row) => row['workout_id'] == completedWorkId);
+    expect(retainedSet['set_completed'], 1);
+    expect(retainedSet['actual_reps'], 8);
+    expect(retainedSet['actual_weight'], 20);
+  });
+
   test('finishing a workout clears any persisted rest timer', () async {
     final workoutId = await database.startWorkoutSession(sessionName: 'Finish cleanup');
     await database.saveWorkoutRestEnd(
