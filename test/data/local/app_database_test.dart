@@ -106,10 +106,10 @@ void main() {
     expect(todayRow['protein_target'], 150);
   });
 
-  test('fresh database creates the complete V1 schema at version 6', () async {
+  test('fresh database creates the complete V1 schema at version 7', () async {
     final db = await appDatabase.database;
     final version = await db.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 6);
+    expect(version.single['user_version'], 7);
 
     final rows = await db.rawQuery(
       "SELECT name FROM sqlite_master WHERE type = 'table'",
@@ -424,7 +424,7 @@ void main() {
   });
 
 
-  test('version 1 database upgrades all modules to version 6 and preserves food logs', () async {
+  test('version 1 database upgrades all modules to version 7 and preserves food logs', () async {
     final databasePath = p.join(tempDirectory.path, 'test.db');
     final oldDb = await openDatabase(
       databasePath,
@@ -505,7 +505,7 @@ void main() {
 
     final upgradedDb = await appDatabase.database;
     final version = await upgradedDb.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 6);
+    expect(version.single['user_version'], 7);
 
     final profileColumns = await upgradedDb.rawQuery('PRAGMA table_info(user_profile)');
     expect(profileColumns.map((column) => column['name']), contains('age'));
@@ -547,7 +547,7 @@ void main() {
 
     final workoutColumns = await upgradedDb.rawQuery('PRAGMA table_info(workouts)');
     expect(workoutColumns.map((column) => column['name']),
-        containsAll(['paused_at', 'paused_seconds']));
+        containsAll(['paused_at', 'paused_seconds', 'rest_ends_at']));
 
     final preservedFoods = await upgradedDb.query('foods', where: 'is_custom = 1');
     expect(preservedFoods, hasLength(1));
@@ -563,7 +563,7 @@ void main() {
     expect(logs.single['calories'], 155.6);
   });
 
-  test('version 2 database upgrades to version 6 without losing food logs', () async {
+  test('version 2 database upgrades to version 7 without losing food logs', () async {
     final databasePath = p.join(tempDirectory.path, 'test.db');
     final oldDb = await openDatabase(
       databasePath,
@@ -645,7 +645,7 @@ void main() {
 
     final upgradedDb = await appDatabase.database;
     final version = await upgradedDb.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 6);
+    expect(version.single['user_version'], 7);
 
     final workoutTables = await upgradedDb.rawQuery(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sets'",
@@ -677,7 +677,7 @@ void main() {
     expect(logs.single['calories'], 318);
   });
 
-  test('version 3 database upgrades workout and activity tables to version 6', () async {
+  test('version 3 database upgrades workout and activity tables to version 7', () async {
     final db = await appDatabase.database;
 
     // Simulate the v3 schema: no v4 workout-module baseline,
@@ -696,7 +696,7 @@ void main() {
 
     final upgradedDb = await appDatabase.database;
     final version = await upgradedDb.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 6);
+    expect(version.single['user_version'], 7);
 
     final tables = await upgradedDb.rawQuery(
       "SELECT name FROM sqlite_master WHERE type = 'table'",
@@ -716,10 +716,10 @@ void main() {
 
     final workoutColumns = await upgradedDb.rawQuery('PRAGMA table_info(workouts)');
     expect(workoutColumns.map((column) => column['name']),
-        containsAll(['paused_at', 'paused_seconds']));
+        containsAll(['paused_at', 'paused_seconds', 'rest_ends_at']));
   });
 
-  test('version 4 database upgrades activity tables and pause fields to version 6', () async {
+  test('version 4 database upgrades activity tables and pause fields to version 7', () async {
     final db = await appDatabase.database;
     final now = DateTime.now().toIso8601String();
     final workoutId = await db.insert('workouts', {
@@ -739,7 +739,7 @@ void main() {
 
     final upgradedDb = await appDatabase.database;
     final version = await upgradedDb.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 6);
+    expect(version.single['user_version'], 7);
 
     final activityTables = await upgradedDb.rawQuery(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('activity_logs', 'activity_health_daily')",
@@ -749,7 +749,7 @@ void main() {
 
     final workoutColumns = await upgradedDb.rawQuery('PRAGMA table_info(workouts)');
     final names = workoutColumns.map((column) => column['name'] as String).toSet();
-    expect(names, containsAll(['paused_at', 'paused_seconds']));
+    expect(names, containsAll(['paused_at', 'paused_seconds', 'rest_ends_at']));
 
     final workout = (await upgradedDb.query(
       'workouts',
@@ -761,7 +761,7 @@ void main() {
     expect(workout['paused_seconds'], 0);
   });
 
-  test('version 5 database upgrades pause fields to version 6 and preserves workouts', () async {
+  test('version 5 database upgrades pause fields to version 7 and preserves workouts', () async {
     final db = await appDatabase.database;
     final now = DateTime.now().toIso8601String();
     final workoutId = await db.insert('workouts', {
@@ -780,11 +780,11 @@ void main() {
 
     final upgradedDb = await appDatabase.database;
     final version = await upgradedDb.rawQuery('PRAGMA user_version');
-    expect(version.single['user_version'], 6);
+    expect(version.single['user_version'], 7);
 
     final columns = await upgradedDb.rawQuery('PRAGMA table_info(workouts)');
     final names = columns.map((column) => column['name'] as String).toSet();
-    expect(names, containsAll(['paused_at', 'paused_seconds']));
+    expect(names, containsAll(['paused_at', 'paused_seconds', 'rest_ends_at']));
 
     final workout = (await upgradedDb.query(
       'workouts',
@@ -795,6 +795,27 @@ void main() {
     expect(workout['notes'], 'Keep this workout');
     expect(workout['paused_at'], isNull);
     expect(workout['paused_seconds'], 0);
+  });
+
+  test('version 6 database adds persisted rest timer field without losing workout', () async {
+    final db = await appDatabase.database;
+    final now = DateTime.now().toIso8601String();
+    final workoutId = await db.insert('workouts', {
+      'started_at': now,
+      'session_name': 'Legacy v6 workout',
+      'status': 'in_progress',
+    });
+    await db.execute('ALTER TABLE workouts DROP COLUMN rest_ends_at');
+    await db.execute('PRAGMA user_version = 6');
+    await appDatabase.closeForTesting();
+    final upgradedDb = await appDatabase.database;
+    final version = await upgradedDb.rawQuery('PRAGMA user_version');
+    expect(version.single['user_version'], 7);
+    final columns = await upgradedDb.rawQuery('PRAGMA table_info(workouts)');
+    expect(columns.map((column) => column['name']), contains('rest_ends_at'));
+    final workout = (await upgradedDb.query('workouts', where: 'id = ?', whereArgs: [workoutId])).single;
+    expect(workout['session_name'], 'Legacy v6 workout');
+    expect(workout['rest_ends_at'], isNull);
   });
 
   test('only one workout session can be in progress at a time', () async {
@@ -834,8 +855,14 @@ void main() {
     await appDatabase.finishWorkoutSession(workoutId);
     await appDatabase.finishWorkoutSession(workoutId);
 
-    final suggested = await appDatabase.getSuggestedWorkoutDay();
-    expect(suggested?['id'], secondDayId);
+    final suggestedToday = await appDatabase.getSuggestedWorkoutDay();
+    expect(suggestedToday, isNull);
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final yesterdayIso = DateTime(yesterday.year, yesterday.month, yesterday.day, 12).toIso8601String();
+    final db = await appDatabase.database;
+    await db.update('workouts', {'completed_at': yesterdayIso}, where: 'id = ?', whereArgs: [workoutId]);
+    final suggestedNextEligibleDay = await appDatabase.getSuggestedWorkoutDay();
+    expect(suggestedNextEligibleDay?['id'], secondDayId);
   });
 
   test('replacing a progress photo returns the previous local path', () async {
