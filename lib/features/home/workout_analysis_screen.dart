@@ -247,9 +247,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
                   subtitle: 'Recorded lifted volume by muscle group',
                   child: data.currentWeek.muscleVolumes.isEmpty
                       ? _inlineEmpty('No muscle-group data recorded this week.')
-                      : Column(children: data.currentWeek.muscleVolumes.entries.toList()
-                          ..sort((a, b) => b.value.compareTo(a.value))
-                          .map((entry) => _barRow(entry.key, entry.value, data.currentWeek.volumeKg)).toList()),
+                      : Column(children: _muscleGroupRows(data.currentWeek)),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -356,8 +354,21 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
     );
   }
 
+  _ExerciseStats? _matchingExercise(List<_ExerciseStats> list, String name) {
+    for (final exercise in list) {
+      if (exercise.name.toLowerCase() == name.toLowerCase()) return exercise;
+    }
+    return null;
+  }
+
+  List<Widget> _muscleGroupRows(_PeriodStats stats) {
+    final entries = stats.muscleVolumes.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return entries.map((entry) => _barRow(entry.key, entry.value, stats.volumeKg)).toList();
+  }
+
   Widget _barRow(String label, double value, double total) {
-    final fraction = total <= 0 ? 0.0 : (value / total).clamp(0.0, 1.0);
+    final fraction = total <= 0 ? 0.0 : (value / total).clamp(0.0, 1.0).toDouble();
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
