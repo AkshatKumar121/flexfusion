@@ -8,6 +8,12 @@ on:
     branches:
       - flexfusion_v1
   workflow_dispatch:
+    inputs:
+      run_ios:
+        description: "Run the iOS simulator build and integration test"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -42,6 +48,9 @@ jobs:
 
   ios-simulator:
     name: iOS simulator integration and build
+    # Hosted macOS runners are currently being cancelled before job startup.
+    # Keep iOS verification opt-in until runner availability is reliable.
+    if: github.event_name == 'workflow_dispatch' && inputs.run_ios
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
