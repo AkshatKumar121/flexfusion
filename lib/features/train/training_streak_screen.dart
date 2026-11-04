@@ -82,29 +82,9 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.local_fire_department, color: Color(0xFFFF3D70), size: 66),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              StreakSectionLabel('STREAK'),
-                              const SizedBox(height: 5),
-                              Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                                Text('$streak', style: GoogleFonts.inter(color: AppColors.white, fontSize: 48, fontWeight: FontWeight.w800, height: 1)),
-                                const SizedBox(width: 9),
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 5),
-                                  child: Text('DAYS', style: GoogleFonts.inter(color: AppColors.white, fontSize: 19, fontWeight: FontWeight.w800)),
-                                ),
-                              ]),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.directions_walk_outlined, color: Color(0xFF999999), size: 48),
-                      ],
+                    StreakHeroHeader(
+                      streakDays: streak,
+                      trailingIcon: const Icon(Icons.directions_walk_outlined, color: Color(0xFF999999), size: 48),
                     ),
                     const SizedBox(height: 24),
                     Container(height: 1, color: const Color(0xFF303030)),
