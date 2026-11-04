@@ -34,8 +34,8 @@ class WorkoutAnalysisCalculator {
 
   /// Mean recorded load across completed sets that have a load.
   /// This is a simple load-intensity proxy, not %1RM or effort/RIR.
-  static double averageLoadPerWeightedSet(double volumeKg, int weightedSetCount) {
-    return weightedSetCount <= 0 ? 0 : volumeKg / weightedSetCount;
+  static double averageLoadPerWeightedSet(double totalLoadKg, int weightedSetCount) {
+    return weightedSetCount <= 0 ? 0 : totalLoadKg / weightedSetCount;
   }
 
   static WorkoutProgression classifyProgression({
