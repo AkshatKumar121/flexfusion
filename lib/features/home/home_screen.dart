@@ -326,7 +326,23 @@ class HomeScreenState extends State<HomeScreen> {
                       onTap: data?.completedWorkoutToday != null
                           ? null
                           : () async {
-                              await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen()));
+                              final active = data?.activeWorkout;
+                              if (active != null) {
+                                await Navigator.of(context).push(MaterialPageRoute<void>(
+                                  builder: (_) => WorkoutSessionScreen(
+                                    workoutId: active['id'] as int,
+                                    title: active['session_name'] as String,
+                                    onFinished: () {
+                                      Navigator.of(context).pop();
+                                      refreshDashboard();
+                                    },
+                                  ),
+                                ));
+                              } else {
+                                await Navigator.of(context).push(MaterialPageRoute<void>(
+                                  builder: (_) => const WorkoutLauncherScreen(),
+                                ));
+                              }
                               if (mounted) refreshDashboard();
                             },
                     ),
