@@ -391,7 +391,6 @@ class AppDatabase {
         await db.execute('ALTER TABLE workouts ADD COLUMN paused_seconds INTEGER NOT NULL DEFAULT 0');
       }
     }
-  }
 
     if (oldVersion < 7) {
       final workoutColumns = await db.rawQuery('PRAGMA table_info(workouts)');
@@ -400,6 +399,7 @@ class AppDatabase {
         await db.execute('ALTER TABLE workouts ADD COLUMN rest_ends_at TEXT');
       }
     }
+  }
 
   Future<void> _createEatV1Tables(Database db) async {
     await db.execute('''
