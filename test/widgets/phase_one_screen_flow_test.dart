@@ -41,7 +41,6 @@ void main() {
   });
 
   tearDown(() async {
-    debugDefaultTargetPlatformOverride = null;
     AppDatabase.setInstanceForTesting(null);
     await database.closeForTesting();
     if (await tempDirectory.exists()) {
@@ -83,30 +82,15 @@ void main() {
 
   testWidgets('food picker saves a custom food with its entered nutrition values', (tester) async {
     addTearDown(() async { await tester.pumpWidget(const SizedBox.shrink()); await tester.pump(); });
-    tester.view.physicalSize = const Size(1000, 2600);
+    tester.view.physicalSize = const Size(1000, 1200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              builder: (_) => const FoodPickerSheet(meal: 'BREAKFAST'),
-            ),
-            child: const Text('OPEN FOOD PICKER'),
-          ),
-        ),
-      ),
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(body: FoodPickerSheet(meal: 'BREAKFAST')),
     ));
-
-    await tester.tap(find.text('OPEN FOOD PICKER'));
     await pumpUntilFound(tester, find.text('ADD TO BREAKFAST'));
-    await tester.ensureVisible(find.text('CUSTOM FOOD'));
-    await tester.ensureVisible(find.text('CUSTOM FOOD'));
     await tester.tap(find.text('CUSTOM FOOD'));
     await pumpUntilFound(tester, find.text('Create custom food'));
 
@@ -130,6 +114,11 @@ void main() {
   });
 
   testWidgets('activity form validates fields and sends the saved activity to its caller', (tester) async {
+    addTearDown(() async { await tester.pumpWidget(const SizedBox.shrink()); await tester.pump(); });
+    tester.view.physicalSize = const Size(1000, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     Map<String, Object?>? savedActivity;
 
     await tester.pumpWidget(MaterialApp(
