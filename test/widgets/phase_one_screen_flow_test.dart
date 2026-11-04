@@ -26,13 +26,10 @@ void main() {
     await tester.pump();
   }
 
-  setUpAll(() {
+  setUpAll(() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     GoogleFonts.config.allowRuntimeFetching = false;
-  });
-
-  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     tempDirectory = await Directory.systemTemp.createTemp('flexfusion_widget_');
     database = AppDatabase.forTesting(p.join(tempDirectory.path, 'widget.db'));
@@ -40,7 +37,7 @@ void main() {
     await database.database;
   });
 
-  tearDown(() async {
+  tearDownAll(() async {
     AppDatabase.setInstanceForTesting(null);
     await database.closeForTesting();
     if (await tempDirectory.exists()) {
@@ -94,10 +91,15 @@ void main() {
     await tester.tap(find.text('CUSTOM FOOD'));
     await pumpUntilFound(tester, find.text('Create custom food'));
 
+    await tester.ensureVisible(find.byKey(const ValueKey('food-field-Food name')));
     await tester.enterText(find.byKey(const ValueKey('food-field-Food name')), 'Widget QA Paneer');
+    await tester.ensureVisible(find.byKey(const ValueKey('food-field-Calories (kcal)')));
     await tester.enterText(find.byKey(const ValueKey('food-field-Calories (kcal)')), '265');
+    await tester.ensureVisible(find.byKey(const ValueKey('food-field-Protein (g)')));
     await tester.enterText(find.byKey(const ValueKey('food-field-Protein (g)')), '18');
+    await tester.ensureVisible(find.byKey(const ValueKey('food-field-Carbs (g)')));
     await tester.enterText(find.byKey(const ValueKey('food-field-Carbs (g)')), '2');
+    await tester.ensureVisible(find.byKey(const ValueKey('food-field-Fat (g)')));
     await tester.enterText(find.byKey(const ValueKey('food-field-Fat (g)')), '21');
     await tester.tap(find.text('ADD TO MEAL'));
     await tester.pump(const Duration(milliseconds: 500));
@@ -154,7 +156,8 @@ void main() {
     await tester.enterText(find.byWidgetPredicate(
       (widget) => widget is TextField && widget.decoration?.labelText == 'Notes (optional)',
     ), 'Widget test walk');
-    await tester.ensureVisible(find.text('SAVE ACTIVITY'));
+    await tester.drag(find.byType(SingleChildScrollView).last, const Offset(0, -1600));
+    await tester.pump();
     await tester.tap(find.text('SAVE ACTIVITY'));
     await tester.pump(const Duration(milliseconds: 500));
 
