@@ -1,0 +1,33 @@
+name: Flutter Analyze
+
+on:
+  push:
+    branches:
+      - flexfusion_v1
+  pull_request:
+    branches:
+      - flexfusion_v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Flutter static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run full analyzer
+        run: flutter analyze --no-pub
