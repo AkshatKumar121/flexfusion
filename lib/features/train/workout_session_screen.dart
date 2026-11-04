@@ -233,67 +233,105 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Widget
   Future<void> _finish() async {
     if (_finishing) return;
     _finishing = true;
+
     try {
       var rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
-    if (!mounted) { _finishing = false; return; }
-    final pending = <Map<String, Object?>>[];
-    for (final row in rows) {
-      final id = row['id'] as int;
-      final reps = int.tryParse(
-        _controller(_reps, id, '${row['actual_reps'] ?? 0}').text.trim(),
-      );
-      final weightText = _controller(
-        _weights,
-        id,
-        row['actual_weight']?.toString() ?? '',
-      ).text.trim();
-      final weight = weightText.isEmpty ? null : double.tryParse(weightText);
-      if (reps == null || reps <= 0 ||
-          (weightText.isNotEmpty && (weight == null || weight < 0))) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fix invalid reps or weight before finishing.')),
-        );
+      if (!mounted) {
         _finishing = false;
         return;
       }
-      pending.add({
-        'id': id,
-        'reps': reps,
-        'weight': weight,
-        'completed': (row['completed'] as int? ?? 0) == 1,
-      });
-    }
-    for (final set in pending) {
-      await AppDatabase.instance.updateWorkoutSet(
-        id: set['id'] as int,
-        reps: set['reps'] as int,
-        weight: set['weight'] as double?,
-        completed: set['completed'] as bool,
-      );
-    }
-    rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
-    final done = rows.where((r) => (r['completed'] as int? ?? 0) == 1).length;
-    if (!mounted) return;
-    final sessionDuration = _isPaused || _startedAt == null
-        ? _elapsed
-        : DateTime.now().difference(_startedAt!) - Duration(seconds: _pausedSeconds);
-    final confirm = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
-      backgroundColor: AppColors.card, title: const Text('Finish workout?'),
-      content: Text('You completed $done of ${rows.length} sets.\n\nTime spent: ${_formatDuration(sessionDuration)}\n\nSave this session to history?'),
-      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('KEEP TRAINING')), ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('FINISH'))]));
-    if (confirm == true) {
-      await _clearRestTimer();
-      await AppDatabase.instance.finishWorkoutSession(widget.workoutId);
-      _workoutTimer?.cancel();
-      if (mounted) {
-        // Return to the screen that opened the workout launcher. The launcher
-        // closes itself as well, so the user lands directly on TRAIN/HOME.
-        if (widget.onFinished != null) {
-          widget.onFinished!();
-        } else {
-          Navigator.pop(context);
+
+      final pending = <Map<String, Object?>>[];
+      for (final row in rows) {
+        final id = row['id'] as int;
+        final reps = int.tryParse(
+          _controller(_reps, id, '${row['actual_reps'] ?? 0}').text.trim(),
+        );
+        final weightText = _controller(
+          _weights,
+          id,
+          row['actual_weight']?.toString() ?? '',
+        ).text.trim();
+        final weight = weightText.isEmpty ? null : double.tryParse(weightText);
+
+        if (reps == null ||
+            reps <= 0 ||
+            (weightText.isNotEmpty && (weight == null || weight < 0))) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Fix invalid reps or weight before finishing.')),
+          );
+          _finishing = false;
+          return;
         }
+
+        pending.add({
+          'id': id,
+          'reps': reps,
+          'weight': weight,
+          'completed': (row['completed'] as int? ?? 0) == 1,
+        });
       }
+
+      for (final set in pending) {
+        await AppDatabase.instance.updateWorkoutSet(
+          id: set['id'] as int,
+          reps: set['reps'] as int,
+          weight: set['weight'] as double?,
+          completed: set['completed'] as bool,
+        );
+      }
+
+      rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
+      if (!mounted) {
+        _finishing = false;
+        return;
+      }
+
+      final done = rows.where((r) => (r['completed'] as int? ?? 0) == 1).length;
+      final sessionDuration = _isPaused || _startedAt == null
+          ? _elapsed
+          : DateTime.now().difference(_startedAt!) -
+              Duration(seconds: _pausedSeconds);
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.card,
+          title: const Text('Finish workout?'),
+          content: Text(
+            'You completed $done of ${rows.length} sets.\n\n'
+            'Time spent: ${_formatDuration(sessionDuration)}\n\n'
+            'Save this session to history?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('KEEP TRAINING'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('FINISH'),
+            ),
+          ],
+        ),
+      );
+
+      if (!mounted) {
+        _finishing = false;
+        return;
+      }
+      if (confirm == true) {
+        await _clearRestTimer();
+        await AppDatabase.instance.finishWorkoutSession(widget.workoutId);
+        _workoutTimer?.cancel();
+        if (mounted) {
+          // Return to the screen that opened the workout launcher. The launcher
+          // closes itself as well, so the user lands directly on TRAIN/HOME.
+          if (widget.onFinished != null) {
+            widget.onFinished!();
+          } else {
+            Navigator.pop(context);
+          }
+        }
       } else {
         _finishing = false;
       }
@@ -302,7 +340,11 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Widget
       _finishing = false;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not finish workout. Your session is still saved; please try again.')),
+          const SnackBar(
+            content: Text(
+              'Could not finish workout. Your session is still saved; please try again.',
+            ),
+          ),
         );
       }
     }
