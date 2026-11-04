@@ -330,13 +330,22 @@ class TrainScreenState extends State<TrainScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          Text(
-            'Your next workout',
-            style: GoogleFonts.inter(
-              color: AppColors.white,
-              fontSize: 21,
-              fontWeight: FontWeight.w800,
-            ),
+          FutureBuilder<Map<String, Object?>?>(
+            future: AppDatabase.instance.getManualStartWorkoutDay(),
+            builder: (context, snapshot) {
+              final nextDay = snapshot.data;
+              final workoutName = nextDay == null || nextDay['no_days'] == true
+                  ? 'Your next workout'
+                  : 'Your next workout ${nextDay['label']}';
+              return Text(
+                workoutName,
+                style: GoogleFonts.inter(
+                  color: AppColors.white,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                ),
+              );
+            },
           ),
           const SizedBox(height: 5),
           Text(
