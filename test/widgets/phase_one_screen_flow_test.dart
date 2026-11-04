@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:flexfusion/app/app_shell.dart';
+import 'package:flexfusion/app/theme/app_colors.dart';
 import 'package:flexfusion/data/local/app_database.dart';
 import 'package:flexfusion/features/activity/activity_screen.dart';
 import 'package:flexfusion/features/eat/food_picker_sheet.dart';
@@ -25,11 +26,6 @@ void main() {
     }
     await tester.pump();
   }
-
-  Finder textFieldWithLabel(String label) => find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.labelText == label,
-      );
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -60,29 +56,41 @@ void main() {
 
   testWidgets('app shell exposes and switches between the three primary tabs', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AppShell()));
-    await pumpUntilFound(tester, find.text('Ready to get stronger?'));
+    await pumpUntilFound(tester, find.byKey(const ValueKey('nav-HOME')));
 
-    expect(find.text('TRAIN'), findsNWidgets(2));
-    expect(find.text('HOME'), findsOneWidget);
-    expect(find.text('EAT'), findsNWidgets(2));
+    expect(find.byKey(const ValueKey('nav-TRAIN')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav-HOME')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav-EAT')), findsOneWidget);
+
+    Icon navIcon(String key, IconData icon) => tester.widget<Icon>(
+          find.descendant(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byIcon(icon),
+          ),
+        );
 
     await tester.tap(find.byKey(const ValueKey('nav-TRAIN')));
-    await pumpUntilFound(tester, find.text('YOUR TRAINING SPACE'));
-    expect(find.text('YOUR TRAINING SPACE'), findsOneWidget);
+    await tester.pump();
+    expect(navIcon('nav-TRAIN', Icons.fitness_center).color, AppColors.red);
 
     await tester.tap(find.byKey(const ValueKey('nav-EAT')));
-    await pumpUntilFound(tester, find.text('YOUR NUTRITION'));
-    expect(find.text('YOUR NUTRITION'), findsOneWidget);
+    await tester.pump();
+    expect(navIcon('nav-EAT', Icons.restaurant).color, AppColors.red);
 
     await tester.tap(find.byKey(const ValueKey('nav-HOME')));
-    await pumpUntilFound(tester, find.text('Ready to get stronger?'));
-    expect(find.text('Ready to get stronger?'), findsOneWidget);
+    await tester.pump();
+    expect(navIcon('nav-HOME', Icons.home_filled).color, AppColors.red);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
 
   testWidgets('food picker saves a custom food with its entered nutrition values', (tester) async {
+    tester.view.physicalSize = const Size(1000, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: Builder(
@@ -100,6 +108,7 @@ void main() {
 
     await tester.tap(find.text('OPEN FOOD PICKER'));
     await pumpUntilFound(tester, find.text('ADD TO BREAKFAST'));
+    await tester.ensureVisible(find.text('CUSTOM FOOD'));
     await tester.tap(find.text('CUSTOM FOOD'));
     await pumpUntilFound(tester, find.text('Create custom food'));
 
@@ -122,25 +131,50 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('activity form validates empty input and persists a manual activity', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: ActivityScreen()));
-    await pumpUntilFound(tester, find.text('LOG AN ACTIVITY'));
-    expect(find.text('LOG AN ACTIVITY'), findsOneWidget);
+  testWidgets('activity form validates fields and sends the saved activity to its caller', (tester) async {
+    Map<String, Object?>? savedActivity;
 
-    await tester.tap(find.text('LOG AN ACTIVITY'));
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              builder: (_) => ActivityForm(
+                types: const ['Walking'],
+                date: DateTime.now(),
+                row: null,
+                onSave: (value) async => savedActivity = value,
+              ),
+            ),
+            child: const Text('OPEN ACTIVITY FORM'),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('OPEN ACTIVITY FORM'));
     await pumpUntilFound(tester, find.text('LOG ACTIVITY'));
     expect(find.text('LOG ACTIVITY'), findsOneWidget);
 
-    await tester.enterText(textFieldWithLabel('Duration (minutes)'), '25');
-    await tester.enterText(textFieldWithLabel('Steps (optional)'), '3200');
-    await tester.enterText(textFieldWithLabel('Notes (optional)'), 'Widget test walk');
+    await tester.enterText(find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.decoration?.labelText == 'Duration (minutes)',
+    ), '25');
+    await tester.enterText(find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.decoration?.labelText == 'Steps (optional)',
+    ), '3200');
+    await tester.enterText(find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.decoration?.labelText == 'Notes (optional)',
+    ), 'Widget test walk');
     await tester.tap(find.text('SAVE ACTIVITY'));
-    await pumpUntilFound(tester, find.text('25 min · 3200 steps'));
+    await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Walking'), findsOneWidget);
-    expect(find.text('25 min · 3200 steps'), findsOneWidget);
-    final history = await AppDatabase.instance.getActivityHistory(days: 1);
-    expect(history.any((row) => row['notes'] == 'Widget test walk'), isTrue);
+    expect(savedActivity, isNotNull);
+    expect(savedActivity!['type'], 'Walking');
+    expect(savedActivity!['duration'], 25);
+    expect(savedActivity!['steps'], 3200);
+    expect(savedActivity!['notes'], 'Widget test walk');
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();

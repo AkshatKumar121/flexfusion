@@ -112,7 +112,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
   Future<void> _openForm({Map<String,Object?>? row}) async {
     await showModalBottomSheet<void>(context:context,isScrollControlled:true,backgroundColor:AppColors.card,
-      builder:(_)=>_ActivityForm(types:_types,date:_date,row:row,onSave:(v)async{
+      builder:(_)=>ActivityForm(types:_types,date:_date,row:row,onSave:(v)async{
         await AppDatabase.instance.saveActivityLog(id:row?['id'] as int?,activityType:v['type'] as String,
           activityDate:_key(_date),startedAt:v['started'] as String,durationMinutes:v['duration'] as int,
           distanceKm:v['distance'] as double?,steps:v['steps'] as int?,activeCalories:v['calories'] as double?,notes:v['notes'] as String?);
@@ -169,12 +169,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 }
 
-class _ActivityForm extends StatefulWidget {
+class ActivityForm extends StatefulWidget {
   final List<String> types;final DateTime date;final Map<String,Object?>? row;final Future<void> Function(Map<String,Object?>) onSave;
-  const _ActivityForm({required this.types,required this.date,required this.row,required this.onSave});
-  @override State<_ActivityForm> createState()=>_ActivityFormState();
+  const ActivityForm({required this.types,required this.date,required this.row,required this.onSave});
+  @override State<ActivityForm> createState()=>ActivityFormState();
 }
-class _ActivityFormState extends State<_ActivityForm>{
+class ActivityFormState extends State<ActivityForm>{
   late String _type;late final TextEditingController _duration,_distance,_steps,_calories,_notes;TimeOfDay _time=TimeOfDay.now();bool _saving=false;
   @override void initState(){super.initState();final r=widget.row;_type=r?['activity_type'] as String? ?? widget.types.first;
     _duration=TextEditingController(text:r?['duration_minutes']?.toString()??'');_distance=TextEditingController(text:r?['distance_km']?.toString()??'');
