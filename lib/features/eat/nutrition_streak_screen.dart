@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
+import '../../shared/widgets/streak_components.dart';
 
 class NutritionStreakScreen extends StatefulWidget {
   const NutritionStreakScreen({super.key});
@@ -96,7 +97,7 @@ class _NutritionStreakScreenState extends State<NutritionStreakScreen> {
                       const Icon(Icons.local_fire_department, color: Color(0xFFFF3D70), size: 66),
                       const SizedBox(width: 16),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        _label('STREAK'),
+                        StreakSectionLabel('STREAK'),
                         const SizedBox(height: 5),
                         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
                           Text('$streak', style: GoogleFonts.inter(color: AppColors.white, fontSize: 48, fontWeight: FontWeight.w800, height: 1)),
@@ -109,28 +110,14 @@ class _NutritionStreakScreenState extends State<NutritionStreakScreen> {
                     const SizedBox(height: 24),
                     Container(height: 1, color: const Color(0xFF303030)),
                     const SizedBox(height: 22),
-                    Row(children: List.generate(7, (i) {
-                      final day = week[i];
-                      final key = _key(day);
-                      final done = achieved(key);
-                      final isToday = key == todayKey;
-                      return Expanded(child: Column(children: [
-                        Container(
-                          width: 38, height: 38,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: done ? AppColors.green : const Color(0xFF292929),
-                            border: isToday && !done ? Border.all(color: AppColors.green, width: 2.5) : null,
-                          ),
-                          child: done ? const Icon(Icons.check, color: Colors.black, size: 27) : null,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-                          style: GoogleFonts.inter(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w500)),
-                      ]));
-                    })),
+                    StreakWeekStrip(
+                      week: week,
+                      todayKey: todayKey,
+                      isCompleted: (key) => achieved(key),
+                      markIncompleteToday: false,
+                    ),
                     const SizedBox(height: 30),
-                    _label('TODAY\'S CALORIES'),
+                    StreakSectionLabel('TODAY\'S CALORIES'),
                     const SizedBox(height: 10),
                     _progressRow(
                       value: todayCalories,
@@ -141,7 +128,7 @@ class _NutritionStreakScreenState extends State<NutritionStreakScreen> {
                       subtitle: 'Allowed range: ${(calorieTarget - 100).round()}–${(calorieTarget + 100).round()} kcal',
                     ),
                     const SizedBox(height: 24),
-                    _label('TODAY\'S PROTEIN'),
+                    StreakSectionLabel('TODAY\'S PROTEIN'),
                     const SizedBox(height: 10),
                     _progressRow(
                       value: todayProtein,
@@ -170,9 +157,9 @@ class _NutritionStreakScreenState extends State<NutritionStreakScreen> {
                     ),
                     const SizedBox(height: 22),
                     Row(children: [
-                      Expanded(child: _summary('GOAL DAYS THIS WEEK', '$weekCount / 7', Icons.calendar_today)),
+                      Expanded(child: StreakSummaryTile(title: 'GOAL DAYS THIS WEEK', value: '$weekCount / 7', icon: Icons.calendar_today, valueFontSize: 15)),
                       const SizedBox(width: 10),
-                      Expanded(child: _summary('PROTEIN GOAL', proteinAchieved ? 'Achieved' : 'Pending', Icons.fitness_center)),
+                      Expanded(child: StreakSummaryTile(title: 'PROTEIN GOAL', value: proteinAchieved ? 'Achieved' : 'Pending', icon: Icons.fitness_center, valueFontSize: 15)),
                     ]),
                   ],
                 ),
@@ -187,7 +174,7 @@ class _NutritionStreakScreenState extends State<NutritionStreakScreen> {
     );
   }
 
-  Widget _label(String value) => Text(value,
+  Widget StreakSectionLabel(String value) => Text(value,
     style: GoogleFonts.inter(color: AppColors.grey, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.2));
 
   Widget _progressRow({
@@ -216,7 +203,7 @@ class _NutritionStreakScreenState extends State<NutritionStreakScreen> {
     )),
   ]);
 
-  Widget _summary(String title, String value, IconData icon) => Container(
+  Widget StreakSummaryTile(String title, String value, IconData icon) => Container(
     padding: const EdgeInsets.all(13),
     decoration: BoxDecoration(color: const Color(0xFF292929), borderRadius: BorderRadius.circular(12)),
     child: Row(children: [
