@@ -20,7 +20,8 @@ void main() {
     // Food diary tab remains reachable from the bottom navigation.
     await tester.tap(find.text('EAT').last);
     await tester.pumpAndSettle();
-    expect(find.text('ADD FOOD'), findsOneWidget);
+    // The food screen repeats this action label across multiple catalogue cards.
+    expect(find.text('ADD FOOD'), findsWidgets);
     await tester.tap(find.text('HOME').last);
     await tester.pumpAndSettle();
 
