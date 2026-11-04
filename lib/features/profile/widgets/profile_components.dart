@@ -6,7 +6,7 @@ import '../../../app/theme/app_colors.dart';
 class ProfileCard extends StatelessWidget {
   final Widget child;
 
-  const ProfileCard({required this.child});
+  const ProfileCard({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +29,7 @@ class SectionHeading extends StatelessWidget {
   final VoidCallback? onEdit;
 
   const SectionHeading({
+    super.key,
     required this.icon,
     required this.title,
     this.onEdit,
@@ -73,6 +74,7 @@ class DetailTile extends StatelessWidget {
   final String value;
 
   const DetailTile({
+    super.key,
     required this.icon,
     required this.label,
     required this.value,
@@ -119,6 +121,7 @@ class GoalOption extends StatelessWidget {
   final VoidCallback onTap;
 
   const GoalOption({
+    super.key,
     required this.title,
     required this.icon,
     required this.selected,
@@ -178,6 +181,7 @@ class MacroTarget extends StatelessWidget {
   final String label;
 
   const MacroTarget({
+    super.key,
     required this.color,
     required this.amount,
     required this.label,
