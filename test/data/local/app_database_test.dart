@@ -818,6 +818,15 @@ void main() {
     expect(workout['rest_ends_at'], isNull);
   });
 
+  test('rest timer end timestamp persists on the active workout', () async {
+    final workoutId = await appDatabase.startWorkoutSession(sessionName: 'Rest timer test');
+    final end = DateTime.now().add(const Duration(seconds: 90));
+    await appDatabase.saveWorkoutRestEnd(workoutId, end);
+    expect(await appDatabase.getWorkoutRestEnd(workoutId), end);
+    await appDatabase.saveWorkoutRestEnd(workoutId, null);
+    expect(await appDatabase.getWorkoutRestEnd(workoutId), isNull);
+  });
+
   test('only one workout session can be in progress at a time', () async {
     final firstId = await appDatabase.startWorkoutSession(
       sessionName: 'First session',
