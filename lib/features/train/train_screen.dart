@@ -307,6 +307,7 @@ class TrainScreenState extends State<TrainScreen> {
   Widget _buildWorkoutCard(_TrainData? trainData) {
     final activeWorkout = trainData?.activeWorkout;
     final hasActiveWorkout = activeWorkout != null;
+    final isWorkoutPaused = activeWorkout?['paused_at'] != null;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -323,7 +324,9 @@ class TrainScreenState extends State<TrainScreen> {
               const Icon(Icons.bolt, color: AppColors.green, size: 19),
               const SizedBox(width: 7),
               Text(
-                hasActiveWorkout ? 'WORKOUT IN PROGRESS' : 'READY WHEN YOU ARE',
+                hasActiveWorkout
+                    ? (isWorkoutPaused ? 'WORKOUT PAUSED' : 'WORKOUT IN PROGRESS')
+                    : 'READY WHEN YOU ARE',
                 style: GoogleFonts.inter(
                   color: AppColors.green,
                   fontSize: 10,
@@ -339,7 +342,7 @@ class TrainScreenState extends State<TrainScreen> {
             builder: (context, snapshot) {
               final nextDay = snapshot.data;
               final workoutName = hasActiveWorkout
-                  ? 'Resume ${activeWorkout['session_name']}'
+                  ? '${isWorkoutPaused ? 'Resume' : 'Ongoing'} ${activeWorkout['session_name']}'
                   : nextDay == null || nextDay['no_days'] == true
                       ? 'Your next workout'
                       : 'Your next workout ${nextDay['label']}';
@@ -356,7 +359,9 @@ class TrainScreenState extends State<TrainScreen> {
           const SizedBox(height: 5),
           Text(
             hasActiveWorkout
-                ? 'Pick up where you left off. Your session is still in progress.'
+                ? (isWorkoutPaused
+                    ? 'Your workout is paused. Resume when you are ready.'
+                    : 'Your workout is underway. Continue your current session.')
                 : 'Start your planned session or create a workout plan.',
             style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
           ),
@@ -378,7 +383,11 @@ class TrainScreenState extends State<TrainScreen> {
                 if (mounted) refreshTrainScreen();
               },
               icon: Icon(hasActiveWorkout ? Icons.play_arrow_rounded : Icons.play_arrow, size: 18),
-              label: Text(hasActiveWorkout ? 'RESUME WORKOUT' : 'START WORKOUT'),
+              label: Text(
+                hasActiveWorkout
+                    ? (isWorkoutPaused ? 'RESUME WORKOUT' : 'GO TO ONGOING WORKOUT')
+                    : 'START WORKOUT',
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.green,
                 foregroundColor: Colors.black,
