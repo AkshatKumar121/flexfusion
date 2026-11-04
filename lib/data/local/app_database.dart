@@ -2012,9 +2012,14 @@ class AppDatabase {
     final db = await database;
     final stepGoal = int.tryParse(await getAppSetting('daily_step_goal', defaultValue: '10000')) ?? 10000;
     final workouts = await db.rawQuery("""
-      SELECT DISTINCT substr(completed_at, 1, 10) AS day
+      SELECT DISTINCT substr(COALESCE(completed_at, started_at), 1, 10) AS day
       FROM workouts
-      WHERE status = 'completed' AND completed_at IS NOT NULL
+      WHERE EXISTS (
+        SELECT 1
+        FROM workout_sets
+        WHERE workout_sets.workout_id = workouts.id
+          AND workout_sets.completed = 1
+      )
     """);
     final activities = await db.rawQuery("""
       SELECT DISTINCT activity_date AS day
