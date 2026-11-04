@@ -8,7 +8,7 @@ class MacroItem extends StatelessWidget {
   final double value;
   final double target;
   final Color color;
-  const MacroItem({required this.label, required this.value, required this.target, required this.color});
+  const MacroItem({super.key, required this.label, required this.value, required this.target, required this.color});
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Container(width: 28, height: 3, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4))),
