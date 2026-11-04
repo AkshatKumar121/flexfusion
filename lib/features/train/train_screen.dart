@@ -91,7 +91,9 @@ class TrainScreenState extends State<TrainScreen> {
   Future<void> refreshTrainScreen() async {
     if (!mounted) return;
     final refreshedData = _loadDataAndCache();
-    setState(() => _dataFuture = refreshedData);
+    setState(() {
+      _dataFuture = refreshedData;
+    });
     await refreshedData;
   }
 
