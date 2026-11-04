@@ -3,6 +3,65 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
 
+class StreakHeroHeader extends StatelessWidget {
+  final int streakDays;
+  final Widget trailingIcon;
+
+  const StreakHeroHeader({
+    super.key,
+    required this.streakDays,
+    required this.trailingIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          const Icon(
+            Icons.local_fire_department,
+            color: Color(0xFFFF3D70),
+            size: 66,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const StreakSectionLabel('STREAK'),
+                const SizedBox(height: 5),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '$streakDays',
+                      style: GoogleFonts.inter(
+                        color: AppColors.white,
+                        fontSize: 48,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Text(
+                        'DAYS',
+                        style: GoogleFonts.inter(
+                          color: AppColors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          trailingIcon,
+        ],
+      );
+}
+
 class StreakSectionLabel extends StatelessWidget {
   final String label;
 
