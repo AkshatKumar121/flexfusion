@@ -37,11 +37,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _changeUnit(String key, String value) async {
+    final previousValue = key == 'weight_unit' ? _weightUnit : _heightUnit;
     setState(() {
       if (key == 'weight_unit') _weightUnit = value;
       if (key == 'height_unit') _heightUnit = value;
     });
-    await AppDatabase.instance.saveAppSetting(key, value);
+    try {
+      await AppDatabase.instance.saveAppSetting(key, value);
+    } catch (error) {
+      debugPrint('Could not save $key: $error');
+      if (!mounted) return;
+      setState(() {
+        if (key == 'weight_unit') _weightUnit = previousValue;
+        if (key == 'height_unit') _heightUnit = previousValue;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save this setting. Please try again.')),
+      );
+    }
   }
 
   @override
