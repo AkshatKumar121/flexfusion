@@ -26,9 +26,9 @@ import UserNotifications
     UNUserNotificationCenter.current().delegate = self
     let channel = FlutterMethodChannel(
       name: "com.flexfusion/rest_timer",
-      binaryMessenger: engineBridge.engine.binaryMessenger
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
-    channel.setMethodCallHandler { [weak self] call, result in
+    channel.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       guard let self = self else { result(FlutterError(code: "UNAVAILABLE", message: "App delegate unavailable", details: nil)); return }
       switch call.method {
       case "requestPermission":
