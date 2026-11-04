@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'widgets/profile_components.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
@@ -304,7 +305,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMemberCard() {
-    return _ProfileCard(
+    return ProfileCard(
       child: Row(
         children: [
           Stack(
@@ -400,11 +401,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPersonalDetails() {
-    return _ProfileCard(
+    return ProfileCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeading(
+          SectionHeading(
             icon: Icons.person_outline,
             title: 'PERSONAL DETAILS',
             onEdit: _editPersonalDetails,
@@ -413,7 +414,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               Expanded(
-                child: _DetailTile(
+                child: DetailTile(
                   icon: Icons.cake_outlined,
                   label: 'AGE',
                   value: (_profile?['age'] ?? 'Not set').toString(),
@@ -421,7 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               SizedBox(width: 10),
               Expanded(
-                child: _DetailTile(
+                child: DetailTile(
                   icon: Icons.height,
                   label: 'HEIGHT',
                   value: _profile?['height_value'] == null ? 'Not set' : _heightUnit == 'cm' ? '${(_profile!['height_value'] as num).round()} cm' : _formatFeet((_profile!['height_value'] as num).toDouble()),
@@ -429,7 +430,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               SizedBox(width: 10),
               Expanded(
-                child: _DetailTile(
+                child: DetailTile(
                   icon: Icons.monitor_weight_outlined,
                   label: 'WEIGHT',
                   value: _weight == null ? 'Not set' : '${(_weightUnit == 'kg' ? _weight! : _weight! * 2.2046226218).toStringAsFixed(1)} $_weightUnit',
@@ -443,32 +444,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildFitnessGoal() {
-    return _ProfileCard(
+    return ProfileCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeading(
+          SectionHeading(
             icon: Icons.track_changes,
             title: 'FITNESS GOAL',
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              _GoalOption(
+              GoalOption(
                 title: 'Fat Loss',
                 icon: Icons.local_fire_department_outlined,
                 selected: _fitnessGoal == 'Fat Loss',
                 onTap: () => _saveGoal('Fat Loss'),
               ),
               const SizedBox(width: 9),
-              _GoalOption(
+              GoalOption(
                 title: 'Muscle Gain',
                 icon: Icons.fitness_center,
                 selected: _fitnessGoal == 'Muscle Gain',
                 onTap: () => _saveGoal('Muscle Gain'),
               ),
               const SizedBox(width: 9),
-              _GoalOption(
+              GoalOption(
                 title: 'Recomposition',
                 icon: Icons.autorenew,
                 selected: _fitnessGoal == 'Recomposition',
@@ -482,11 +483,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildDailyTargets() {
-    return _ProfileCard(
+    return ProfileCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeading(
+          SectionHeading(
             icon: Icons.bar_chart_rounded,
             title: 'DAILY TARGETS',
             onEdit: _editDailyTargets,
@@ -530,21 +531,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               Expanded(
-                child: _MacroTarget(
+                child: MacroTarget(
                   color: AppColors.red,
                   amount: (_targets?['protein_target_g'] as num?)?.round().toString() ?? '—',
                   label: 'Protein',
                 ),
               ),
               Expanded(
-                child: _MacroTarget(
+                child: MacroTarget(
                   color: AppColors.green,
                   amount: (_targets?['carbs_target_g'] as num?)?.round().toString() ?? '—',
                   label: 'Carbs',
                 ),
               ),
               Expanded(
-                child: _MacroTarget(
+                child: MacroTarget(
                   color: Color(0xFFE8BD3D),
                   amount: (_targets?['fat_target_g'] as num?)?.round().toString() ?? '—',
                   label: 'Fats',
@@ -567,225 +568,5 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveGoal(String goal) async {
     setState(() => _fitnessGoal = goal);
     await AppDatabase.instance.saveAppSetting('fitness_goal', goal);
-  }
-}
-
-class _ProfileCard extends StatelessWidget {
-  final Widget child;
-
-  const _ProfileCard({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _SectionHeading extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback? onEdit;
-
-  const _SectionHeading({
-    required this.icon,
-    required this.title,
-    this.onEdit,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.white, size: 22),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            title,
-            style: GoogleFonts.inter(
-              color: AppColors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.7,
-            ),
-          ),
-        ),
-        if (onEdit != null)
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            onPressed: onEdit,
-            icon: const Icon(
-              Icons.edit_outlined,
-              color: AppColors.grey,
-              size: 19,
-            ),
-            tooltip: 'Edit $title',
-          ),
-      ],
-    );
-  }
-}
-
-class _DetailTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _DetailTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 112),
-      padding: const EdgeInsets.all(11),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.grey, size: 21),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              color: AppColors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalOption extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _GoalOption({
-    required this.title,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(11),
-        child: Container(
-          height: 108,
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 12),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.red.withValues(alpha: 0.08)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(11),
-            border: Border.all(
-              color: selected ? AppColors.red : AppColors.border,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: selected ? AppColors.red : AppColors.grey),
-              const SizedBox(height: 9),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  color: AppColors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Icon(
-                selected ? Icons.check_circle : Icons.circle_outlined,
-                color: selected ? AppColors.red : AppColors.grey,
-                size: 14,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MacroTarget extends StatelessWidget {
-  final Color color;
-  final String amount;
-  final String label;
-
-  const _MacroTarget({
-    required this.color,
-    required this.amount,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 5,
-          height: 34,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                amount,
-                style: GoogleFonts.inter(
-                  color: AppColors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  color: AppColors.grey,
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 }
