@@ -292,6 +292,19 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
                 ),
                 const SizedBox(height: 14),
                 _panel(
+                  title: 'EXERCISE PERFORMANCE',
+                  subtitle: 'Last 7 days vs previous 7 days • completed weighted sets',
+                  child: data.currentWeek.exercises.isEmpty
+                      ? _inlineEmpty('No completed exercises in the current 7-day period.')
+                      : Column(
+                          children: data.currentWeek.exercises.map((exercise) {
+                            final previous = _matchingExercise(data.previousWeek.exercises, exercise.name);
+                            return _exercisePerformanceTile(exercise, previous);
+                          }).toList(),
+                        ),
+                ),
+                const SizedBox(height: 14),
+                _panel(
                   title: 'MUSCLE GROUP DISTRIBUTION',
                   subtitle: 'Recorded lifted volume by muscle group',
                   child: data.currentWeek.muscleVolumes.isEmpty
@@ -377,6 +390,68 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
         SizedBox(width: 76, child: Text(current, textAlign: TextAlign.end, style: GoogleFonts.inter(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w700))),
         SizedBox(width: 76, child: Text(previous, textAlign: TextAlign.end, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10))),
         SizedBox(width: 58, child: Text(delta, textAlign: TextAlign.end, style: GoogleFonts.inter(color: color, fontSize: 10, fontWeight: FontWeight.w800))),
+      ]),
+    );
+  }
+
+  Widget _exercisePerformanceTile(_ExerciseStats current, _ExerciseStats? previous) {
+    final priorWeighted = previous != null && previous.hasWeight;
+    final currentWeighted = current.hasWeight;
+    final strengthStatus = WorkoutAnalysisCalculator.classifyProgression(
+      currentEstimatedOneRepMaxKg: current.estimatedOneRepMaxKg,
+      previousEstimatedOneRepMaxKg: previous?.estimatedOneRepMaxKg,
+      currentHasWeight: currentWeighted,
+      previousHasWeight: priorWeighted,
+    );
+    final statusColor = strengthStatus == WorkoutProgression.progressing
+        ? AppColors.green
+        : strengthStatus == WorkoutProgression.declining
+            ? AppColors.red
+            : AppColors.grey;
+    String load(double value, bool available) =>
+        available ? '${value.toStringAsFixed(1)} kg' : '—';
+    String bestSet(_ExerciseStats? stats) => stats == null || !stats.hasWeight
+        ? '—'
+        : '${stats.bestSetWeightKg.toStringAsFixed(1)} kg × ${stats.bestSetReps}';
+    Widget comparison(String label, String currentValue, String previousValue) =>
+        Padding(
+          padding: const EdgeInsets.only(top: 7),
+          child: Row(
+            children: [
+              Expanded(child: Text(label, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10))),
+              Expanded(child: Text(currentValue, textAlign: TextAlign.right,
+                  style: GoogleFonts.inter(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w700))),
+              Expanded(child: Text(previousValue, textAlign: TextAlign.right,
+                  style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10))),
+            ],
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text(current.name,
+              style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w700))),
+          Text(strengthStatus.label,
+              style: GoogleFonts.inter(color: statusColor, fontSize: 9, fontWeight: FontWeight.w800)),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          const Expanded(child: SizedBox()),
+          Expanded(child: Text('LAST 7 DAYS', textAlign: TextAlign.right,
+              style: GoogleFonts.inter(color: AppColors.green, fontSize: 9, fontWeight: FontWeight.w700))),
+          Expanded(child: Text('PREVIOUS 7', textAlign: TextAlign.right,
+              style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9))),
+        ]),
+        comparison('Best set', bestSet(current), bestSet(previous)),
+        comparison('Est. 1RM', load(current.estimatedOneRepMaxKg, currentWeighted),
+            load(previous?.estimatedOneRepMaxKg ?? 0, priorWeighted)),
+        comparison('Top load', load(current.maxWeightKg, currentWeighted),
+            load(previous?.maxWeightKg ?? 0, priorWeighted)),
+        comparison('Volume', currentWeighted ? _volume(current.volumeKg) : '—',
+            priorWeighted ? _volume(previous!.volumeKg) : '—'),
+        comparison('Completed sets', '${current.sets}', previous == null ? '—' : '${previous.sets}'),
+        comparison('Total reps', '${current.reps}', previous == null ? '—' : '${previous.reps}'),
       ]),
     );
   }
