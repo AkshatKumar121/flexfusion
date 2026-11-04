@@ -143,10 +143,6 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                     const SizedBox(height: 12),
                     Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       Text('$steps / $stepGoal', style: GoogleFonts.inter(color: AppColors.white, fontSize: 42, fontWeight: FontWeight.w800, height: 1)),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text('/$stepGoal', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 20)),
-                      ),
                       const Spacer(),
                       Text('${(progress * 100).round()}%', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 22, fontWeight: FontWeight.w600)),
                     ]),
