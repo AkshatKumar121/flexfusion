@@ -25,9 +25,9 @@ void main() {
     });
 
     test('calculates average load only across weighted completed sets', () {
-      expect(WorkoutAnalysisCalculator.averageLoadPerWeightedSet(300, 3), 100);
+      expect(WorkoutAnalysisCalculator.averageLoadPerWeightedSet(180, 3), 60);
       expect(WorkoutAnalysisCalculator.averageLoadPerWeightedSet(0, 0), 0);
-      expect(WorkoutAnalysisCalculator.averageLoadPerWeightedSet(300, 0), 0);
+      expect(WorkoutAnalysisCalculator.averageLoadPerWeightedSet(180, 0), 0);
     });
 
     test('classifies estimated strength progression, not volume change', () {
