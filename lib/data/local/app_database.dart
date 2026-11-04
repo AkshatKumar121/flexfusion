@@ -15,7 +15,7 @@ class AppDatabase {
       : this._(databasePathOverride: databasePath);
 
   static final AppDatabase instance = AppDatabase._();
-  static const int schemaVersion = 6;
+  static const int schemaVersion = 7;
   final String? _databasePathOverride;
   Database? _database;
 
@@ -296,6 +296,7 @@ class AppDatabase {
         notes TEXT,
         paused_at TEXT,
         paused_seconds INTEGER NOT NULL DEFAULT 0,
+        rest_ends_at TEXT,
         FOREIGN KEY (plan_id) REFERENCES workout_plans(id) ON DELETE SET NULL,
         FOREIGN KEY (plan_day_id) REFERENCES workout_plan_days(id) ON DELETE SET NULL
       )
@@ -391,6 +392,14 @@ class AppDatabase {
       }
     }
   }
+
+    if (oldVersion < 7) {
+      final workoutColumns = await db.rawQuery('PRAGMA table_info(workouts)');
+      final hasRestEndsAt = workoutColumns.any((column) => column['name'] == 'rest_ends_at');
+      if (!hasRestEndsAt) {
+        await db.execute('ALTER TABLE workouts ADD COLUMN rest_ends_at TEXT');
+      }
+    }
 
   Future<void> _createEatV1Tables(Database db) async {
     await db.execute('''
@@ -1728,6 +1737,44 @@ class AppDatabase {
       ''',
       [limit],
     );
+  }
+
+  Future<void> saveWorkoutRestEnd(int workoutId, DateTime? endsAt) async {
+    final db = await database;
+    await db.update(
+      'workouts',
+      {'rest_ends_at': endsAt?.toIso8601String()},
+      where: "id = ? AND status = 'in_progress'",
+      whereArgs: [workoutId],
+    );
+  }
+
+  Future<DateTime?> getWorkoutRestEnd(int workoutId) async {
+    final db = await database;
+    final rows = await db.query(
+      'workouts',
+      columns: ['rest_ends_at'],
+      where: 'id = ?',
+      whereArgs: [workoutId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return DateTime.tryParse(rows.first['rest_ends_at'] as String? ?? '');
+  }
+
+  Future<Map<String, Object?>?> getCompletedWorkoutToday() async {
+    final db = await database;
+    final today = DateTime.now();
+    final start = DateTime(today.year, today.month, today.day).toIso8601String();
+    final end = DateTime(today.year, today.month, today.day + 1).toIso8601String();
+    final rows = await db.query(
+      'workouts',
+      where: "status = 'completed' AND completed_at >= ? AND completed_at < ?",
+      whereArgs: [start, end],
+      orderBy: 'completed_at DESC, id DESC',
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
   }
 
   Future<Map<String, Object?>?> getInProgressWorkout() async {
