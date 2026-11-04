@@ -33,9 +33,11 @@ class TrainScreenState extends State<TrainScreen> {
     final db = AppDatabase.instance;
     final latestWeight = await db.getLatestBodyWeight();
     final weekly = await db.getWeeklyProgressDetails();
+    final activeWorkout = await db.getInProgressWorkout();
     return _TrainData(
       latestWeight: latestWeight,
       weekly: weekly,
+      activeWorkout: activeWorkout,
     );
   }
 
@@ -164,7 +166,7 @@ class TrainScreenState extends State<TrainScreen> {
                       ),
                     ),
                     const SizedBox(height: 22),
-                    _buildWorkoutCard(),
+                    _buildWorkoutCard(data),
                     const SizedBox(height: 14),
                     _buildWeekCard(workoutCount, days),
                     const SizedBox(height: 14),
@@ -302,7 +304,9 @@ class TrainScreenState extends State<TrainScreen> {
     );
   }
 
-  Widget _buildWorkoutCard() {
+  Widget _buildWorkoutCard(_TrainData? trainData) {
+    final activeWorkout = trainData?.activeWorkout;
+    final hasActiveWorkout = activeWorkout != null;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -319,7 +323,7 @@ class TrainScreenState extends State<TrainScreen> {
               const Icon(Icons.bolt, color: AppColors.green, size: 19),
               const SizedBox(width: 7),
               Text(
-                'READY WHEN YOU ARE',
+                hasActiveWorkout ? 'WORKOUT IN PROGRESS' : 'READY WHEN YOU ARE',
                 style: GoogleFonts.inter(
                   color: AppColors.green,
                   fontSize: 10,
@@ -334,9 +338,11 @@ class TrainScreenState extends State<TrainScreen> {
             future: AppDatabase.instance.getManualStartWorkoutDay(),
             builder: (context, snapshot) {
               final nextDay = snapshot.data;
-              final workoutName = nextDay == null || nextDay['no_days'] == true
-                  ? 'Your next workout'
-                  : 'Your next workout ${nextDay['label']}';
+              final workoutName = hasActiveWorkout
+                  ? 'Resume ${activeWorkout['session_name']}'
+                  : nextDay == null || nextDay['no_days'] == true
+                      ? 'Your next workout'
+                      : 'Your next workout ${nextDay['label']}';
               return Text(
                 workoutName,
                 style: GoogleFonts.inter(
@@ -349,7 +355,9 @@ class TrainScreenState extends State<TrainScreen> {
           ),
           const SizedBox(height: 5),
           Text(
-            'Start your planned session or create a workout plan.',
+            hasActiveWorkout
+                ? 'Pick up where you left off. Your session is still in progress.'
+                : 'Start your planned session or create a workout plan.',
             style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
           ),
           const SizedBox(height: 17),
@@ -357,11 +365,20 @@ class TrainScreenState extends State<TrainScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
-                await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen()));
+                if (activeWorkout != null) {
+                  await Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => WorkoutSessionScreen(
+                      workoutId: activeWorkout['id'] as int,
+                      title: activeWorkout['session_name'] as String,
+                    ),
+                  ));
+                } else {
+                  await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen()));
+                }
                 if (mounted) refreshTrainScreen();
               },
-              icon: const Icon(Icons.play_arrow, size: 18),
-              label: const Text('START WORKOUT'),
+              icon: Icon(hasActiveWorkout ? Icons.play_arrow_rounded : Icons.play_arrow, size: 18),
+              label: Text(hasActiveWorkout ? 'RESUME WORKOUT' : 'START WORKOUT'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.green,
                 foregroundColor: Colors.black,
@@ -591,9 +608,11 @@ class TrainScreenState extends State<TrainScreen> {
 class _TrainData {
   final Map<String, Object?>? latestWeight;
   final Map<String, Object?> weekly;
+  final Map<String, Object?>? activeWorkout;
 
   const _TrainData({
     required this.latestWeight,
     required this.weekly,
+    required this.activeWorkout,
   });
 }
