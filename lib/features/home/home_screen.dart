@@ -8,6 +8,7 @@ import '../profile/profile_screen.dart';
 import 'weekly_progress_screen.dart';
 import 'workout_analysis_screen.dart';
 import '../train/workout_session_screen.dart';
+import '../train/workout_launcher_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onOpenEat;
