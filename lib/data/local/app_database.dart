@@ -1770,7 +1770,7 @@ class AppDatabase {
     final end = DateTime(today.year, today.month, today.day + 1).toIso8601String();
     final rows = await db.query(
       'workouts',
-      where: "status = 'completed' AND completed_at >= ? AND completed_at < ?",
+      where: "status = 'completed' AND plan_day_id IS NOT NULL AND completed_at >= ? AND completed_at < ?",
       whereArgs: [start, end],
       orderBy: 'completed_at DESC, id DESC',
       limit: 1,
