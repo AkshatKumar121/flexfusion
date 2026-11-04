@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -31,7 +30,6 @@ void main() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     GoogleFonts.config.allowRuntimeFetching = false;
-    debugDefaultTargetPlatformOverride = TargetPlatform.android;
   });
 
   setUp(() async {
@@ -43,6 +41,7 @@ void main() {
   });
 
   tearDown(() async {
+    debugDefaultTargetPlatformOverride = null;
     AppDatabase.setInstanceForTesting(null);
     await database.closeForTesting();
     if (await tempDirectory.exists()) {
@@ -50,11 +49,8 @@ void main() {
     }
   });
 
-  tearDownAll(() {
-    debugDefaultTargetPlatformOverride = null;
-  });
-
   testWidgets('app shell exposes and switches between the three primary tabs', (tester) async {
+    addTearDown(() async { await tester.pumpWidget(const SizedBox.shrink()); await tester.pump(); });
     await tester.pumpWidget(const MaterialApp(home: AppShell()));
     await pumpUntilFound(tester, find.byKey(const ValueKey('nav-HOME')));
 
@@ -86,7 +82,8 @@ void main() {
   });
 
   testWidgets('food picker saves a custom food with its entered nutrition values', (tester) async {
-    tester.view.physicalSize = const Size(1000, 1800);
+    addTearDown(() async { await tester.pumpWidget(const SizedBox.shrink()); await tester.pump(); });
+    tester.view.physicalSize = const Size(1000, 2600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -108,6 +105,7 @@ void main() {
 
     await tester.tap(find.text('OPEN FOOD PICKER'));
     await pumpUntilFound(tester, find.text('ADD TO BREAKFAST'));
+    await tester.ensureVisible(find.text('CUSTOM FOOD'));
     await tester.ensureVisible(find.text('CUSTOM FOOD'));
     await tester.tap(find.text('CUSTOM FOOD'));
     await pumpUntilFound(tester, find.text('Create custom food'));
@@ -167,6 +165,7 @@ void main() {
     await tester.enterText(find.byWidgetPredicate(
       (widget) => widget is TextField && widget.decoration?.labelText == 'Notes (optional)',
     ), 'Widget test walk');
+    await tester.ensureVisible(find.text('SAVE ACTIVITY'));
     await tester.tap(find.text('SAVE ACTIVITY'));
     await tester.pump(const Duration(milliseconds: 500));
 
