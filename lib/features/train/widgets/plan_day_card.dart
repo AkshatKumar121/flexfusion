@@ -11,7 +11,7 @@ class PlanDayCard extends StatefulWidget {
   final VoidCallback onEdit;
   final VoidCallback onStart;
   final VoidCallback onDelete;
-  const _PlanDayCard({super.key, required this.day, required this.index, required this.onAddExercise, required this.onEdit, required this.onStart, required this.onDelete});
+  const PlanDayCard({super.key, required this.day, required this.index, required this.onAddExercise, required this.onEdit, required this.onStart, required this.onDelete});
 
   @override
   State<PlanDayCard> createState() => _PlanDayCardState();
