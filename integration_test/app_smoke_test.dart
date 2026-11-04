@@ -50,7 +50,10 @@ void main() {
     await tester.tap(find.text('TRAIN').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('GO TO ONGOING WORKOUT'));
-    await tester.pumpAndSettle();
+    // The live workout clock schedules periodic frames, so avoid pumpAndSettle
+    // while the session is active.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Integration Test Press'), findsOneWidget);
     expect(find.text('WORKOUT DURATION'), findsOneWidget);
 
@@ -66,11 +69,13 @@ void main() {
     expect(find.text('REST TIMER'), findsOneWidget);
     await tester.tap(find.byTooltip('Dismiss rest timer'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
     expect(find.text('REST TIMER'), findsNothing);
     expect(await db.getWorkoutRestEnd(workoutId), isNull);
 
     await tester.tap(find.text('FINISH').first);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Finish workout?'), findsOneWidget);
     await tester.tap(find.text('FINISH').last);
     await tester.pumpAndSettle();
