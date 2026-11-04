@@ -255,12 +255,13 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
                       ? _inlineEmpty('No completed sets in the current 7-day period.')
                       : Column(children: data.currentWeek.exercises.map((exercise) {
                           final previous = _matchingExercise(data.previousWeek.exercises, exercise.name);
-                          final volumeChange = previous == null ? 'NEW' : _change(exercise.volumeKg, previous.volumeKg);
-                          final strengthChange = previous == null ? '—' : _change(exercise.estimatedOneRepMaxKg, previous.estimatedOneRepMaxKg);
-                          final progressing = previous != null && exercise.estimatedOneRepMaxKg > previous.estimatedOneRepMaxKg;
-                          final declining = previous != null && exercise.estimatedOneRepMaxKg < previous.estimatedOneRepMaxKg;
-                          final status = previous == null ? 'INSUFFICIENT BASELINE' : progressing ? 'PROGRESSING' : declining ? 'DECLINING' : 'MAINTAINING';
-                          final color = previous == null ? AppColors.grey : progressing ? AppColors.green : declining ? AppColors.red : AppColors.grey;
+                          final hasBaseline = previous != null && previous.hasWeight && exercise.hasWeight && previous.estimatedOneRepMaxKg > 0;
+                          final volumeChange = hasBaseline ? _change(exercise.volumeKg, previous.volumeKg) : 'NEW';
+                          final strengthChange = hasBaseline ? _change(exercise.estimatedOneRepMaxKg, previous.estimatedOneRepMaxKg) : '—';
+                          final progressing = hasBaseline && exercise.estimatedOneRepMaxKg > previous.estimatedOneRepMaxKg;
+                          final declining = hasBaseline && exercise.estimatedOneRepMaxKg < previous.estimatedOneRepMaxKg;
+                          final status = !hasBaseline ? 'INSUFFICIENT BASELINE' : progressing ? 'PROGRESSING' : declining ? 'DECLINING' : 'MAINTAINING';
+                          final color = !hasBaseline ? AppColors.grey : progressing ? AppColors.green : declining ? AppColors.red : AppColors.grey;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 14),
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
