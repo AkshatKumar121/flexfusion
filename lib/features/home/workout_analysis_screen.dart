@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
+import 'workout_analysis_calculator.dart';
 
 class WorkoutAnalysisScreen extends StatefulWidget {
   const WorkoutAnalysisScreen({super.key});
@@ -32,15 +33,15 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
     final previousStart = today.subtract(const Duration(days: 13));
     final currentRows = rows.where((r) {
       final d = DateTime.tryParse(r['started_at'] as String? ?? '');
-      return d != null && !d.isBefore(currentStart) && d.isBefore(today.add(const Duration(days: 1)));
+      return WorkoutAnalysisCalculator.isInRange(d, currentStart, today.add(const Duration(days: 1)));
     }).toList();
     final previousRows = rows.where((r) {
       final d = DateTime.tryParse(r['started_at'] as String? ?? '');
-      return d != null && !d.isBefore(previousStart) && d.isBefore(currentStart);
+      return WorkoutAnalysisCalculator.isInRange(d, previousStart, currentStart);
     }).toList();
     final todayRows = rows.where((r) {
       final d = DateTime.tryParse(r['started_at'] as String? ?? '');
-      return d != null && d.year == today.year && d.month == today.month && d.day == today.day;
+      return WorkoutAnalysisCalculator.isInRange(d, today, today.add(const Duration(days: 1)));
     }).toList();
     return _AnalysisData(
       today: _buildPeriod(todayRows, today),
@@ -79,7 +80,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
       final reps = (row['actual_reps'] as num?)?.toInt() ?? 0;
       final rawWeight = (row['actual_weight'] as num?)?.toDouble();
       final unit = (row['weight_unit'] as String? ?? 'kg').toLowerCase();
-      final weightKg = rawWeight == null ? null : (unit == 'lb' || unit == 'lbs' ? rawWeight * 0.45359237 : rawWeight);
+      final weightKg = rawWeight == null ? null : WorkoutAnalysisCalculator.toKilograms(rawWeight, unit);
       totalSets++;
       session.completedSets++;
       totalReps += reps;
@@ -102,7 +103,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
       if (weightKg != null) {
         exercise.volumeKg += weightKg * reps;
         if (weightKg > exercise.maxWeightKg) exercise.maxWeightKg = weightKg;
-        final estimated = reps > 0 ? weightKg * (1 + reps / 30.0) : weightKg;
+        final estimated = WorkoutAnalysisCalculator.estimateOneRepMax(weightKg, reps);
         if (estimated > exercise.estimatedOneRepMaxKg) exercise.estimatedOneRepMaxKg = estimated;
         if (weightKg > exercise.bestSetWeightKg ||
             (weightKg == exercise.bestSetWeightKg && reps > exercise.bestSetReps)) {
@@ -136,6 +137,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
       volumeKg: volumeKg,
       maxWeightKg: maxWeightKg,
       weightedSetCount: weightedSetCount,
+      averageLoadKg: WorkoutAnalysisCalculator.averageLoadPerWeightedSet(volumeKg, weightedSetCount),
       durationMinutes: durationMinutes,
       muscleVolumes: muscleVolumes,
     );
@@ -240,6 +242,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
                   subtitle: 'Rolling 7-day periods • based on recorded workouts',
                   child: Column(children: [
                     _comparisonRow('Training volume', _volume(data.currentWeek.volumeKg), _volume(data.previousWeek.volumeKg), data.currentWeek.volumeKg, data.previousWeek.volumeKg),
+                    _comparisonRow('Avg load / weighted set', data.currentWeek.weightedSetCount == 0 ? '—' : '${data.currentWeek.averageLoadKg.toStringAsFixed(1)} kg', data.previousWeek.weightedSetCount == 0 ? '—' : '${data.previousWeek.averageLoadKg.toStringAsFixed(1)} kg', data.currentWeek.averageLoadKg, data.previousWeek.averageLoadKg),
                     _comparisonRow('Completed sets', '${data.currentWeek.totalSets}', '${data.previousWeek.totalSets}', data.currentWeek.totalSets.toDouble(), data.previousWeek.totalSets.toDouble()),
                     _comparisonRow('Total reps', '${data.currentWeek.totalReps}', '${data.previousWeek.totalReps}', data.currentWeek.totalReps.toDouble(), data.previousWeek.totalReps.toDouble()),
                     _comparisonRow('Workout sessions', '${data.currentWeek.sessions.length}', '${data.previousWeek.sessions.length}', data.currentWeek.sessions.length.toDouble(), data.previousWeek.sessions.length.toDouble()),
@@ -258,10 +261,18 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
                           final hasBaseline = previous != null && previous.hasWeight && exercise.hasWeight && previous.estimatedOneRepMaxKg > 0;
                           final volumeChange = hasBaseline ? _change(exercise.volumeKg, previous.volumeKg) : 'NEW';
                           final strengthChange = hasBaseline ? _change(exercise.estimatedOneRepMaxKg, previous.estimatedOneRepMaxKg) : '—';
-                          final progressing = hasBaseline && exercise.estimatedOneRepMaxKg > previous.estimatedOneRepMaxKg;
-                          final declining = hasBaseline && exercise.estimatedOneRepMaxKg < previous.estimatedOneRepMaxKg;
-                          final status = !hasBaseline ? 'INSUFFICIENT BASELINE' : progressing ? 'PROGRESSING' : declining ? 'DECLINING' : 'MAINTAINING';
-                          final color = !hasBaseline ? AppColors.grey : progressing ? AppColors.green : declining ? AppColors.red : AppColors.grey;
+                          final progression = WorkoutAnalysisCalculator.classifyProgression(
+                            currentEstimatedOneRepMaxKg: exercise.estimatedOneRepMaxKg,
+                            previousEstimatedOneRepMaxKg: previous?.estimatedOneRepMaxKg,
+                            currentHasWeight: exercise.hasWeight,
+                            previousHasWeight: previous?.hasWeight ?? false,
+                          );
+                          final status = progression.label;
+                          final color = progression == WorkoutProgression.progressing
+                              ? AppColors.green
+                              : progression == WorkoutProgression.declining
+                                  ? AppColors.red
+                                  : AppColors.grey;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 14),
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -321,6 +332,12 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
       Expanded(child: _metric('HEAVIEST LOAD', stats.weightedSetCount == 0 ? '—' : '${stats.maxWeightKg.toStringAsFixed(1)} kg', Icons.monitor_weight_outlined, AppColors.red)),
       const SizedBox(width: 10),
       Expanded(child: _metric('EXERCISES', '${stats.exercises.length}', Icons.sports_gymnastics, AppColors.green)),
+    ]),
+    const SizedBox(height: 10),
+    Row(children: [
+      Expanded(child: _metric('AVG LOAD / WEIGHTED SET', stats.weightedSetCount == 0 ? '—' : '${stats.averageLoadKg.toStringAsFixed(1)} kg', Icons.speed, AppColors.green)),
+      const SizedBox(width: 10),
+      const Expanded(child: SizedBox()),
     ]),
   ]);
 
@@ -455,9 +472,10 @@ class _PeriodStats {
   final double volumeKg;
   final double maxWeightKg;
   final int weightedSetCount;
+  final double averageLoadKg;
   final int durationMinutes;
   final Map<String, double> muscleVolumes;
-  const _PeriodStats({required this.sessions, required this.exercises, required this.totalSets, required this.loggedSets, required this.totalReps, required this.volumeKg, required this.maxWeightKg, required this.weightedSetCount, required this.durationMinutes, required this.muscleVolumes});
+  const _PeriodStats({required this.sessions, required this.exercises, required this.totalSets, required this.loggedSets, required this.totalReps, required this.volumeKg, required this.maxWeightKg, required this.weightedSetCount, required this.averageLoadKg, required this.durationMinutes, required this.muscleVolumes});
 }
 
 class _SessionStats {
