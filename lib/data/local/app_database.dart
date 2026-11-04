@@ -1813,7 +1813,7 @@ class AppDatabase {
       whereArgs: [plan['id']],
       orderBy: 'day_order, id',
     );
-    if (days.isEmpty) return null;
+    if (days.isEmpty) return {...plan, 'plan_name': plan['name'], 'plan_id': plan['id'], 'no_days': true};
 
     final today = DateTime.now().weekday;
     final fixedToday = days.where((day) =>
