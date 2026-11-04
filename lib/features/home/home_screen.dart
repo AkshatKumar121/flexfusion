@@ -33,6 +33,8 @@ class HomeScreenState extends State<HomeScreen> {
       db.getNutritionTargets(),
       db.getWeeklyProgressDetails(),
       db.getSuggestedWorkoutDay(),
+      db.getInProgressWorkout(),
+      db.getCompletedWorkoutToday(),
       db.getAppSetting('weight_unit', defaultValue: 'kg'),
     ]);
     final nutrition = results[0] as Map<String, double>;
@@ -41,7 +43,9 @@ class HomeScreenState extends State<HomeScreen> {
     final targets = results[3] as Map<String, Object?>?;
     final weekly = results[4] as Map<String, Object?>;
     final suggestedWorkoutDay = results[5] as Map<String, Object?>?;
-    final weightUnit = results[6] as String;
+    final activeWorkout = results[6] as Map<String, Object?>?;
+    final completedWorkoutToday = results[7] as Map<String, Object?>?;
+    final weightUnit = results[8] as String;
     final suggestedExercises = suggestedWorkoutDay == null ||
             (suggestedWorkoutDay['is_rest_day'] as int? ?? 0) == 1
         ? <Map<String, Object?>>[]
@@ -55,6 +59,8 @@ class HomeScreenState extends State<HomeScreen> {
       weightUnit: weightUnit,
       suggestedWorkoutDay: suggestedWorkoutDay,
       suggestedExerciseCount: suggestedExercises.length,
+      activeWorkout: activeWorkout,
+      completedWorkoutToday: completedWorkoutToday,
     );
   }
 
@@ -293,18 +299,30 @@ class HomeScreenState extends State<HomeScreen> {
                       icon: Icons.fitness_center,
                       title: 'TRAIN',
                       subtitle: 'Today\'s workout',
-                      description: data?.suggestedWorkoutDay == null
-                          ? 'No workout scheduled'
-                          : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
-                              ? 'Rest Day'
-                              : data.suggestedWorkoutDay!['label'] as String,
-                      detail: data?.suggestedWorkoutDay == null
-                          ? 'Create or activate a plan'
-                          : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
-                              ? 'Recovery day'
-                              : '${data.suggestedExerciseCount} Exercises',
+                      description: data?.activeWorkout != null
+                          ? data!.activeWorkout!['session_name'] as String
+                          : data?.completedWorkoutToday != null
+                              ? '${data!.completedWorkoutToday!['session_name']} – WORKOUT COMPLETED'
+                              : data?.suggestedWorkoutDay == null
+                                  ? 'No workout scheduled'
+                                  : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
+                                      ? 'Rest Day'
+                                      : data.suggestedWorkoutDay!['label'] as String,
+                      detail: data?.activeWorkout != null
+                          ? 'Workout in progress'
+                          : data?.completedWorkoutToday != null
+                              ? 'Start another session from the Workout screen'
+                              : data?.suggestedWorkoutDay == null
+                                  ? 'Create or activate a plan'
+                                  : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
+                                      ? 'Recovery day'
+                                      : '${data.suggestedExerciseCount} Exercises',
                       accentColor: AppColors.red,
-                      buttonText: 'START WORKOUT',
+                      buttonText: data?.activeWorkout != null
+                          ? 'RESUME WORKOUT'
+                          : data?.completedWorkoutToday != null
+                              ? 'WORKOUT COMPLETED'
+                              : 'START WORKOUT',
                       onTap: () async {
                         await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen()));
                         if (mounted) refreshDashboard();
@@ -683,6 +701,8 @@ class _DashboardData {
   final String weightUnit;
   final Map<String, Object?>? suggestedWorkoutDay;
   final int suggestedExerciseCount;
+  final Map<String, Object?>? activeWorkout;
+  final Map<String, Object?>? completedWorkoutToday;
 
   const _DashboardData({
     required this.nutrition,
@@ -693,6 +713,8 @@ class _DashboardData {
     required this.weightUnit,
     required this.suggestedWorkoutDay,
     required this.suggestedExerciseCount,
+    required this.activeWorkout,
+    required this.completedWorkoutToday,
   });
 }
 
