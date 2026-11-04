@@ -1664,6 +1664,7 @@ class AppDatabase {
           'completed_at': DateTime.now().toIso8601String(),
           'notes': notes,
           'paused_at': null,
+          'rest_ends_at': null,
           'paused_seconds': existingPausedSeconds + (pausedDuration > 0 ? pausedDuration : 0),
         },
         where: "id = ? AND status = 'in_progress'",
@@ -1818,6 +1819,21 @@ class AppDatabase {
 
     final sequenceDays = days.where((day) => day['schedule_type'] != 'weekday').toList();
     if (sequenceDays.isEmpty) return null;
+
+    // A sequence plan advances after completion, but its next item is not
+    // eligible until the next local calendar day.
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day).toIso8601String();
+    final tomorrowStart = DateTime(now.year, now.month, now.day + 1).toIso8601String();
+    final completedToday = await db.query(
+      'workouts',
+      columns: ['id'],
+      where: "plan_id = ? AND status = 'completed' AND completed_at >= ? AND completed_at < ?",
+      whereArgs: [plan['id'], todayStart, tomorrowStart],
+      limit: 1,
+    );
+    if (completedToday.isNotEmpty) return null;
+
     final pointer = await db.query('app_settings', columns: ['value'], where: 'key = ?', whereArgs: ['workout_plan_sequence_${plan['id']}'], limit: 1);
     var nextIndex = 0;
     if (pointer.isNotEmpty) {
