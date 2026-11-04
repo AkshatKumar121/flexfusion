@@ -192,6 +192,32 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
                   _emptyCard('No workout recorded today', 'Your completed sets and workout statistics will appear here.')
                 else ...[
                   _metricGrid(data.today),
+                  const SizedBox(height: 10),
+                  _panel(
+                    title: 'SET COMPLETION',
+                    subtitle: '${data.today.totalSets} completed out of ${data.today.loggedSets} logged sets',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data.today.loggedSets == 0
+                              ? 'No sets logged'
+                              : '${(data.today.totalSets / data.today.loggedSets * 100).round()}% completed',
+                          style: GoogleFonts.inter(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: LinearProgressIndicator(
+                            value: data.today.loggedSets == 0 ? 0 : data.today.totalSets / data.today.loggedSets,
+                            minHeight: 6,
+                            backgroundColor: AppColors.border,
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.green),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 14),
                   _panel(
                     title: 'TODAY\'S EXERCISES',
@@ -227,7 +253,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
                   child: data.currentWeek.exercises.isEmpty
                       ? _inlineEmpty('No completed sets in the current 7-day period.')
                       : Column(children: data.currentWeek.exercises.map((exercise) {
-                          final previous = data.previousWeek.exercises.where((e) => e.name.toLowerCase() == exercise.name.toLowerCase()).firstOrNull;
+                          final previous = _matchingExercise(data.previousWeek.exercises, exercise.name);
                           final volumeChange = previous == null ? 'NEW' : _change(exercise.volumeKg, previous.volumeKg);
                           final strengthChange = previous == null ? '—' : _change(exercise.estimatedOneRepMaxKg, previous.estimatedOneRepMaxKg);
                           final progressing = previous != null && exercise.estimatedOneRepMaxKg > previous.estimatedOneRepMaxKg;
@@ -438,7 +464,7 @@ class _SessionStats {
   int completedSets = 0;
   int reps = 0;
   double volumeKg = 0;
-  const _SessionStats({required this.id, required this.name, required this.startedAt, required this.completedAt, required this.status, required this.pausedSeconds});
+  _SessionStats({required this.id, required this.name, required this.startedAt, required this.completedAt, required this.status, required this.pausedSeconds});
 }
 
 class _ExerciseStats {
