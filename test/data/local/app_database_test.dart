@@ -54,11 +54,21 @@ void main() {
       durationMinutes: 15,
       steps: 4000,
     );
-    await db.insert('workouts', {
+    final workoutId = await db.insert('workouts', {
       'started_at': '2026-11-02T07:00:00',
       'completed_at': '2026-11-02T08:00:00',
       'session_name': 'Completed workout',
       'status': 'completed',
+    });
+    await db.insert('workout_sets', {
+      'workout_id': workoutId,
+      'exercise_name_snapshot': 'Dumbbell press',
+      'set_order': 1,
+      'actual_reps': 10,
+      'actual_weight': 15,
+      'weight_unit': 'kg',
+      'completed': 1,
+      'created_at': '2026-11-02T07:30:00',
     });
 
     final data = await appDatabase.getTrainingStreakData();
