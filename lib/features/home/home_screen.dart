@@ -323,10 +323,12 @@ class HomeScreenState extends State<HomeScreen> {
                           : data?.completedWorkoutToday != null
                               ? 'WORKOUT COMPLETED'
                               : 'START WORKOUT',
-                      onTap: () async {
-                        await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen()));
-                        if (mounted) refreshDashboard();
-                      },
+                      onTap: data?.completedWorkoutToday != null
+                          ? null
+                          : () async {
+                              await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutLauncherScreen()));
+                              if (mounted) refreshDashboard();
+                            },
                     ),
                   ),
 
