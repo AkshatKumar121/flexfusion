@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../shared/widgets/flexfusion_brand_header.dart';
 import '../../data/local/app_database.dart';
 import '../profile/profile_screen.dart';
 import 'weekly_progress_screen.dart';
@@ -163,86 +164,22 @@ class HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // FXF LOGO HEADER
-              Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Original FXF logo
-                      SizedBox(
-                        width: 130,
-                        height: 48,
-                        child: Image.asset(
-                          'assets/images/fxf_logo.jpg',
-                          fit: BoxFit.contain,
-                          alignment: Alignment.centerLeft,
-                        ),
+              FlexFusionBrandHeader(
+                trailingAction: IconButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const ProfileScreen(),
                       ),
-
-                      // Divider and TRAINER group
-                      Transform.translate(
-                        offset: const Offset(-25, 0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // Vertical divider
-                            Container(
-                              height: 38,
-                              width: 2,
-                              color: const Color(0xFF555555),
-                            ),
-
-                            const SizedBox(width: 13),
-
-                            // Trainer label
-                            Transform.translate(
-                              offset: const Offset(0, 1),
-                              child: Text(
-                                'TRAINER',
-                                style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 5,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Push profile icon to the right
-                      const Spacer(),
-
-                      // Profile icon
-                      IconButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) => const ProfileScreen(),
-                            ),
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.person_outline_rounded,
-                          color: Colors.white,
-                          size: 25,
-                        ),
-                        tooltip: 'Profile',
-                      ),
-                    ],
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.person_outline_rounded,
+                    color: Colors.white,
+                    size: 25,
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // Header bottom border
-                  Container(
-                    height: 1,
-                    color: const Color(0xFF292929),
-                  ),
-                ],
+                  tooltip: 'Profile',
+                ),
               ),
 
               const SizedBox(height: 32),
