@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -12,32 +15,55 @@ import 'package:flexfusion/features/eat/food_picker_sheet.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() async {
+  late Directory tempDirectory;
+  late AppDatabase database;
+
+  Future<void> pumpLoaded(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+  }
+
+  setUpAll(() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await AppDatabase.instance.database;
+    tempDirectory = await Directory.systemTemp.createTemp('flexfusion_widget_');
+    database = AppDatabase.forTesting(p.join(tempDirectory.path, 'widget.db'));
+    AppDatabase.setInstanceForTesting(database);
+    await database.database;
+  });
+
+  tearDown(() async {
+    await database.closeForTesting();
+    AppDatabase.setInstanceForTesting(null);
+    if (await tempDirectory.exists()) {
+      await tempDirectory.delete(recursive: true);
+    }
   });
 
   testWidgets('app shell exposes and switches between the three primary tabs', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AppShell()));
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
 
     expect(find.text('TRAIN'), findsNWidgets(2));
     expect(find.text('HOME'), findsOneWidget);
     expect(find.text('EAT'), findsNWidgets(2));
 
     await tester.tap(find.text('TRAIN').last);
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
     expect(find.text('YOUR TRAINING SPACE'), findsOneWidget);
 
     await tester.tap(find.text('EAT').last);
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
     expect(find.text('YOUR NUTRITION'), findsOneWidget);
 
     await tester.tap(find.text('HOME').last);
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
     expect(find.text('Ready to get stronger?'), findsOneWidget);
   });
 
@@ -58,11 +84,11 @@ void main() {
     ));
 
     await tester.tap(find.text('OPEN FOOD PICKER'));
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
     expect(find.text('ADD TO BREAKFAST'), findsOneWidget);
 
     await tester.tap(find.text('CUSTOM FOOD'));
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
 
     await tester.tap(find.text('ADD TO MEAL'));
     await tester.pump();
@@ -81,7 +107,7 @@ void main() {
 
     await tester.enterText(fields.at(5), '150');
     await tester.tap(find.text('ADD TO MEAL'));
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
 
     final foods = await AppDatabase.instance.getCustomFoods();
     expect(foods.any((food) => food['name'] == 'Widget QA Paneer'), isTrue);
@@ -89,10 +115,10 @@ void main() {
 
   testWidgets('activity form validates empty input and persists a manual activity', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: ActivityScreen()));
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
 
     await tester.tap(find.text('LOG AN ACTIVITY'));
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
     expect(find.text('LOG ACTIVITY'), findsOneWidget);
 
     await tester.tap(find.text('SAVE ACTIVITY'));
@@ -104,7 +130,7 @@ void main() {
     await tester.enterText(fields.at(2), '3200');
     await tester.enterText(fields.at(4), 'Widget test walk');
     await tester.tap(find.text('SAVE ACTIVITY'));
-    await tester.pumpAndSettle();
+    await pumpLoaded(tester);
 
     expect(find.text('Walking'), findsOneWidget);
     expect(find.text('25 min · 3200 steps'), findsOneWidget);

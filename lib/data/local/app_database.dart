@@ -21,7 +21,22 @@ class AppDatabase {
   AppDatabase.forTesting(String databasePath)
       : this._(databasePathOverride: databasePath);
 
-  static final AppDatabase instance = AppDatabase._();
+  static final AppDatabase _defaultInstance = AppDatabase._();
+  static AppDatabase? _testingInstance;
+
+  static AppDatabase get instance => _testingInstance ?? _defaultInstance;
+
+  @visibleForTesting
+  static void setInstanceForTesting(AppDatabase? value) {
+    _testingInstance = value;
+  }
+
+  @visibleForTesting
+  Future<void> closeForTesting() async {
+    await _database?.close();
+    _database = null;
+  }
+
   static const int schemaVersion = 7;
   final String? _databasePathOverride;
   Database? _database;
@@ -160,20 +175,13 @@ class AppDatabase {
       });
       debugPrint('FlexFusion food catalogue seeded: ${decoded.length} records.');
     } catch (error) {
-      // A missing or invalid optional catalogue asset must not prevent the
-      // existing app and user data from opening. The seed can be retried later.
       debugPrint('Food catalogue seed skipped; existing app data is safe: $error');
     }
   }
 
-
   Future<void> _migrateLegacyMealLogs(Database db) async {
     const migrationKey = 'flexfusion_sqlite_meal_migration_v1_complete';
     final preferences = await SharedPreferences.getInstance();
-
-    // Keep the completion marker in SQLite so imported rows and the marker
-    // commit atomically. SharedPreferences alone leaves a crash window where
-    // rows are committed but the marker is not, causing duplicate imports.
     final completed = await db.query(
       'app_settings',
       columns: ['value'],
@@ -183,7 +191,6 @@ class AppDatabase {
     );
     if (completed.isNotEmpty) return;
 
-    // Upgrade installations that used the old preference-only marker.
     if (preferences.getBool(migrationKey) == true) {
       await db.insert(
         'app_settings',
@@ -203,8 +210,6 @@ class AppDatabase {
       ..sort();
 
     await db.transaction((txn) async {
-      // Recheck inside the transaction in case another initialization path
-      // completed this migration while the preference keys were collected.
       final marker = await txn.query(
         'app_settings',
         columns: ['value'],
@@ -260,8 +265,6 @@ class AppDatabase {
       );
     });
 
-    // Retain the old marker for compatibility, but SQLite is authoritative.
     await preferences.setBool(migrationKey, true);
   }
-
 }

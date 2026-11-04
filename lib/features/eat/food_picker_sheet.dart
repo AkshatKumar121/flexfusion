@@ -206,16 +206,19 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
         separatorBuilder: (_, _) => const Divider(color: AppColors.border, height: 1),
         itemBuilder: (_, i) {
           final f = list[i]; final active = selected?.name == f.name;
-          return ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 2),
-            title: Text(f.name, style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-            subtitle: Text('${f.isCustom ? 'MY FOOD • ' : ''}${f.kcal.round()} kcal • P ${f.protein}g C ${f.carbs}g F ${f.fat}g per 100 g', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
-            trailing: Icon(active ? Icons.check_circle : Icons.add_circle_outline, color: active ? AppColors.green : AppColors.grey),
-            onTap: () => setState(() {
-              final isSameFood = selected?.id != null && f.id != null
-                  ? selected!.id == f.id
-                  : selected == f;
-              selected = isSameFood ? null : f;
-            }),
+          return Material(
+            color: Colors.transparent,
+            child: ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 2),
+              title: Text(f.name, style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+              subtitle: Text('${f.isCustom ? 'MY FOOD • ' : ''}${f.kcal.round()} kcal • P ${f.protein}g C ${f.carbs}g F ${f.fat}g per 100 g', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
+              trailing: Icon(active ? Icons.check_circle : Icons.add_circle_outline, color: active ? AppColors.green : AppColors.grey),
+              onTap: () => setState(() {
+                final isSameFood = selected?.id != null && f.id != null
+                    ? selected!.id == f.id
+                    : selected == f;
+                selected = isSameFood ? null : f;
+              }),
+            ),
           );
         },
       )),
