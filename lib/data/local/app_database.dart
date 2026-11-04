@@ -1968,6 +1968,7 @@ class AppDatabase {
         w.completed_at,
         w.status,
         w.paused_seconds,
+        w.paused_at,
         s.id AS set_id,
         s.exercise_id,
         s.exercise_name_snapshot,
@@ -1981,7 +1982,10 @@ class AppDatabase {
       LEFT JOIN workout_sets s ON s.workout_id = w.id
       LEFT JOIN exercises e ON e.id = s.exercise_id
       WHERE w.started_at >= ? AND w.started_at < ?
-        AND w.status != 'abandoned'
+        AND (w.status != 'abandoned' OR EXISTS (
+          SELECT 1 FROM workout_sets sx
+          WHERE sx.workout_id = w.id AND sx.completed = 1
+        ))
       ORDER BY w.started_at DESC, w.id DESC, s.id ASC
       ''',
       [rangeStart.toIso8601String(), rangeEnd.toIso8601String()],
