@@ -300,7 +300,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Volume uses completed reps × recorded weight, converted to kg. Estimated 1RM uses the Epley formula and is an estimate, not a tested max. Cardio, bodyweight-only sets and sets without a recorded load are counted in set/repetition totals but not weighted volume.',
+                  'Volume uses completed reps × recorded weight, converted to kg. Average load is the arithmetic mean of recorded loads across completed weighted sets; it is a basic load-intensity proxy, not %1RM or effort/RIR. Estimated 1RM uses the Epley formula and is an estimate, not a tested max. Cardio, bodyweight-only sets and sets without a recorded load are counted in set/repetition totals but not weighted volume.',
                   style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10, height: 1.5),
                 ),
               ],
