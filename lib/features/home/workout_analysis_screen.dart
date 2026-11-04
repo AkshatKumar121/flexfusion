@@ -1,0 +1,431 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../app/theme/app_colors.dart';
+import '../../data/local/app_database.dart';
+
+class WorkoutAnalysisScreen extends StatefulWidget {
+  const WorkoutAnalysisScreen({super.key});
+
+  @override
+  State<WorkoutAnalysisScreen> createState() => _WorkoutAnalysisScreenState();
+}
+
+class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
+  late Future<_AnalysisData> _future;
+
+  DateTime get _today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<_AnalysisData> _load() async {
+    final rows = await AppDatabase.instance.getWorkoutAnalysisRows();
+    final today = _today;
+    final currentStart = today.subtract(const Duration(days: 6));
+    final previousStart = today.subtract(const Duration(days: 13));
+    final currentRows = rows.where((r) {
+      final d = DateTime.tryParse(r['started_at'] as String? ?? '');
+      return d != null && !d.isBefore(currentStart) && d.isBefore(today.add(const Duration(days: 1)));
+    }).toList();
+    final previousRows = rows.where((r) {
+      final d = DateTime.tryParse(r['started_at'] as String? ?? '');
+      return d != null && !d.isBefore(previousStart) && d.isBefore(currentStart);
+    }).toList();
+    final todayRows = rows.where((r) {
+      final d = DateTime.tryParse(r['started_at'] as String? ?? '');
+      return d != null && d.year == today.year && d.month == today.month && d.day == today.day;
+    }).toList();
+    return _AnalysisData(
+      today: _buildPeriod(todayRows, today),
+      currentWeek: _buildPeriod(currentRows, currentStart),
+      previousWeek: _buildPeriod(previousRows, previousStart),
+    );
+  }
+
+  _PeriodStats _buildPeriod(List<Map<String, Object?>> rows, DateTime start) {
+    final sessions = <int, _SessionStats>{};
+    final exercises = <String, _ExerciseStats>{};
+    var totalSets = 0;
+    var totalReps = 0;
+    var volumeKg = 0.0;
+    var maxWeightKg = 0.0;
+    var weightedSetCount = 0;
+    var durationMinutes = 0;
+
+    for (final row in rows) {
+      final id = row['workout_id'] as int;
+      final session = sessions.putIfAbsent(id, () => _SessionStats(
+        id: id,
+        name: row['session_name'] as String? ?? 'Workout',
+        startedAt: DateTime.tryParse(row['started_at'] as String? ?? ''),
+        completedAt: DateTime.tryParse(row['completed_at'] as String? ?? ''),
+        status: row['status'] as String? ?? '',
+        pausedSeconds: (row['paused_seconds'] as num?)?.toInt() ?? 0,
+      ));
+      final setId = row['set_id'];
+      if (setId == null || (row['set_completed'] as num? ?? 0).toInt() != 1) continue;
+      final reps = (row['actual_reps'] as num?)?.toInt() ?? 0;
+      final rawWeight = (row['actual_weight'] as num?)?.toDouble();
+      final unit = (row['weight_unit'] as String? ?? 'kg').toLowerCase();
+      final weightKg = rawWeight == null ? null : (unit == 'lb' || unit == 'lbs' ? rawWeight * 0.45359237 : rawWeight);
+      totalSets++;
+      totalReps += reps;
+      if (weightKg != null) {
+        final setVolume = weightKg * reps;
+        volumeKg += setVolume;
+        if (weightKg > maxWeightKg) maxWeightKg = weightKg;
+        weightedSetCount++;
+      }
+      final name = (row['exercise_name_snapshot'] as String? ?? 'Unknown exercise').trim();
+      final key = name.toLowerCase();
+      final exercise = exercises.putIfAbsent(key, () => _ExerciseStats(
+        name: name,
+        muscleGroup: row['muscle_group'] as String? ?? 'Other',
+      ));
+      exercise.sets++;
+      exercise.reps += reps;
+      if (weightKg != null) {
+        exercise.volumeKg += weightKg * reps;
+        if (weightKg > exercise.maxWeightKg) exercise.maxWeightKg = weightKg;
+        final estimated = reps > 0 ? weightKg * (1 + reps / 30.0) : weightKg;
+        if (estimated > exercise.estimatedOneRepMaxKg) exercise.estimatedOneRepMaxKg = estimated;
+        if (weightKg > exercise.bestSetWeightKg ||
+            (weightKg == exercise.bestSetWeightKg && reps > exercise.bestSetReps)) {
+          exercise.bestSetWeightKg = weightKg;
+          exercise.bestSetReps = reps;
+        }
+      }
+      exercise.hasWeight = exercise.hasWeight || weightKg != null;
+    }
+
+    for (final session in sessions.values) {
+      final startTime = session.startedAt;
+      if (startTime == null) continue;
+      final endTime = session.completedAt ?? DateTime.now();
+      final elapsed = endTime.difference(startTime).inSeconds - session.pausedSeconds;
+      if (elapsed > 0) durationMinutes += elapsed ~/ 60;
+    }
+    final muscleVolumes = <String, double>{};
+    for (final exercise in exercises.values) {
+      muscleVolumes.update(exercise.muscleGroup, (v) => v + exercise.volumeKg,
+          ifAbsent: () => exercise.volumeKg);
+    }
+    final sortedExercises = exercises.values.toList()
+      ..sort((a, b) => b.volumeKg.compareTo(a.volumeKg));
+    return _PeriodStats(
+      sessions: sessions.values.toList()..sort((a, b) => (b.startedAt ?? DateTime(2000)).compareTo(a.startedAt ?? DateTime(2000))),
+      exercises: sortedExercises,
+      totalSets: totalSets,
+      totalReps: totalReps,
+      volumeKg: volumeKg,
+      maxWeightKg: maxWeightKg,
+      weightedSetCount: weightedSetCount,
+      durationMinutes: durationMinutes,
+      muscleVolumes: muscleVolumes,
+    );
+  }
+
+  String _volume(double value) => value >= 1000
+      ? '${(value / 1000).toStringAsFixed(2)}k kg'
+      : '${value.round()} kg';
+
+  String _duration(int minutes) {
+    if (minutes <= 0) return '—';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return h > 0 ? '${h}h ${m}m' : '${m}m';
+  }
+
+  String _change(double current, double previous) {
+    if (previous == 0) return current == 0 ? '—' : 'NEW';
+    final percent = ((current - previous) / previous) * 100;
+    return '${percent > 0 ? '+' : ''}${percent.toStringAsFixed(1)}%';
+  }
+
+  Color _changeColor(double current, double previous) =>
+      current > previous ? AppColors.green : current < previous ? AppColors.red : AppColors.grey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.white,
+        title: Text('WORKOUT ANALYSIS', style: GoogleFonts.inter(fontWeight: FontWeight.w800, letterSpacing: 1)),
+      ),
+      body: FutureBuilder<_AnalysisData>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Unable to load workout analysis.', style: GoogleFonts.inter(color: AppColors.grey)));
+          }
+          final data = snapshot.data!;
+          return RefreshIndicator(
+            color: AppColors.green,
+            backgroundColor: AppColors.card,
+            onRefresh: () async => setState(() => _future = _load()),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
+              children: [
+                _sectionLabel('TODAY', 'All sessions combined'),
+                const SizedBox(height: 12),
+                if (data.today.sessions.isEmpty)
+                  _emptyCard('No workout recorded today', 'Your completed sets and workout statistics will appear here.')
+                else ...[
+                  _metricGrid(data.today),
+                  const SizedBox(height: 14),
+                  _panel(
+                    title: 'TODAY\'S EXERCISES',
+                    subtitle: '${data.today.exercises.length} exercises with completed sets',
+                    child: Column(children: data.today.exercises.map(_exerciseTile).toList()),
+                  ),
+                  const SizedBox(height: 14),
+                  _panel(
+                    title: 'SESSIONS',
+                    subtitle: '${data.today.sessions.length} session(s) today',
+                    child: Column(children: data.today.sessions.map(_sessionTile).toList()),
+                  ),
+                ],
+                const SizedBox(height: 26),
+                _sectionLabel('7-DAY PROGRESS', 'Last 7 days vs previous 7 days'),
+                const SizedBox(height: 12),
+                _panel(
+                  title: 'WEEKLY COMPARISON',
+                  subtitle: 'Rolling 7-day periods • based on recorded workouts',
+                  child: Column(children: [
+                    _comparisonRow('Training volume', _volume(data.currentWeek.volumeKg), _volume(data.previousWeek.volumeKg), data.currentWeek.volumeKg, data.previousWeek.volumeKg),
+                    _comparisonRow('Completed sets', '${data.currentWeek.totalSets}', '${data.previousWeek.totalSets}', data.currentWeek.totalSets.toDouble(), data.previousWeek.totalSets.toDouble()),
+                    _comparisonRow('Total reps', '${data.currentWeek.totalReps}', '${data.previousWeek.totalReps}', data.currentWeek.totalReps.toDouble(), data.previousWeek.totalReps.toDouble()),
+                    _comparisonRow('Workout sessions', '${data.currentWeek.sessions.length}', '${data.previousWeek.sessions.length}', data.currentWeek.sessions.length.toDouble(), data.previousWeek.sessions.length.toDouble()),
+                    _comparisonRow('Training time', _duration(data.currentWeek.durationMinutes), _duration(data.previousWeek.durationMinutes), data.currentWeek.durationMinutes.toDouble(), data.previousWeek.durationMinutes.toDouble()),
+                    _comparisonRow('Exercises trained', '${data.currentWeek.exercises.length}', '${data.previousWeek.exercises.length}', data.currentWeek.exercises.length.toDouble(), data.previousWeek.exercises.length.toDouble()),
+                  ]),
+                ),
+                const SizedBox(height: 14),
+                _panel(
+                  title: 'PROGRESSIVE OVERLOAD',
+                  subtitle: 'Exercise volume and estimated strength comparison',
+                  child: data.currentWeek.exercises.isEmpty
+                      ? _inlineEmpty('No completed sets in the current 7-day period.')
+                      : Column(children: data.currentWeek.exercises.map((exercise) {
+                          final previous = data.previousWeek.exercises.where((e) => e.name.toLowerCase() == exercise.name.toLowerCase()).firstOrNull;
+                          final volumeChange = previous == null ? 'NEW' : _change(exercise.volumeKg, previous.volumeKg);
+                          final strengthChange = previous == null ? '—' : _change(exercise.estimatedOneRepMaxKg, previous.estimatedOneRepMaxKg);
+                          final progressing = previous != null && exercise.estimatedOneRepMaxKg > previous.estimatedOneRepMaxKg;
+                          final declining = previous != null && exercise.estimatedOneRepMaxKg < previous.estimatedOneRepMaxKg;
+                          final status = previous == null ? 'INSUFFICIENT BASELINE' : progressing ? 'PROGRESSING' : declining ? 'DECLINING' : 'MAINTAINING';
+                          final color = previous == null ? AppColors.grey : progressing ? AppColors.green : declining ? AppColors.red : AppColors.grey;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Row(children: [
+                                Expanded(child: Text(exercise.name, style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w700))),
+                                Text(status, style: GoogleFonts.inter(color: color, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: .5)),
+                              ]),
+                              const SizedBox(height: 5),
+                              Text('${exercise.sets} sets • ${exercise.reps} reps • ${_volume(exercise.volumeKg)}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10)),
+                              const SizedBox(height: 3),
+                              Text('Volume: $volumeChange   •   Est. 1RM: $strengthChange', style: GoogleFonts.inter(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+                            ]),
+                          );
+                        }).toList()),
+                ),
+                const SizedBox(height: 14),
+                _panel(
+                  title: 'MUSCLE GROUP DISTRIBUTION',
+                  subtitle: 'Recorded lifted volume by muscle group',
+                  child: data.currentWeek.muscleVolumes.isEmpty
+                      ? _inlineEmpty('No muscle-group data recorded this week.')
+                      : Column(children: data.currentWeek.muscleVolumes.entries.toList()
+                          ..sort((a, b) => b.value.compareTo(a.value))
+                          .map((entry) => _barRow(entry.key, entry.value, data.currentWeek.volumeKg)).toList()),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Volume uses completed reps × recorded weight, converted to kg. Estimated 1RM uses the Epley formula and is an estimate, not a tested max. Cardio, bodyweight-only sets and sets without a recorded load are counted in set/repetition totals but not weighted volume.',
+                  style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10, height: 1.5),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String title, String subtitle) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text(title, style: GoogleFonts.inter(color: AppColors.green, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+    const SizedBox(height: 4),
+    Text(subtitle, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
+  ]);
+
+  Widget _metricGrid(_PeriodStats stats) => Column(children: [
+    Row(children: [
+      Expanded(child: _metric('TOTAL VOLUME', _volume(stats.volumeKg), Icons.fitness_center, AppColors.red)),
+      const SizedBox(width: 10),
+      Expanded(child: _metric('DURATION', _duration(stats.durationMinutes), Icons.timer_outlined, AppColors.green)),
+    ]),
+    const SizedBox(height: 10),
+    Row(children: [
+      Expanded(child: _metric('WORKING SETS', '${stats.totalSets}', Icons.repeat, AppColors.green)),
+      const SizedBox(width: 10),
+      Expanded(child: _metric('TOTAL REPS', '${stats.totalReps}', Icons.format_list_numbered, AppColors.red)),
+    ]),
+    const SizedBox(height: 10),
+    Row(children: [
+      Expanded(child: _metric('HEAVIEST LOAD', stats.weightedSetCount == 0 ? '—' : '${stats.maxWeightKg.toStringAsFixed(1)} kg', Icons.monitor_weight_outlined, AppColors.red)),
+      const SizedBox(width: 10),
+      Expanded(child: _metric('EXERCISES', '${stats.exercises.length}', Icons.sports_gymnastics, AppColors.green)),
+    ]),
+  ]);
+
+  Widget _metric(String label, String value, IconData icon, Color accent) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(icon, color: accent, size: 18),
+      const SizedBox(height: 10),
+      Text(value, style: GoogleFonts.inter(color: AppColors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 4),
+      Text(label, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: .5)),
+    ]),
+  );
+
+  Widget _panel({required String title, required String subtitle, required Widget child}) => Container(
+    padding: const EdgeInsets.all(15),
+    decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: .6)),
+      const SizedBox(height: 4),
+      Text(subtitle, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10)),
+      const SizedBox(height: 14),
+      child,
+    ]),
+  );
+
+  Widget _comparisonRow(String label, String current, String previous, double currentValue, double previousValue) {
+    final delta = _change(currentValue, previousValue);
+    final color = _changeColor(currentValue, previousValue);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 13),
+      child: Row(children: [
+        Expanded(child: Text(label, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11))),
+        SizedBox(width: 76, child: Text(current, textAlign: TextAlign.end, style: GoogleFonts.inter(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w700))),
+        SizedBox(width: 76, child: Text(previous, textAlign: TextAlign.end, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10))),
+        SizedBox(width: 58, child: Text(delta, textAlign: TextAlign.end, style: GoogleFonts.inter(color: color, fontSize: 10, fontWeight: FontWeight.w800))),
+      ]),
+    );
+  }
+
+  Widget _exerciseTile(_ExerciseStats e) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(children: [
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(e.name, style: GoogleFonts.inter(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+        Text('${e.muscleGroup} • ${e.sets} sets • ${e.reps} reps', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
+      ])),
+      Text(e.hasWeight ? _volume(e.volumeKg) : 'No load', style: GoogleFonts.inter(color: AppColors.green, fontSize: 10, fontWeight: FontWeight.w700)),
+    ]),
+  );
+
+  Widget _sessionTile(_SessionStats s) {
+    final date = s.startedAt;
+    final time = date == null ? '' : '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(children: [
+        const Icon(Icons.fitness_center, color: AppColors.red, size: 17),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(s.name, style: GoogleFonts.inter(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+          Text('${time.isEmpty ? 'Time unavailable' : time} • ${s.status == 'completed' ? 'Completed' : 'In progress'}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
+        ])),
+        const Icon(Icons.chevron_right, color: AppColors.grey, size: 17),
+      ]),
+    );
+  }
+
+  Widget _barRow(String label, double value, double total) {
+    final fraction = total <= 0 ? 0.0 : (value / total).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text(label, style: GoogleFonts.inter(color: AppColors.white, fontSize: 10))),
+          Text(_volume(value), style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10)),
+        ]),
+        const SizedBox(height: 6),
+        ClipRRect(borderRadius: BorderRadius.circular(5), child: LinearProgressIndicator(value: fraction, minHeight: 5, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation<Color>(AppColors.green))),
+      ]),
+    );
+  }
+
+  Widget _emptyCard(String title, String subtitle) => Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+    child: Column(children: [
+      const Icon(Icons.insights_outlined, color: AppColors.green, size: 30),
+      const SizedBox(height: 10),
+      Text(title, style: GoogleFonts.inter(color: AppColors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 5),
+      Text(subtitle, textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10)),
+    ]),
+  );
+
+  Widget _inlineEmpty(String text) => Text(text, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10));
+}
+
+class _AnalysisData {
+  final _PeriodStats today;
+  final _PeriodStats currentWeek;
+  final _PeriodStats previousWeek;
+  const _AnalysisData({required this.today, required this.currentWeek, required this.previousWeek});
+}
+
+class _PeriodStats {
+  final List<_SessionStats> sessions;
+  final List<_ExerciseStats> exercises;
+  final int totalSets;
+  final int totalReps;
+  final double volumeKg;
+  final double maxWeightKg;
+  final int weightedSetCount;
+  final int durationMinutes;
+  final Map<String, double> muscleVolumes;
+  const _PeriodStats({required this.sessions, required this.exercises, required this.totalSets, required this.totalReps, required this.volumeKg, required this.maxWeightKg, required this.weightedSetCount, required this.durationMinutes, required this.muscleVolumes});
+}
+
+class _SessionStats {
+  final int id;
+  final String name;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final String status;
+  final int pausedSeconds;
+  const _SessionStats({required this.id, required this.name, required this.startedAt, required this.completedAt, required this.status, required this.pausedSeconds});
+}
+
+class _ExerciseStats {
+  final String name;
+  final String muscleGroup;
+  int sets = 0;
+  int reps = 0;
+  double volumeKg = 0;
+  double maxWeightKg = 0;
+  double bestSetWeightKg = 0;
+  int bestSetReps = 0;
+  double estimatedOneRepMaxKg = 0;
+  bool hasWeight = false;
+  _ExerciseStats({required this.name, required this.muscleGroup});
+}
