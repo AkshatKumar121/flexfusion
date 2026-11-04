@@ -199,8 +199,9 @@ void main() {
 
     await database.finishWorkoutSession(workoutId);
 
-    final rows = await database.queryWorkoutHistory();
-    expect(rows, isEmpty);
+    final rows = await database.getWorkoutHistory();
+    expect(rows, hasLength(1));
+    expect(rows.single['session_name'], 'Finish cleanup');
     expect(await database.getWorkoutRestEnd(workoutId), isNull);
   });
 }
