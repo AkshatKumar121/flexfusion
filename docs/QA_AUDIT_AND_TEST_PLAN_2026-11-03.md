@@ -265,6 +265,12 @@ Implemented areas:
 | WKO-015 | Open workout history | Completed sessions sort newest first and show correct details. | [ ] |
 | WKO-016 | Return from history/session to Train | Dashboard refreshes completed workout metrics. | [ ] |
 | WKO-017 | Force-close during active workout and relaunch | Active session can be resumed with timer/state intact. | [ ] |
+| WKO-018 | Navigate away from an active workout and return from Home | Home shows the active workout name and RESUME WORKOUT; the same session, completed sets and current exercise are restored. | [ ] |
+| WKO-019 | Complete a set and leave the workout screen | Rest countdown persists as an absolute end time; reopening shows the true remaining time. | [ ] |
+| WKO-020 | Background/lock the iPhone until rest expires | Rest Complete notification is delivered; reopening shows REST COMPLETE rather than restarting the countdown. | [ ] |
+| WKO-021 | Deny notification permission | In-app rest countdown still works and no crash occurs. | [ ] |
+| WKO-022 | Tap Done on reps/weight keyboard and tap outside a field | Keyboard dismisses; Next moves from reps to weight smoothly. | [ ] |
+| WKO-023 | Complete a scheduled sequence workout, then return to Home/Workout on the same day | Home shows “[WORKOUT] – WORKOUT COMPLETED” and directs the user to start another session from Workout; next sequence item is not eligible until the next local calendar day. | [ ] |
 
 ### H. Workout & Activity Streak
 
@@ -352,6 +358,7 @@ Implemented areas:
 | DB-009 | Low storage / file deletion failure | Clear error/recovery behavior; DB and local files do not silently diverge. | [ ] |
 | DB-010 | Large food catalogue search | Search remains responsive and correct. | [ ] |
 | DB-011 | Legacy meal migration interrupted after SQLite commit | Reopening with legacy preference data but without the old preference marker must not duplicate imported meal rows; SQLite migration marker must exist. | **Automated regression test added; user run pending.** |
+| DB-012 | Upgrade v6 database to v7 | `rest_ends_at` is added without losing existing workouts or set data. | [ ] |
 
 ### L. Platform, permissions, accessibility and resilience
 
