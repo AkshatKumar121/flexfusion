@@ -36,6 +36,7 @@ class HomeScreenState extends State<HomeScreen> {
       db.getInProgressWorkout(),
       db.getCompletedWorkoutToday(),
       db.getAppSetting('weight_unit', defaultValue: 'kg'),
+      db.getUserProfile(),
     ]);
     final nutrition = results[0] as Map<String, double>;
     final weights = results[1] as List<Map<String, Object?>>;
@@ -46,6 +47,8 @@ class HomeScreenState extends State<HomeScreen> {
     final activeWorkout = results[6] as Map<String, Object?>?;
     final completedWorkoutToday = results[7] as Map<String, Object?>?;
     final weightUnit = results[8] as String;
+    final profile = results[9] as Map<String, Object?>?;
+    final displayName = (profile?['display_name'] as String? ?? '').trim();
     final suggestedExercises = suggestedWorkoutDay == null ||
             (suggestedWorkoutDay['is_rest_day'] as int? ?? 0) == 1
         ? <Map<String, Object?>>[]
@@ -57,6 +60,7 @@ class HomeScreenState extends State<HomeScreen> {
       targets: targets,
       weekly: weekly,
       weightUnit: weightUnit,
+      displayName: displayName,
       suggestedWorkoutDay: suggestedWorkoutDay,
       suggestedExerciseCount: suggestedExercises.length,
       activeWorkout: activeWorkout,
@@ -243,7 +247,9 @@ class HomeScreenState extends State<HomeScreen> {
 
               // PERSONALIZED GREETING
               Text(
-                '$greeting, Akshat!',
+                data == null || data.displayName.isEmpty
+                    ? '$greeting!'
+                    : '$greeting, ${data.displayName}!',
                 style: GoogleFonts.inter(
                   color: AppColors.grey,
                   fontSize: 14,
@@ -752,6 +758,7 @@ class _DashboardData {
   final Map<String, Object?>? targets;
   final Map<String, Object?> weekly;
   final String weightUnit;
+  final String displayName;
   final Map<String, Object?>? suggestedWorkoutDay;
   final int suggestedExerciseCount;
   final Map<String, Object?>? activeWorkout;
@@ -764,6 +771,7 @@ class _DashboardData {
     required this.targets,
     required this.weekly,
     required this.weightUnit,
+    required this.displayName,
     required this.suggestedWorkoutDay,
     required this.suggestedExerciseCount,
     required this.activeWorkout,
