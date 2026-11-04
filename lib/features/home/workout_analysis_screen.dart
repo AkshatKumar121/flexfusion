@@ -59,6 +59,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
     var volumeKg = 0.0;
     var maxWeightKg = 0.0;
     var weightedSetCount = 0;
+    var weightedLoadSumKg = 0.0;
     var durationMinutes = 0;
 
     for (final row in rows) {
@@ -91,6 +92,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
         session.volumeKg += setVolume;
         if (weightKg > maxWeightKg) maxWeightKg = weightKg;
         weightedSetCount++;
+        weightedLoadSumKg += weightKg;
       }
       final name = (row['exercise_name_snapshot'] as String? ?? 'Unknown exercise').trim();
       final key = name.toLowerCase();
@@ -137,7 +139,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
       volumeKg: volumeKg,
       maxWeightKg: maxWeightKg,
       weightedSetCount: weightedSetCount,
-      averageLoadKg: WorkoutAnalysisCalculator.averageLoadPerWeightedSet(volumeKg, weightedSetCount),
+      averageLoadKg: WorkoutAnalysisCalculator.averageLoadPerWeightedSet(weightedLoadSumKg, weightedSetCount),
       durationMinutes: durationMinutes,
       muscleVolumes: muscleVolumes,
     );
