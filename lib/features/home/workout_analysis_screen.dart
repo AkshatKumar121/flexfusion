@@ -256,10 +256,10 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
                       : Column(children: data.currentWeek.exercises.map((exercise) {
                           final previous = _matchingExercise(data.previousWeek.exercises, exercise.name);
                           final hasBaseline = previous != null && previous.hasWeight && exercise.hasWeight && previous.estimatedOneRepMaxKg > 0;
-                          final volumeChange = hasBaseline ? _change(exercise.volumeKg, previous.volumeKg) : 'NEW';
-                          final strengthChange = hasBaseline ? _change(exercise.estimatedOneRepMaxKg, previous.estimatedOneRepMaxKg) : '—';
-                          final progressing = hasBaseline && exercise.estimatedOneRepMaxKg > previous.estimatedOneRepMaxKg;
-                          final declining = hasBaseline && exercise.estimatedOneRepMaxKg < previous.estimatedOneRepMaxKg;
+                          final volumeChange = hasBaseline ? _change(exercise.volumeKg, previous!.volumeKg) : 'NEW';
+                          final strengthChange = hasBaseline ? _change(exercise.estimatedOneRepMaxKg, previous!.estimatedOneRepMaxKg) : '—';
+                          final progressing = hasBaseline && exercise.estimatedOneRepMaxKg > previous!.estimatedOneRepMaxKg;
+                          final declining = hasBaseline && exercise.estimatedOneRepMaxKg < previous!.estimatedOneRepMaxKg;
                           final status = !hasBaseline ? 'INSUFFICIENT BASELINE' : progressing ? 'PROGRESSING' : declining ? 'DECLINING' : 'MAINTAINING';
                           final color = !hasBaseline ? AppColors.grey : progressing ? AppColors.green : declining ? AppColors.red : AppColors.grey;
                           return Padding(
