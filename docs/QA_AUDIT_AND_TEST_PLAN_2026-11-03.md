@@ -433,3 +433,47 @@ QA is complete only when:
 - Android build is verified if Android is a supported V1 target.
 - Data migration, persistence and backup/restore risks are documented.
 - Final regression run is recorded against the exact release commit.
+
+
+---
+
+## 8. Automated test implementation (2026-11-04)
+
+### Automated suites added
+
+| Suite | Location | Coverage |
+|---|---|---|
+| Existing database/regression suite | `test/data/local/app_database_test.dart` | SQLite schema, upgrade paths, food logging/migration, nutrition and training streaks, progress photos, workout sequence and foreign-key integrity. |
+| Workout lifecycle suite | `test/data/local/workout_flow_test.dart` | Plan-to-session set generation, custom rest duration propagation, plan duplication, set completion, volume/history summaries, pause/resume accounting, persisted rest timer, single active session, abandon/restart, and analysis query window. |
+| Widget suite | `test/widgets/flexfusion_brand_header_test.dart` | Shared brand header renders its trainer label, image and supplied action. |
+| iOS end-to-end suite | `integration_test/app_smoke_test.dart` | App launch and three-tab navigation, Train session resume, set completion, rest timer display and explicit dismissal, workout finish/history, workout analysis route, and Activity route/back navigation. |
+
+### CI execution
+
+`.github/workflows/flutter-analyze.yml` now runs on pushes and pull requests targeting `flexfusion_v1` and supports manual dispatch.
+
+- Linux job: dependency resolution, Flutter analysis and all unit/widget tests.
+- macOS job: unsigned iOS simulator build, boots an available iPhone simulator, then runs the end-to-end suite.
+- A failed job blocks the workflow result; the workflow does not claim a pass until GitHub Actions reports success.
+
+### Local commands
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter build ios --simulator --no-codesign
+flutter test integration_test/app_smoke_test.dart -d <SIMULATOR_ID>
+```
+
+### Explicitly device/manual-only verification
+
+The automated simulator suite cannot prove behavior that depends on a real person's device state or hardware. Continue to run the existing manual checklist for:
+
+- HealthKit authorization states, real health samples, background refresh and sync on a physical iPhone.
+- Camera capture, photo-library permissions, real image file creation/deletion and low-storage behavior.
+- Notification permission prompts, scheduled rest notifications while the app is backgrounded/terminated, sound and lock-screen behavior.
+- Force-close/relaunch persistence on an installed app with pre-existing user data, upgrade-in-place and device-specific performance.
+- iOS signing, provisioning, HealthKit entitlement and App Store configuration.
+
+**Verification status:** test code and CI workflows are committed; the new CI run must finish successfully before these suites are considered green. Simulator success does not replace the physical-device checks above.
