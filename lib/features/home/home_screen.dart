@@ -314,10 +314,12 @@ class HomeScreenState extends State<HomeScreen> {
                                   : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
                                       ? 'Rest Day'
                                       : data.suggestedWorkoutDay!['label'] as String,
-                      detail: data?.completedWorkoutToday != null
-                          ? ''
-                          : data?.activeWorkout != null
-                              ? 'Workout in progress'
+                      detail: data?.activeWorkout != null
+                          ? ((data!.activeWorkout!['paused_at'] != null)
+                              ? 'Workout paused'
+                              : 'Workout in progress')
+                          : data?.completedWorkoutToday != null
+                              ? ''
                               : data?.suggestedWorkoutDay == null
                                   ? 'Create or activate a plan'
                                   : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
@@ -325,11 +327,24 @@ class HomeScreenState extends State<HomeScreen> {
                                       : '${data.suggestedExerciseCount} Exercises',
                       accentColor: AppColors.red,
                       buttonText: data?.activeWorkout != null
-                          ? 'RESUME WORKOUT'
+                          ? ((data!.activeWorkout!['paused_at'] != null)
+                              ? 'RESUME WORKOUT'
+                              : 'IN PROGRESS')
                           : data?.completedWorkoutToday != null
                               ? 'WORKOUT COMPLETED'
                               : 'START WORKOUT',
                       onTap: () async {
+                              final active = data?.activeWorkout;
+                              if (active != null) {
+                                await Navigator.of(dashboardContext).push(MaterialPageRoute<void>(
+                                  builder: (_) => WorkoutSessionScreen(
+                                    workoutId: active['id'] as int,
+                                    title: active['session_name'] as String,
+                                  ),
+                                ));
+                                if (dashboardContext.mounted) refreshDashboard();
+                                return;
+                              }
                               if (data?.completedWorkoutToday != null) {
                                 final sessionName = data!.completedWorkoutToday!['session_name'] as String;
                                 final startAnother = await showDialog<bool>(
@@ -367,23 +382,9 @@ class HomeScreenState extends State<HomeScreen> {
                                 }
                                 return;
                               }
-                              final active = data?.activeWorkout;
-                              if (active != null) {
-                                await Navigator.of(context).push(MaterialPageRoute<void>(
-                                  builder: (_) => WorkoutSessionScreen(
-                                    workoutId: active['id'] as int,
-                                    title: active['session_name'] as String,
-                                    onFinished: () {
-                                      Navigator.of(context).pop();
-                                      refreshDashboard();
-                                    },
-                                  ),
-                                ));
-                              } else {
-                                await Navigator.of(context).push(MaterialPageRoute<void>(
-                                  builder: (_) => const WorkoutLauncherScreen(),
-                                ));
-                              }
+                              await Navigator.of(dashboardContext).push(MaterialPageRoute<void>(
+                                builder: (_) => const WorkoutLauncherScreen(),
+                              ));
                               if (dashboardContext.mounted) refreshDashboard();
                             },
                     ),
