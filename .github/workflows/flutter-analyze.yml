@@ -10,7 +10,12 @@ on:
   workflow_dispatch:
     inputs:
       run_ios:
-        description: "Run the iOS simulator build and integration test"
+        description: "Build and run the iOS simulator integration suite"
+        required: false
+        type: boolean
+        default: false
+      run_android:
+        description: "Build and run the Android emulator integration suite"
         required: false
         type: boolean
         default: false
@@ -24,12 +29,18 @@ concurrency:
 
 jobs:
   analyze-and-test:
-    name: Analyze and automated tests
+    name: Analyze, widget tests and Android compile
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -46,6 +57,9 @@ jobs:
       - name: Run unit, widget and quality workflow tests with coverage
         run: flutter test --no-pub --coverage --reporter expanded
 
+      - name: Build Android debug APK
+        run: flutter build apk --debug --no-pub
+
       - name: Upload LCOV coverage report
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,10 +69,49 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Upload Android debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flexfusion-android-debug-${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+
+  android-emulator:
+    name: Android emulator integration
+    if: github.event_name == 'workflow_dispatch' && inputs.run_android
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run app integration journey on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          script: flutter test integration_test/app_smoke_test.dart -d emulator-5554 --reporter expanded
+
   ios-simulator:
     name: iOS simulator integration and build
-    # Hosted macOS runners are currently being cancelled before job startup.
-    # Keep iOS verification opt-in until runner availability is reliable.
     if: github.event_name == 'workflow_dispatch' && inputs.run_ios
     runs-on: macos-latest
     timeout-minutes: 45
