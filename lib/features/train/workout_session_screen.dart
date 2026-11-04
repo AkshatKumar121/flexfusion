@@ -103,17 +103,26 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Widget
   }
 
   Future<void> _toggleWorkoutPause() async {
-    if (_isPaused) {
-      await AppDatabase.instance.resumeWorkoutSession(widget.workoutId);
-      if (!mounted) return;
-      await _loadWorkoutStartTime();
-    } else {
-      await AppDatabase.instance.pauseWorkoutSession(widget.workoutId);
-      if (!mounted) return;
-      _workoutTimer?.cancel();
-      setState(() {
-        _isPaused = true;
-      });
+    try {
+      if (_isPaused) {
+        await AppDatabase.instance.resumeWorkoutSession(widget.workoutId);
+        if (!mounted) return;
+        await _loadWorkoutStartTime();
+      } else {
+        await AppDatabase.instance.pauseWorkoutSession(widget.workoutId);
+        if (!mounted) return;
+        _workoutTimer?.cancel();
+        setState(() {
+          _isPaused = true;
+        });
+      }
+    } catch (error) {
+      debugPrint('Could not update workout pause state: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not update workout timer. Please try again.')),
+        );
+      }
     }
   }
 
@@ -155,15 +164,24 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Widget
       );
       return;
     }
-    await AppDatabase.instance.updateWorkoutSet(
-      id: id,
-      reps: reps,
-      weight: weight,
-      completed: done,
-    );
-    if (!mounted) return;
-    if (done) _startRest(row['rest_seconds'] as int? ?? 90);
-    setState(_reload);
+    try {
+      await AppDatabase.instance.updateWorkoutSet(
+        id: id,
+        reps: reps,
+        weight: weight,
+        completed: done,
+      );
+      if (!mounted) return;
+      if (done) _startRest(row['rest_seconds'] as int? ?? 90);
+      setState(_reload);
+    } catch (error) {
+      debugPrint('Could not save workout set: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save this set. Please try again.')),
+        );
+      }
+    }
   }
   Future<void> _startRest(int seconds) async {
     _timer?.cancel();
@@ -215,7 +233,8 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Widget
   Future<void> _finish() async {
     if (_finishing) return;
     _finishing = true;
-    var rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
+    try {
+      var rows = await AppDatabase.instance.getWorkoutSessionSets(widget.workoutId);
     if (!mounted) { _finishing = false; return; }
     final pending = <Map<String, Object?>>[];
     for (final row in rows) {
@@ -275,8 +294,17 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Widget
           Navigator.pop(context);
         }
       }
-    } else {
+      } else {
+        _finishing = false;
+      }
+    } catch (error) {
+      debugPrint('Could not finish workout: $error');
       _finishing = false;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not finish workout. Your session is still saved; please try again.')),
+        );
+      }
     }
   }
   @override
