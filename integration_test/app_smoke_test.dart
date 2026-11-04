@@ -13,7 +13,8 @@ void main() {
     await tester.pumpAndSettle(const Duration(seconds: 1));
 
     expect(find.text('HOME'), findsOneWidget);
-    expect(find.text('TRAIN'), findsOneWidget);
+    // TRAIN appears both as the dashboard heading and as the bottom-nav label.
+    expect(find.text('TRAIN'), findsNWidgets(2));
     expect(find.text('EAT'), findsOneWidget);
 
     // Food diary tab remains reachable from the bottom navigation.
