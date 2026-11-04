@@ -17,7 +17,7 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
   @override
   void initState() { super.initState(); _load(); }
   void _load() {
-    _suggested = AppDatabase.instance.getSuggestedWorkoutDay();
+    _suggested = AppDatabase.instance.getManualStartWorkoutDay();
     _active = AppDatabase.instance.getInProgressWorkout();
   }
   void _finishAndCloseLauncher() {
