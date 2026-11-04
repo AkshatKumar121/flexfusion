@@ -457,7 +457,7 @@ class HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 5),
                             Text(
-                              'Volume, intensity and progressive overload',
+                              'Training volume, load and progressive overload',
                               style: GoogleFonts.inter(
                                 color: AppColors.grey,
                                 fontSize: 10,
