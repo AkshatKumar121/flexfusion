@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import 'theme/app_colors.dart';
@@ -89,6 +88,7 @@ class _AppShellState extends State<AppShell> {
 
     return Expanded(
       child: InkWell(
+        key: ValueKey('nav-$label'),
         onTap: () {
           setState(() {
             _selectedIndex = index;

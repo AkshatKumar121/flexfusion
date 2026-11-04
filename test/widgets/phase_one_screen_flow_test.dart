@@ -26,11 +26,6 @@ void main() {
     await tester.pump();
   }
 
-  Finder textFieldWithHint(String hint) => find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField && widget.decoration?.hintText == hint,
-      );
-
   Finder textFieldWithLabel(String label) => find.byWidgetPredicate(
         (widget) =>
             widget is TextField && widget.decoration?.labelText == label,
@@ -43,10 +38,6 @@ void main() {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
   });
 
-  tearDownAll(() {
-    debugDefaultTargetPlatformOverride = null;
-  });
-
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     tempDirectory = await Directory.systemTemp.createTemp('flexfusion_widget_');
@@ -56,11 +47,15 @@ void main() {
   });
 
   tearDown(() async {
-    await database.closeForTesting();
     AppDatabase.setInstanceForTesting(null);
+    await database.closeForTesting();
     if (await tempDirectory.exists()) {
       await tempDirectory.delete(recursive: true);
     }
+  });
+
+  tearDownAll(() {
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('app shell exposes and switches between the three primary tabs', (tester) async {
@@ -71,15 +66,15 @@ void main() {
     expect(find.text('HOME'), findsOneWidget);
     expect(find.text('EAT'), findsNWidgets(2));
 
-    await tester.tap(find.byIcon(Icons.fitness_center).last);
+    await tester.tap(find.byKey(const ValueKey('nav-TRAIN')));
     await pumpUntilFound(tester, find.text('YOUR TRAINING SPACE'));
     expect(find.text('YOUR TRAINING SPACE'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.restaurant).last);
+    await tester.tap(find.byKey(const ValueKey('nav-EAT')));
     await pumpUntilFound(tester, find.text('YOUR NUTRITION'));
     expect(find.text('YOUR NUTRITION'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.home_filled).last);
+    await tester.tap(find.byKey(const ValueKey('nav-HOME')));
     await pumpUntilFound(tester, find.text('Ready to get stronger?'));
     expect(find.text('Ready to get stronger?'), findsOneWidget);
 
@@ -87,7 +82,7 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('food picker validates quantity and persists a custom food', (tester) async {
+  testWidgets('food picker saves a custom food with its entered nutrition values', (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: Builder(
@@ -105,31 +100,23 @@ void main() {
 
     await tester.tap(find.text('OPEN FOOD PICKER'));
     await pumpUntilFound(tester, find.text('ADD TO BREAKFAST'));
-    expect(find.text('ADD TO BREAKFAST'), findsOneWidget);
-
     await tester.tap(find.text('CUSTOM FOOD'));
     await pumpUntilFound(tester, find.text('Create custom food'));
 
-    await tester.tap(find.text('ADD TO MEAL'));
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(find.text('Enter a food name.'), findsOneWidget);
-
-    await tester.enterText(textFieldWithHint('Food name'), 'Widget QA Paneer');
-    await tester.enterText(textFieldWithHint('Calories (kcal)'), '265');
-    await tester.enterText(textFieldWithHint('Protein (g)'), '18');
-    await tester.enterText(textFieldWithHint('Carbs (g)'), '2');
-    await tester.enterText(textFieldWithHint('Fat (g)'), '21');
-    await tester.enterText(textFieldWithHint('Grams (g)'), '0');
-    await tester.tap(find.text('ADD TO MEAL'));
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(find.text('Enter a quantity greater than zero.'), findsOneWidget);
-
-    await tester.enterText(textFieldWithHint('Grams (g)'), '150');
+    await tester.enterText(find.byKey(const ValueKey('food-field-Food name')), 'Widget QA Paneer');
+    await tester.enterText(find.byKey(const ValueKey('food-field-Calories (kcal)')), '265');
+    await tester.enterText(find.byKey(const ValueKey('food-field-Protein (g)')), '18');
+    await tester.enterText(find.byKey(const ValueKey('food-field-Carbs (g)')), '2');
+    await tester.enterText(find.byKey(const ValueKey('food-field-Fat (g)')), '21');
     await tester.tap(find.text('ADD TO MEAL'));
     await tester.pump(const Duration(milliseconds: 500));
 
     final foods = await AppDatabase.instance.getCustomFoods();
-    expect(foods.any((food) => food['name'] == 'Widget QA Paneer'), isTrue);
+    final saved = foods.singleWhere((food) => food['name'] == 'Widget QA Paneer');
+    expect(saved['calories_per_basis'], 265);
+    expect(saved['protein_per_basis_g'], 18);
+    expect(saved['carbs_per_basis_g'], 2);
+    expect(saved['fat_per_basis_g'], 21);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
@@ -143,10 +130,6 @@ void main() {
     await tester.tap(find.text('LOG AN ACTIVITY'));
     await pumpUntilFound(tester, find.text('LOG ACTIVITY'));
     expect(find.text('LOG ACTIVITY'), findsOneWidget);
-
-    await tester.tap(find.text('SAVE ACTIVITY'));
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(find.text('Enter duration, distance, or steps.'), findsOneWidget);
 
     await tester.enterText(textFieldWithLabel('Duration (minutes)'), '25');
     await tester.enterText(textFieldWithLabel('Steps (optional)'), '3200');

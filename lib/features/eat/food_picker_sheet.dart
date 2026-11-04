@@ -169,7 +169,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                 Text('QUANTITY', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: .8)),
                 const SizedBox(height: 5),
-                SizedBox(height: 44, child: TextField(controller: grams, keyboardType: const TextInputType.numberWithOptions(decimal: true), style: GoogleFonts.inter(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w700), decoration: decoration('Grams (g)'))),
+                SizedBox(height: 44, child: TextField(key: const ValueKey('food-quantity'), controller: grams, keyboardType: const TextInputType.numberWithOptions(decimal: true), style: GoogleFonts.inter(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w700), decoration: decoration('Grams (g)'))),
               ])),
               const SizedBox(width: 14),
               Expanded(flex: 2, child: SizedBox(height: 44, child: ElevatedButton(
