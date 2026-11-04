@@ -69,6 +69,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
         completedAt: DateTime.tryParse(row['completed_at'] as String? ?? ''),
         status: row['status'] as String? ?? '',
         pausedSeconds: (row['paused_seconds'] as num?)?.toInt() ?? 0,
+        pausedAt: DateTime.tryParse(row['paused_at'] as String? ?? ''),
       ));
       final setId = row['set_id'];
       if (setId == null) continue;
@@ -115,7 +116,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
     for (final session in sessions.values) {
       final startTime = session.startedAt;
       if (startTime == null) continue;
-      final endTime = session.completedAt ?? DateTime.now();
+      final endTime = session.pausedAt ?? session.completedAt ?? DateTime.now();
       final elapsed = endTime.difference(startTime).inSeconds - session.pausedSeconds;
       if (elapsed > 0) durationMinutes += elapsed ~/ 60;
     }
@@ -460,11 +461,12 @@ class _SessionStats {
   final DateTime? completedAt;
   final String status;
   final int pausedSeconds;
+  final DateTime? pausedAt;
   int loggedSets = 0;
   int completedSets = 0;
   int reps = 0;
   double volumeKg = 0;
-  _SessionStats({required this.id, required this.name, required this.startedAt, required this.completedAt, required this.status, required this.pausedSeconds});
+  _SessionStats({required this.id, required this.name, required this.startedAt, required this.completedAt, required this.status, required this.pausedSeconds, required this.pausedAt});
 }
 
 class _ExerciseStats {
