@@ -171,10 +171,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
 class ActivityForm extends StatefulWidget {
   final List<String> types;final DateTime date;final Map<String,Object?>? row;final Future<void> Function(Map<String,Object?>) onSave;
-  const ActivityForm({required this.types,required this.date,required this.row,required this.onSave});
-  @override State<ActivityForm> createState()=>ActivityFormState();
+  const ActivityForm({super.key, required this.types,required this.date,required this.row,required this.onSave});
+  @override State<ActivityForm> createState()=>_ActivityFormState();
 }
-class ActivityFormState extends State<ActivityForm>{
+class _ActivityFormState extends State<ActivityForm>{
   late String _type;late final TextEditingController _duration,_distance,_steps,_calories,_notes;TimeOfDay _time=TimeOfDay.now();bool _saving=false;
   @override void initState(){super.initState();final r=widget.row;_type=r?['activity_type'] as String? ?? widget.types.first;
     _duration=TextEditingController(text:r?['duration_minutes']?.toString()??'');_distance=TextEditingController(text:r?['distance_km']?.toString()??'');
