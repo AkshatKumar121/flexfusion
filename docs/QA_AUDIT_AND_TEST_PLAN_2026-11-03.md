@@ -347,7 +347,7 @@ Implemented areas:
 
 | ID | Test case | Expected result | Status / notes |
 |---|---|---|---|
-| DB-001 | Fresh database creation | All expected tables/indexes are created and `PRAGMA user_version` equals the current schema version (6). | **Pass — included in user-reported 20/20 automated test run.** |
+| DB-001 | Fresh database creation | All expected tables/indexes are created and `PRAGMA user_version` equals the current schema version (7). | **Pass — included in user-reported 20/20 automated test run.** |
 | DB-002 | Upgrade a v5 database to v6 | Pause fields are added and existing records remain. | **Pass — user confirmed targeted fresh-schema and v5→v6 migration tests.** |
 | DB-003 | Upgrade each supported older schema version | Migration completes without missing-table/duplicate-column errors. | **Pass — v1→v6, v2→v6, v3→v6, v4→v6 and v5→v6 targeted migration tests passed; included in user-reported 20/20 automated test run.** |
 | DB-004 | Force-close during writes | Database remains consistent on next launch. | [ ] |
