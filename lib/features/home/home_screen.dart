@@ -302,16 +302,16 @@ class HomeScreenState extends State<HomeScreen> {
                       description: data?.activeWorkout != null
                           ? data!.activeWorkout!['session_name'] as String
                           : data?.completedWorkoutToday != null
-                              ? '${data!.completedWorkoutToday!['session_name']} – WORKOUT COMPLETED'
+                              ? data!.completedWorkoutToday!['session_name'] as String
                               : data?.suggestedWorkoutDay == null
                                   ? 'No workout scheduled'
                                   : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
                                       ? 'Rest Day'
                                       : data.suggestedWorkoutDay!['label'] as String,
-                      detail: data?.activeWorkout != null
-                          ? 'Workout in progress'
-                          : data?.completedWorkoutToday != null
-                              ? 'Start another session from the Workout screen'
+                      detail: data?.completedWorkoutToday != null
+                          ? ''
+                          : data?.activeWorkout != null
+                              ? 'Workout in progress'
                               : data?.suggestedWorkoutDay == null
                                   ? 'Create or activate a plan'
                                   : (data!.suggestedWorkoutDay!['is_rest_day'] as int? ?? 0) == 1
@@ -323,9 +323,44 @@ class HomeScreenState extends State<HomeScreen> {
                           : data?.completedWorkoutToday != null
                               ? 'WORKOUT COMPLETED'
                               : 'START WORKOUT',
-                      onTap: data?.completedWorkoutToday != null
-                          ? null
-                          : () async {
+                      onTap: () async {
+                              if (data?.completedWorkoutToday != null) {
+                                final sessionName = data!.completedWorkoutToday!['session_name'] as String;
+                                final startAnother = await showDialog<bool>(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    backgroundColor: AppColors.card,
+                                    title: Text(
+                                      'Workout completed',
+                                      style: GoogleFonts.inter(
+                                        color: AppColors.white,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    content: Text(
+                                      '$sessionName is complete. Would you like to start another session?',
+                                      style: GoogleFonts.inter(color: AppColors.grey),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                                        child: const Text('NOT NOW'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                                        child: const Text('GO TO WORKOUT'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (startAnother == true && mounted) {
+                                  await Navigator.of(context).push(MaterialPageRoute<void>(
+                                    builder: (_) => const WorkoutLauncherScreen(),
+                                  ));
+                                  if (mounted) refreshDashboard();
+                                }
+                                return;
+                              }
                               final active = data?.activeWorkout;
                               if (active != null) {
                                 await Navigator.of(context).push(MaterialPageRoute<void>(
@@ -881,15 +916,16 @@ class _DashboardCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 4),
-
-          Text(
-            detail,
-            style: GoogleFonts.inter(
-              color: AppColors.grey,
-              fontSize: 11,
+          if (detail.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              detail,
+              style: GoogleFonts.inter(
+                color: AppColors.grey,
+                fontSize: 11,
+              ),
             ),
-          ),
+          ],
 
           const Spacer(),
 
