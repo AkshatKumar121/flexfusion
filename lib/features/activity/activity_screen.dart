@@ -27,15 +27,29 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (mounted) {
       setState(() => _loading = true);
     }
-    final logs=await AppDatabase.instance.getActivityLogs(requestedKey);
-    final saved=await AppDatabase.instance.getHealthActivitySummary(requestedKey);
-    if (!mounted ||
-        refreshGeneration != _refreshGeneration ||
-        _key(_date) != requestedKey) {
-      return;
+    try {
+      final logs = await AppDatabase.instance.getActivityLogs(requestedKey);
+      final saved = await AppDatabase.instance.getHealthActivitySummary(requestedKey);
+      if (!mounted ||
+          refreshGeneration != _refreshGeneration ||
+          _key(_date) != requestedKey) {
+        return;
+      }
+      setState(() {
+        _logs = logs;
+        _healthDay = saved;
+        _loading = false;
+      });
+      await _syncHealth(requestedDate);
+    } catch (error) {
+      debugPrint('Could not refresh activity data: $error');
+      if (mounted && refreshGeneration == _refreshGeneration) {
+        setState(() {
+          _loading = false;
+          _healthStatus = 'Unable to refresh activity data.';
+        });
+      }
     }
-    setState((){_logs=logs;_healthDay=saved;_loading=false;});
-    await _syncHealth(requestedDate);
   }
   Future<void> _syncHealth([DateTime? date]) async {
     final requestedDate = DateTime(
@@ -70,6 +84,15 @@ class _ActivityScreenState extends State<ActivityScreen> {
         _healthDay = saved;
         _healthStatus = result.statusMessage;
       });
+    } catch (error) {
+      debugPrint('Apple Health sync failed: $error');
+      if (mounted &&
+          syncGeneration == _syncGeneration &&
+          _key(_date) == requestedKey) {
+        setState(() {
+          _healthStatus = 'Apple Health sync unavailable. Showing saved activity.';
+        });
+      }
     } finally {
       if(mounted && syncGeneration == _syncGeneration) {
         setState(()=>_syncing=false);
@@ -82,7 +105,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
   int get _minutes=>_healthDay?['exercise_minutes'] is num&&(_healthDay!['exercise_minutes'] as num)>0?(_healthDay!['exercise_minutes'] as num).round():_logs.fold<int>(0,(s,r)=>s+((r['duration_minutes'] as num?)?.toInt()??0));
   Future<void> _pickDate() async {
     final picked=await showDatePicker(context:context,initialDate:_date,firstDate:DateTime(2020),lastDate:DateTime.now());
-    if(picked!=null){setState(()=>_date=picked);await _refresh();}
+    if (picked != null && mounted) {
+      setState(() => _date = picked);
+      await _refresh();
+    }
   }
   Future<void> _openForm({Map<String,Object?>? row}) async {
     await showModalBottomSheet<void>(context:context,isScrollControlled:true,backgroundColor:AppColors.card,
@@ -99,7 +125,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
       content:const Text('This entry will be removed from this device.',style:TextStyle(color:AppColors.grey)),
       actions:[TextButton(onPressed:()=>Navigator.pop(context,false),child:const Text('CANCEL')),
         TextButton(onPressed:()=>Navigator.pop(context,true),child:const Text('DELETE',style:TextStyle(color:AppColors.red)))]));
-    if(yes==true){await AppDatabase.instance.deleteActivityLog(row['id'] as int);await _refresh();}
+    if (yes == true && mounted) {
+      await AppDatabase.instance.deleteActivityLog(row['id'] as int);
+      if (mounted) await _refresh();
+    }
   }
   Widget _panel(Widget child)=>Container(padding:const EdgeInsets.all(16),decoration:BoxDecoration(color:AppColors.card,borderRadius:BorderRadius.circular(12),border:Border.all(color:AppColors.border)),child:child);
   Widget _heading(String s)=>Text(s,style:GoogleFonts.inter(color:Colors.white,fontSize:12,fontWeight:FontWeight.w800,letterSpacing:1));
@@ -186,8 +215,26 @@ class _ActivityFormState extends State<_ActivityForm>{
 
     setState(()=>_saving=true);
     final started=DateTime(widget.date.year,widget.date.month,widget.date.day,_time.hour,_time.minute).toIso8601String();
-    await widget.onSave({'type':_type,'started':started,'duration':duration,'distance':distance,'steps':steps,'calories':calories,'notes':_notes.text.trim()});
-    if(mounted)Navigator.pop(context);
+    try {
+      await widget.onSave({
+        'type': _type,
+        'started': started,
+        'duration': duration,
+        'distance': distance,
+        'steps': steps,
+        'calories': calories,
+        'notes': _notes.text.trim(),
+      });
+      if (mounted) Navigator.pop(context);
+    } catch (error) {
+      debugPrint('Could not save activity: $error');
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save activity. Please try again.')),
+        );
+      }
+    }
   }
   @override Widget build(BuildContext context)=>SafeArea(child:Padding(padding:EdgeInsets.fromLTRB(18,18,18,MediaQuery.of(context).viewInsets.bottom+18),child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
     Text(widget.row==null?'LOG ACTIVITY':'EDIT ACTIVITY',style:GoogleFonts.inter(color:Colors.white,fontSize:15,fontWeight:FontWeight.w800,letterSpacing:1)),const SizedBox(height:16),
