@@ -33,6 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final profile = await db.getUserProfile();
     final targets = await db.getNutritionTargets();
     final weight = await db.getLatestBodyWeight();
+    final savedGoal = await db.getAppSetting('fitness_goal', defaultValue: '');
     final units = await Future.wait([
       db.getAppSetting('weight_unit', defaultValue: 'kg'),
       db.getAppSetting('height_unit', defaultValue: 'cm'),
@@ -46,7 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _weightUnit = units[0];
       _heightUnit = units[1];
       _stepGoal = int.tryParse(units[2]) ?? 10000;
-      _fitnessGoal = profile?['current_goal'] as String?;
+      _fitnessGoal = (profile?['current_goal'] as String?) ?? (savedGoal.isEmpty ? null : savedGoal);
       _isLoading = false;
     });
   }
@@ -565,23 +566,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveGoal(String goal) async {
     setState(() => _fitnessGoal = goal);
-    final profile = _profile;
-    if (profile == null || _weight == null || _targets == null) {
-      await _editPersonalDetails();
-      return;
-    }
-    await AppDatabase.instance.saveProfileAndTargets(
-      displayName: profile['display_name'] as String? ?? '',
-      age: (profile['age'] as num).round(),
-      heightCm: (profile['height_value'] as num).toDouble(),
-      weightKg: _weight!,
-      goal: goal,
-      calories: (_targets!['calorie_target'] as num).toDouble(),
-      protein: (_targets!['protein_target_g'] as num).toDouble(),
-      carbs: (_targets!['carbs_target_g'] as num).toDouble(),
-      fat: (_targets!['fat_target_g'] as num).toDouble(),
-    );
-    await _loadProfile();
+    await AppDatabase.instance.saveAppSetting('fitness_goal', goal);
   }
 }
 
