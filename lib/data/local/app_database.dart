@@ -264,6 +264,4 @@ class AppDatabase {
     await preferences.setBool(migrationKey, true);
   }
 
-  @visibleForTesting
-
 }
