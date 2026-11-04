@@ -384,30 +384,53 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
     final repsController = TextEditingController(text: '10');
     final weightController = TextEditingController();
     final restController = TextEditingController(text: '90');
+    var useCustomRestTime = false;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.card,
-        title: Text('Set targets', style: GoogleFonts.inter(color: AppColors.white)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('${selected['name']}', style: GoogleFonts.inter(color: AppColors.green)),
-          TextField(controller: setsController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Number of sets')),
-          TextField(controller: repsController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Target reps per set')),
-          TextField(controller: weightController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Target weight in kg (optional)')),
-          TextField(controller: restController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Rest seconds')),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('ADD')),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.card,
+          title: Text('Set targets', style: GoogleFonts.inter(color: AppColors.white)),
+          content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('${selected['name']}', style: GoogleFonts.inter(color: AppColors.green)),
+            TextField(controller: setsController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Number of sets')),
+            TextField(controller: repsController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Target reps per set')),
+            TextField(controller: weightController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Target weight in kg (optional)')),
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              value: useCustomRestTime,
+              onChanged: (value) => setDialogState(() => useCustomRestTime = value ?? false),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Set a custom rest time'),
+              subtitle: const Text('Otherwise, the default 90 seconds will be used.'),
+            ),
+            if (useCustomRestTime)
+              TextField(
+                controller: restController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Rest duration',
+                  suffixText: 'seconds',
+                  helperText: 'Enter a value from 1 to 3600 seconds',
+                ),
+              ),
+          ])),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('ADD')),
+          ],
+        ),
       ),
     );
     if (ok == true && mounted) {
       final setCount = int.tryParse(setsController.text) ?? 3;
       final reps = int.tryParse(repsController.text) ?? 10;
-      final rest = int.tryParse(restController.text) ?? 90;
+      final rest = useCustomRestTime ? int.tryParse(restController.text) : 90;
       final weight = double.tryParse(weightController.text);
-      if (setCount > 0 && setCount <= 20 && reps > 0 && reps <= 100 && rest >= 0 && rest <= 3600 && (weight == null || weight >= 0)) {
+      if (setCount > 0 && setCount <= 20 && reps > 0 && reps <= 100 &&
+          rest != null && rest >= 1 && rest <= 3600 &&
+          (weight == null || weight >= 0)) {
         await AppDatabase.instance.addExerciseToPlanDay(
           dayId: dayId,
           exerciseId: selected['id'] as int,
@@ -419,6 +442,10 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
           restSeconds: rest,
         );
         await _refresh();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Check your set, rep, weight and rest-time values. Rest time must be 1–3600 seconds.')),
+        );
       }
     }
     setsController.dispose(); repsController.dispose(); weightController.dispose(); restController.dispose();
