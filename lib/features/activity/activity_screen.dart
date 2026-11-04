@@ -242,6 +242,6 @@ class _ActivityFormState extends State<ActivityForm>{
     const SizedBox(height:12),Row(children:[Expanded(child:_field(_duration,'Duration (minutes)',numeric:true)),const SizedBox(width:10),Expanded(child:OutlinedButton.icon(onPressed:()async{final t=await showTimePicker(context:context,initialTime:_time);if(t!=null)setState(()=>_time=t);},icon:const Icon(Icons.access_time),label:Text(_time.format(context)),style:OutlinedButton.styleFrom(foregroundColor:AppColors.green)))]),
     const SizedBox(height:12),Row(children:[Expanded(child:_field(_distance,'Distance (km)',numeric:true)),const SizedBox(width:10),Expanded(child:_field(_steps,'Steps (optional)',numeric:true))]),
     const SizedBox(height:12),_field(_calories,'Active calories (optional)',numeric:true),const SizedBox(height:12),_field(_notes,'Notes (optional)',lines:2),
-    const SizedBox(height:18),SizedBox(width:double.infinity,height:46,child:ElevatedButton(onPressed:_saving?null:_save,style:ElevatedButton.styleFrom(backgroundColor:AppColors.green,foregroundColor:Colors.black),child:Text(_saving?'SAVING...':'SAVE ACTIVITY',style:const TextStyle(fontWeight:FontWeight.w800)))),
+    const SizedBox(height:18),SizedBox(width:double.infinity,height:46,child:ElevatedButton(onPressed:_saving?null:_save,style:ElevatedButton.styleFrom(backgroundColor:AppColors.green,foregroundColor:Colors.black),key:const ValueKey('activity-save-button'),child:Text(_saving?'SAVING...':'SAVE ACTIVITY',style:const TextStyle(fontWeight:FontWeight.w800)))),
   ]))));
 }
