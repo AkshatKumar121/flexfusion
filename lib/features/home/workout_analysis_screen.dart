@@ -367,6 +367,11 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(e.name, style: GoogleFonts.inter(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w700)),
         Text('${e.muscleGroup} • ${e.sets} sets • ${e.reps} reps', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
+        if (e.hasWeight)
+          Text(
+            'Best set: ${e.bestSetWeightKg.toStringAsFixed(1)} kg × ${e.bestSetReps} reps • Est. 1RM ${e.estimatedOneRepMaxKg.toStringAsFixed(1)} kg',
+            style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9),
+          ),
       ])),
       Text(e.hasWeight ? _volume(e.volumeKg) : 'No load', style: GoogleFonts.inter(color: AppColors.green, fontSize: 10, fontWeight: FontWeight.w700)),
     ]),
