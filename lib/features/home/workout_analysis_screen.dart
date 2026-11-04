@@ -53,6 +53,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
     final sessions = <int, _SessionStats>{};
     final exercises = <String, _ExerciseStats>{};
     var totalSets = 0;
+    var loggedSets = 0;
     var totalReps = 0;
     var volumeKg = 0.0;
     var maxWeightKg = 0.0;
@@ -70,16 +71,22 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
         pausedSeconds: (row['paused_seconds'] as num?)?.toInt() ?? 0,
       ));
       final setId = row['set_id'];
-      if (setId == null || (row['set_completed'] as num? ?? 0).toInt() != 1) continue;
+      if (setId == null) continue;
+      loggedSets++;
+      session.loggedSets++;
+      if ((row['set_completed'] as num? ?? 0).toInt() != 1) continue;
       final reps = (row['actual_reps'] as num?)?.toInt() ?? 0;
       final rawWeight = (row['actual_weight'] as num?)?.toDouble();
       final unit = (row['weight_unit'] as String? ?? 'kg').toLowerCase();
       final weightKg = rawWeight == null ? null : (unit == 'lb' || unit == 'lbs' ? rawWeight * 0.45359237 : rawWeight);
       totalSets++;
+      session.completedSets++;
       totalReps += reps;
+      session.reps += reps;
       if (weightKg != null) {
         final setVolume = weightKg * reps;
         volumeKg += setVolume;
+        session.volumeKg += setVolume;
         if (weightKg > maxWeightKg) maxWeightKg = weightKg;
         weightedSetCount++;
       }
@@ -123,6 +130,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
       sessions: sessions.values.toList()..sort((a, b) => (b.startedAt ?? DateTime(2000)).compareTo(a.startedAt ?? DateTime(2000))),
       exercises: sortedExercises,
       totalSets: totalSets,
+      loggedSets: loggedSets,
       totalReps: totalReps,
       volumeKg: volumeKg,
       maxWeightKg: maxWeightKg,
@@ -348,6 +356,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(s.name, style: GoogleFonts.inter(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w700)),
           Text('${time.isEmpty ? 'Time unavailable' : time} • ${s.status == 'completed' ? 'Completed' : 'In progress'}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 9)),
+          Text('${s.completedSets}/${s.loggedSets} sets • ${s.reps} reps • ${_volume(s.volumeKg)}', style: GoogleFonts.inter(color: AppColors.green, fontSize: 9)),
         ])),
         const Icon(Icons.chevron_right, color: AppColors.grey, size: 17),
       ]),
@@ -408,13 +417,14 @@ class _PeriodStats {
   final List<_SessionStats> sessions;
   final List<_ExerciseStats> exercises;
   final int totalSets;
+  final int loggedSets;
   final int totalReps;
   final double volumeKg;
   final double maxWeightKg;
   final int weightedSetCount;
   final int durationMinutes;
   final Map<String, double> muscleVolumes;
-  const _PeriodStats({required this.sessions, required this.exercises, required this.totalSets, required this.totalReps, required this.volumeKg, required this.maxWeightKg, required this.weightedSetCount, required this.durationMinutes, required this.muscleVolumes});
+  const _PeriodStats({required this.sessions, required this.exercises, required this.totalSets, required this.loggedSets, required this.totalReps, required this.volumeKg, required this.maxWeightKg, required this.weightedSetCount, required this.durationMinutes, required this.muscleVolumes});
 }
 
 class _SessionStats {
@@ -424,6 +434,10 @@ class _SessionStats {
   final DateTime? completedAt;
   final String status;
   final int pausedSeconds;
+  int loggedSets = 0;
+  int completedSets = 0;
+  int reps = 0;
+  double volumeKg = 0;
   const _SessionStats({required this.id, required this.name, required this.startedAt, required this.completedAt, required this.status, required this.pausedSeconds});
 }
 
