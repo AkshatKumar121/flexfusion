@@ -132,7 +132,7 @@ class HomeScreenState extends State<HomeScreen> {
     return FutureBuilder<_DashboardData>(
       future: _dashboardFuture,
       initialData: _cachedDashboardData,
-      builder: (context, snapshot) {
+      builder: (dashboardContext, snapshot) {
         final data = snapshot.data ?? _cachedDashboardData;
         final kcal = data?.nutrition['calories'] ?? 0.0;
         final protein = data?.nutrition['protein'] ?? 0.0;
@@ -353,11 +353,11 @@ class HomeScreenState extends State<HomeScreen> {
                                     ],
                                   ),
                                 );
-                                if (startAnother == true && mounted) {
-                                  await Navigator.of(context).push(MaterialPageRoute<void>(
+                                if (startAnother == true && dashboardContext.mounted) {
+                                  await Navigator.of(dashboardContext).push(MaterialPageRoute<void>(
                                     builder: (_) => const WorkoutLauncherScreen(),
                                   ));
-                                  if (mounted) refreshDashboard();
+                                  if (dashboardContext.mounted) refreshDashboard();
                                 }
                                 return;
                               }
@@ -378,7 +378,7 @@ class HomeScreenState extends State<HomeScreen> {
                                   builder: (_) => const WorkoutLauncherScreen(),
                                 ));
                               }
-                              if (mounted) refreshDashboard();
+                              if (dashboardContext.mounted) refreshDashboard();
                             },
                     ),
                   ),
