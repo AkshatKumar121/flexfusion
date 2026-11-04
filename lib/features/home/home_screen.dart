@@ -6,6 +6,7 @@ import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
 import '../profile/profile_screen.dart';
 import 'weekly_progress_screen.dart';
+import 'workout_analysis_screen.dart';
 import '../train/workout_session_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -405,6 +406,73 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // WORKOUT ANALYSIS
+              InkWell(
+                onTap: () => Navigator.of(dashboardContext).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const WorkoutAnalysisScreen(),
+                  ),
+                ),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.red.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.insights_rounded,
+                          color: AppColors.red,
+                          size: 25,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'WORKOUT ANALYSIS',
+                              style: GoogleFonts.inter(
+                                color: AppColors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              'Volume, intensity and progressive overload',
+                              style: GoogleFonts.inter(
+                                color: AppColors.grey,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        color: AppColors.red,
+                        size: 16,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
