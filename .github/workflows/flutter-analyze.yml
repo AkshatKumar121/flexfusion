@@ -1,4 +1,4 @@
-name: Flutter Analyze
+name: FlexFusion CI
 
 on:
   push:
@@ -12,10 +12,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: flexfusion-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  analyze:
-    name: Flutter static analysis
+  analyze-and-test:
+    name: Analyze and automated tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,5 +34,52 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run full analyzer
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test integration_test
+
+      - name: Run Flutter analyzer
         run: flutter analyze --no-pub
+
+      - name: Run unit and widget tests
+        run: flutter test --no-pub --reporter expanded
+
+  ios-simulator:
+    name: iOS simulator integration and build
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS simulator app
+        run: flutter build ios --simulator --no-codesign
+
+      - name: Boot an available iPhone simulator
+        id: simulator
+        shell: bash
+        run: |
+          SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }')"
+          if [ -z "$SIMULATOR_ID" ]; then
+            echo "No available iPhone simulator was found on this runner."
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "device_id=$SIMULATOR_ID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$SIMULATOR_ID" || true
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+
+      - name: Run end-to-end app flow
+        run: flutter test integration_test/app_smoke_test.dart -d "${{ steps.simulator.outputs.device_id }}" --reporter expanded
+
+      - name: Shut down simulator
+        if: always()
+        run: xcrun simctl shutdown all || true
