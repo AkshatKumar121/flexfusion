@@ -174,9 +174,6 @@ class _NutritionStreakScreenState extends State<NutritionStreakScreen> {
     );
   }
 
-  Widget StreakSectionLabel(String value) => Text(value,
-    style: GoogleFonts.inter(color: AppColors.grey, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.2));
-
   Widget _progressRow({
     required double value,
     required double target,
@@ -203,17 +200,4 @@ class _NutritionStreakScreenState extends State<NutritionStreakScreen> {
     )),
   ]);
 
-  Widget StreakSummaryTile(String title, String value, IconData icon) => Container(
-    padding: const EdgeInsets.all(13),
-    decoration: BoxDecoration(color: const Color(0xFF292929), borderRadius: BorderRadius.circular(12)),
-    child: Row(children: [
-      Icon(icon, color: AppColors.green, size: 20),
-      const SizedBox(width: 8),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 8, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 4),
-        Text(value, style: GoogleFonts.inter(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w800)),
-      ])),
-    ]),
-  );
 }
