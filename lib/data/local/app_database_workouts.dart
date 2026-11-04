@@ -749,6 +749,37 @@ extension AppDatabaseWorkouts on AppDatabase {
     );
   }
 
+  /// Returns all recorded sessions for one exercise, newest first.
+  /// Set details are preserved from workout-time snapshots.
+  Future<List<Map<String, Object?>>> getExercisePerformanceHistory(
+    String exerciseName,
+  ) async {
+    final db = await database;
+    return db.rawQuery(
+      '''
+      SELECT
+        w.id AS workout_id,
+        w.session_name,
+        w.started_at,
+        w.completed_at,
+        w.status,
+        s.id AS set_id,
+        s.set_order,
+        s.actual_reps,
+        s.actual_weight,
+        s.weight_unit,
+        s.completed AS set_completed
+      FROM workouts w
+      INNER JOIN workout_sets s ON s.workout_id = w.id
+      WHERE LOWER(TRIM(s.exercise_name_snapshot)) = LOWER(TRIM(?))
+        AND s.completed = 1
+        AND w.status != 'abandoned'
+      ORDER BY w.started_at DESC, w.id DESC, s.set_order ASC, s.id ASC
+      ''',
+      [exerciseName],
+    );
+  }
+
   Future<Map<String, Object?>> getWorkoutSessionSummary(int workoutId) async {
     final db = await database;
     final rows = await db.rawQuery(

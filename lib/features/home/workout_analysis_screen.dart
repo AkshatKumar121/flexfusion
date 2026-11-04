@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
 import 'workout_analysis_calculator.dart';
+import 'exercise_performance_screen.dart';
 
 class WorkoutAnalysisScreen extends StatefulWidget {
   const WorkoutAnalysisScreen({super.key});
@@ -456,7 +457,12 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
     );
   }
 
-  Widget _exerciseTile(_ExerciseStats e) => Padding(
+  Widget _exerciseTile(_ExerciseStats e) => InkWell(
+    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ExercisePerformanceScreen(exerciseName: e.name),
+    )),
+    borderRadius: BorderRadius.circular(8),
+    child: Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Row(children: [
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -470,6 +476,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
       ])),
       Text(e.hasWeight ? _volume(e.volumeKg) : 'No load', style: GoogleFonts.inter(color: AppColors.green, fontSize: 10, fontWeight: FontWeight.w700)),
     ]),
+  ),
   );
 
   Widget _sessionTile(_SessionStats s) {
