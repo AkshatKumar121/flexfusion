@@ -1800,6 +1800,62 @@ class AppDatabase {
     await saveAppSetting('workout_plan_sequence_$planId', (next['id'] as int).toString());
   }
 
+  // Manual starts from the Train screen may use the active plan even when
+  // today's scheduled slot has already been completed.
+  Future<Map<String, Object?>?> getManualStartWorkoutDay() async {
+    final db = await database;
+    final plans = await db.query('workout_plans', where: 'is_active = 1', limit: 1);
+    if (plans.isEmpty) return null;
+    final plan = plans.first;
+    final days = await db.query(
+      'workout_plan_days',
+      where: 'plan_id = ?',
+      whereArgs: [plan['id']],
+      orderBy: 'day_order, id',
+    );
+    if (days.isEmpty) return null;
+
+    final today = DateTime.now().weekday;
+    final fixedToday = days.where((day) =>
+        day['schedule_type'] == 'weekday' && day['weekday'] == today).toList();
+    if (fixedToday.isNotEmpty) {
+      return {...fixedToday.first, 'plan_name': plan['name'], 'plan_id': plan['id']};
+    }
+
+    final sequenceDays = days.where((day) => day['schedule_type'] != 'weekday').toList();
+    if (sequenceDays.isNotEmpty) {
+      final pointer = await db.query(
+        'app_settings',
+        columns: ['value'],
+        where: 'key = ?',
+        whereArgs: ['workout_plan_sequence_${plan['id']}'],
+        limit: 1,
+      );
+      var nextIndex = 0;
+      if (pointer.isNotEmpty) {
+        final pointerId = int.tryParse(pointer.first['value'] as String? ?? '');
+        final pointerIndex = sequenceDays.indexWhere((day) => day['id'] == pointerId);
+        if (pointerIndex >= 0) nextIndex = pointerIndex;
+      } else {
+        final previous = await db.query(
+          'workouts',
+          where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
+          whereArgs: [plan['id']],
+          orderBy: 'completed_at DESC, id DESC',
+          limit: 1,
+        );
+        if (previous.isNotEmpty) {
+          final lastIndex = sequenceDays.indexWhere((day) => day['id'] == previous.first['plan_day_id']);
+          if (lastIndex >= 0) nextIndex = (lastIndex + 1) % sequenceDays.length;
+        }
+      }
+      return {...sequenceDays[nextIndex], 'plan_name': plan['name'], 'plan_id': plan['id']};
+    }
+
+    // Fixed-weekday plans can still be started manually on a different day.
+    return {...days.first, 'plan_name': plan['name'], 'plan_id': plan['id']};
+  }
+
   Future<Map<String, Object?>?> getSuggestedWorkoutDay() async {
     final db = await database;
     final plans = await db.query('workout_plans', where: 'is_active = 1', limit: 1);
