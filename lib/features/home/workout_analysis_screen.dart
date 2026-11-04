@@ -450,7 +450,7 @@ class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
         comparison('Top load', load(current.maxWeightKg, currentWeighted),
             load(previous?.maxWeightKg ?? 0, priorWeighted)),
         comparison('Volume', currentWeighted ? _volume(current.volumeKg) : '—',
-            priorWeighted ? _volume(previous!.volumeKg) : '—'),
+            priorWeighted ? _volume(previous.volumeKg) : '—'),
         comparison('Completed sets', '${current.sets}', previous == null ? '—' : '${previous.sets}'),
         comparison('Total reps', '${current.reps}', previous == null ? '—' : '${previous.reps}'),
       ]),
