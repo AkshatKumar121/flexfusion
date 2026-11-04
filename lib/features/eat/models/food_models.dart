@@ -1,4 +1,4 @@
-/// Shared food catalogue and logged-food value objects used by nutrition flows.
+// Shared food catalogue and logged-food value objects used by nutrition flows.
 
 class FoodData {
   final int? id;
