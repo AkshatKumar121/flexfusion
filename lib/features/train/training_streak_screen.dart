@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
+import '../../shared/widgets/streak_components.dart';
 
 class TrainingStreakScreen extends StatefulWidget {
   const TrainingStreakScreen({super.key});
@@ -89,7 +90,7 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _label('STREAK'),
+                              StreakSectionLabel('STREAK'),
                               const SizedBox(height: 5),
                               Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
                                 Text('$streak', style: GoogleFonts.inter(color: AppColors.white, fontSize: 48, fontWeight: FontWeight.w800, height: 1)),
@@ -108,38 +109,14 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                     const SizedBox(height: 24),
                     Container(height: 1, color: const Color(0xFF303030)),
                     const SizedBox(height: 22),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List.generate(7, (i) {
-                        final day = week[i];
-                        final key = _key(day);
-                        final done = activeDays.contains(key);
-                        final isToday = key == todayKey;
-                        return Expanded(
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: done ? AppColors.green : (isToday ? Colors.transparent : const Color(0xFF292929)),
-                                  border: isToday && !done ? Border.all(color: AppColors.green, width: 2.5) : null,
-                                ),
-                                child: done
-                                    ? const Icon(Icons.check, color: Colors.black, size: 27)
-                                    : (isToday ? const Icon(Icons.circle, color: AppColors.green, size: 8) : null),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-                                style: GoogleFonts.inter(color: AppColors.white, fontSize: 10, fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                        );
-                      }),
+                    StreakWeekStrip(
+                      week: week,
+                      todayKey: todayKey,
+                      isCompleted: (key) => activeDays.contains(key),
+                      markIncompleteToday: true,
                     ),
                     const SizedBox(height: 30),
-                    _label('STEPS'),
+                    StreakSectionLabel('STEPS'),
                     const SizedBox(height: 12),
                     Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       Text('$steps / $stepGoal', style: GoogleFonts.inter(color: AppColors.white, fontSize: 42, fontWeight: FontWeight.w800, height: 1)),
@@ -157,12 +134,12 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
                       ),
                     ),
                     const SizedBox(height: 25),
-                    _label('THIS WEEK'),
+                    StreakSectionLabel('THIS WEEK'),
                     const SizedBox(height: 12),
                     Row(children: [
-                      Expanded(child: _summary('WORKOUT DAYS', '$weekWorkoutCount / 7', Icons.fitness_center)),
+                      Expanded(child: StreakSummaryTile(title: 'WORKOUT DAYS', value: '$weekWorkoutCount / 7', icon: Icons.fitness_center, valueFontSize: 17)),
                       const SizedBox(width: 10),
-                      Expanded(child: _summary('ACTIVITY DAYS', '$weekActivityCount / 7', Icons.directions_walk)),
+                      Expanded(child: StreakSummaryTile(title: 'ACTIVITY DAYS', value: '$weekActivityCount / 7', icon: Icons.directions_walk, valueFontSize: 17)),
                     ]),
                   ],
                 ),
@@ -177,10 +154,10 @@ class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
     );
   }
 
-  Widget _label(String value) => Text(value,
+  Widget StreakSectionLabel(String value) => Text(value,
     style: GoogleFonts.inter(color: AppColors.grey, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.2));
 
-  Widget _summary(String title, String value, IconData icon) => Container(
+  Widget StreakSummaryTile(String title, String value, IconData icon) => Container(
     padding: const EdgeInsets.all(13),
     decoration: BoxDecoration(color: const Color(0xFF292929), borderRadius: BorderRadius.circular(12)),
     child: Row(children: [
