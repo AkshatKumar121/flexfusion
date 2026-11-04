@@ -1950,6 +1950,44 @@ class AppDatabase {
     });
   }
 
+  /// Returns workout sessions and their set-level records for the last 14
+  /// calendar days. The first 7 days are used for the current report and the
+  /// preceding 7 days provide the comparison baseline.
+  Future<List<Map<String, Object?>>> getWorkoutAnalysisRows({DateTime? now}) async {
+    final db = await database;
+    final current = now ?? DateTime.now();
+    final today = DateTime(current.year, current.month, current.day);
+    final rangeStart = today.subtract(const Duration(days: 13));
+    final rangeEnd = today.add(const Duration(days: 1));
+    return db.rawQuery(
+      '''
+      SELECT
+        w.id AS workout_id,
+        w.session_name,
+        w.started_at,
+        w.completed_at,
+        w.status,
+        w.paused_seconds,
+        s.id AS set_id,
+        s.exercise_id,
+        s.exercise_name_snapshot,
+        s.set_order,
+        s.actual_reps,
+        s.actual_weight,
+        s.weight_unit,
+        s.completed AS set_completed,
+        e.muscle_group
+      FROM workouts w
+      LEFT JOIN workout_sets s ON s.workout_id = w.id
+      LEFT JOIN exercises e ON e.id = s.exercise_id
+      WHERE w.started_at >= ? AND w.started_at < ?
+        AND w.status != 'abandoned'
+      ORDER BY w.started_at DESC, w.id DESC, s.id ASC
+      ''',
+      [rangeStart.toIso8601String(), rangeEnd.toIso8601String()],
+    );
+  }
+
   Future<Map<String, Object?>> getWorkoutSessionSummary(int workoutId) async {
     final db = await database;
     final rows = await db.rawQuery(
