@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../shared/widgets/flexfusion_brand_header.dart';
 import '../../data/local/app_database.dart';
 import 'workout_plan_screen.dart';
 import 'exercise_library_screen.dart';
@@ -247,63 +248,21 @@ class TrainScreenState extends State<TrainScreen> {
   }
 
   Widget _buildHeader() {
-    return Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 130,
-              height: 48,
-              child: Image.asset(
-                'assets/images/fxf_logo.jpg',
-                fit: BoxFit.contain,
-                alignment: Alignment.centerLeft,
-              ),
-            ),
-            Transform.translate(
-              offset: const Offset(-25, 0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(height: 38, width: 2, color: const Color(0xFF555555)),
-                  const SizedBox(width: 13),
-                  Transform.translate(
-                    offset: const Offset(0, 1),
-                    child: Text(
-                      'TRAINER',
-                      style: GoogleFonts.inter(
-                        color: AppColors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            IconButton(
-              tooltip: 'Workout and activity streak',
-              visualDensity: VisualDensity.compact,
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const TrainingStreakScreen(),
-                ),
-              ),
-              icon: const Icon(
-                Icons.local_fire_department_rounded,
-                color: Color(0xFFFF3D70),
-                size: 29,
-              ),
-            ),
-          ],
+    return FlexFusionBrandHeader(
+      trailingAction: IconButton(
+        tooltip: 'Workout and activity streak',
+        visualDensity: VisualDensity.compact,
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const TrainingStreakScreen(),
+          ),
         ),
-        const SizedBox(height: 20),
-        Container(height: 1, color: const Color(0xFF292929)),
-      ],
+        icon: const Icon(
+          Icons.local_fire_department_rounded,
+          color: Color(0xFFFF3D70),
+          size: 29,
+        ),
+      ),
     );
   }
 
