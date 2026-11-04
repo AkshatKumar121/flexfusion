@@ -111,8 +111,19 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
                 }
               });
             }
+            if (day['no_days'] == true) {
+              return _tile(
+                'Active plan: ${day['plan_name']}',
+                'Add training days to this plan before starting a planned session.',
+                'MANAGE PLAN',
+                () async {
+                  await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()));
+                  if (mounted) setState(_load);
+                },
+              );
+            }
             final rest = (day['is_rest_day'] as int? ?? 0) == 1;
-            return _tile('Your planned session', '${day['label']} • ${day['plan_name']}', rest ? 'LOG REST DAY' : 'START', rest ? () => _logRestDay(day) : () => _start(day: day));
+            return _tile('Active plan: ${day['plan_name']}', '${day['label']}', rest ? 'LOG REST DAY' : 'START', rest ? () => _logRestDay(day) : () => _start(day: day));
           }),
           _tile('Unscheduled workout', 'Start a session outside your plan.', 'START FREE WORKOUT', _startFree),
         ]);
