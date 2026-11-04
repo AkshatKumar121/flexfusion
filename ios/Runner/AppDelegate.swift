@@ -23,6 +23,7 @@ import UserNotifications
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    UNUserNotificationCenter.current().delegate = self
     let channel = FlutterMethodChannel(
       name: "com.flexfusion/rest_timer",
       binaryMessenger: engineBridge.engine.binaryMessenger
