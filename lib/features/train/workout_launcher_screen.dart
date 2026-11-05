@@ -169,6 +169,7 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
                             : () => _start(day: day),
                         highlighted: day['id'] == suggested?['id'],
                       ),
+                    _tile('Unscheduled workout', 'Start a session outside your plan.', 'START FREE WORKOUT', _startFree),
                   ],
                 );
               },
