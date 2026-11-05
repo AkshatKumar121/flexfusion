@@ -157,6 +157,9 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
                       if (value == 'activate') {
                         await AppDatabase.instance.setActiveWorkoutPlan(plan['id'] as int);
                         await _refresh();
+                      } else if (value == 'deactivate') {
+                        await AppDatabase.instance.deactivateWorkoutPlan(plan['id'] as int);
+                        await _refresh();
                       } else if (value == 'rename') {
                         await _rename(plan);
                       } else if (value == 'duplicate') {
@@ -167,6 +170,7 @@ class _WorkoutPlanScreenState extends State<WorkoutPlanScreen> {
                     },
                     itemBuilder: (_) => [
                       if (!active) const PopupMenuItem(value: 'activate', child: Text('Set as active')),
+                      if (active) const PopupMenuItem(value: 'deactivate', child: Text('Set as inactive')),
                       const PopupMenuItem(value: 'rename', child: Text('Rename')),
                       const PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
                       const PopupMenuItem(value: 'delete', child: Text('Delete')),
