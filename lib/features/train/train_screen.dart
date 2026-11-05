@@ -92,11 +92,33 @@ class TrainScreenState extends State<TrainScreen> {
 
   Future<void> refreshTrainScreen() async {
     if (!mounted) return;
+
+    // Keep the user's current position while fresh data is loaded and laid out.
+    final preservedOffset =
+        _scrollController.hasClients ? _scrollController.offset : null;
     final generation = ++_loadGeneration;
+
     try {
       final refreshedData = await _loadData();
       if (!mounted || generation != _loadGeneration) return;
+
       setState(() => _trainData = refreshedData);
+
+      if (preservedOffset != null && preservedOffset > 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_scrollController.hasClients) return;
+
+          final position = _scrollController.position;
+          final targetOffset = preservedOffset
+              .clamp(position.minScrollExtent, position.maxScrollExtent)
+              .toDouble();
+
+          // jumpTo also cancels any stale ballistic scroll activity.
+          if ((_scrollController.offset - targetOffset).abs() > 0.5) {
+            _scrollController.jumpTo(targetOffset);
+          }
+        });
+      }
     } catch (error) {
       debugPrint('Could not refresh training data: $error');
     }
@@ -117,6 +139,7 @@ class TrainScreenState extends State<TrainScreen> {
               backgroundColor: AppColors.card,
               onRefresh: refreshTrainScreen,
               child: SingleChildScrollView(
+                key: const PageStorageKey<String>('train-screen-scroll'),
                 controller: _scrollController,
                 primary: false,
                 physics: const AlwaysScrollableScrollPhysics(),
