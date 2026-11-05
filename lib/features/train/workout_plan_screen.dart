@@ -338,6 +338,9 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: TextField(
                   autofocus: false,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => FocusScope.of(context).unfocus(),
+                  onTapOutside: (_) => FocusScope.of(context).unfocus(),
                   onChanged: (value) => setSheetState(() => searchQuery = value),
                   style: GoogleFonts.inter(color: AppColors.white, fontSize: 13),
                   decoration: InputDecoration(
@@ -369,7 +372,10 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
                               return ListTile(
                                 title: Text(exercise['name'] as String, style: GoogleFonts.inter(color: AppColors.white)),
                                 subtitle: Text('${exercise['muscle_group'] ?? 'Other'} • ${exercise['equipment'] ?? 'Equipment not set'}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
-                                onTap: () => Navigator.pop(context, exercise),
+                                onTap: () {
+                                  FocusScope.of(context).unfocus();
+                                  Navigator.pop(context, exercise);
+                                },
                               );
                             },
                           ),

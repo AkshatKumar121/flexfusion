@@ -481,11 +481,19 @@ class TrainScreenState extends State<TrainScreen> {
                 child: TextField(
                   controller: _weightController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                  onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                   style: GoogleFonts.inter(color: AppColors.white, fontSize: 20, fontWeight: FontWeight.w700),
                   decoration: InputDecoration(
                     hintText: latestWeight?.toStringAsFixed(1) ?? 'Enter weight in kg',
                     hintStyle: GoogleFonts.inter(color: AppColors.grey, fontSize: 14),
                     suffixText: 'kg',
+                    suffixIcon: IconButton(
+                      tooltip: 'Hide keyboard',
+                      onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
+                      icon: const Icon(Icons.keyboard_hide_outlined, color: AppColors.grey),
+                    ),
                     filled: true,
                     fillColor: AppColors.surface,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),

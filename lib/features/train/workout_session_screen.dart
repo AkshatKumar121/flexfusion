@@ -353,12 +353,20 @@ class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> with Widget
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background,
     appBar: AppBar(backgroundColor: AppColors.background, foregroundColor: AppColors.white, title: Text(widget.title), actions: [TextButton(onPressed: _finish, child: const Text('FINISH'))]),
-    floatingActionButton: FloatingActionButton.extended(onPressed: _addExercise, label: const Text('ADD EXERCISE'), icon: const Icon(Icons.add)),
+    floatingActionButton: FloatingActionButton.small(
+      onPressed: _addExercise,
+      tooltip: 'Add exercise',
+      backgroundColor: AppColors.red,
+      foregroundColor: AppColors.white,
+      child: const Icon(Icons.add),
+    ),
     body: FutureBuilder<List<Map<String, Object?>>>(future: _sets, builder: (context, snap) {
       if (!snap.hasData) return const Center(child: CircularProgressIndicator());
       final groups = <String, List<Map<String, Object?>>>{};
       for (final row in snap.data!) { groups.putIfAbsent(row['exercise_name_snapshot'] as String, () => []).add(row); }
-      return ListView(padding: const EdgeInsets.all(16), children: [
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        children: [
         Card(
           color: AppColors.card,
           child: ListTile(
