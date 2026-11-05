@@ -27,12 +27,15 @@ void main() {
     expect(finder, findsOneWidget, reason: 'Expected widget was not found after waiting.');
   }
 
-  setUpAll(() async {
+  setUpAll(() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     // Tests must never wait on Google Fonts network requests. Use the local
     // fallback typography in tests; visual Inter rendering is checked on-device.
     GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     tempDirectory = await Directory.systemTemp.createTemp('flexfusion_widget_');
     database = AppDatabase.forTesting(p.join(tempDirectory.path, 'widget.db'));
@@ -40,7 +43,7 @@ void main() {
     await database.database;
   });
 
-  tearDownAll(() async {
+  tearDown(() async {
     AppDatabase.setInstanceForTesting(null);
     await database.closeForTesting();
     if (await tempDirectory.exists()) {
