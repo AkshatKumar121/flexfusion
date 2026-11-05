@@ -10,6 +10,12 @@ import '../../data/local/app_database.dart';
 /// Creates a portable ZIP containing every SQLite table and optional
 /// progress-photo files. The live database and photo files are never changed.
 class DataExportService {
+  DataExportService({Future<Directory> Function()? tempDirectoryProvider})
+      : _tempDirectoryProvider =
+            tempDirectoryProvider ?? getTemporaryDirectory;
+
+  final Future<Directory> Function() _tempDirectoryProvider;
+
   Future<File> createExport({required bool includePhotos}) async {
     final db = await AppDatabase.instance.database;
     final tables = await db.rawQuery(
@@ -116,7 +122,7 @@ private, secure location because it may contain personal fitness information.
       throw StateError('FlexFusion could not create the export archive.');
     }
 
-    final tempDirectory = await getTemporaryDirectory();
+    final tempDirectory = await _tempDirectoryProvider();
     final timestamp = DateTime.now()
         .toIso8601String()
         .replaceAll(':', '-')
