@@ -14,12 +14,25 @@ class WorkoutLauncherScreen extends StatefulWidget {
 class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
   late Future<Map<String, Object?>?> _suggested;
   late Future<Map<String, Object?>?> _active;
+  late Future<List<Map<String, Object?>>> _planDays;
   @override
   void initState() { super.initState(); _load(); }
   void _load() {
     _suggested = AppDatabase.instance.getManualStartWorkoutDay();
     _active = AppDatabase.instance.getInProgressWorkout();
+    _planDays = _loadPlanDays();
   }
+  Future<List<Map<String, Object?>>> _loadPlanDays() async {
+    final plan = await AppDatabase.instance.getActiveWorkoutPlan();
+    if (plan == null) return [];
+    final days = await AppDatabase.instance.getWorkoutPlanDays(plan['id'] as int);
+    return days.map((day) => <String, Object?>{
+      ...day,
+      'plan_id': plan['id'],
+      'plan_name': plan['name'],
+    }).toList();
+  }
+
   void _finishAndCloseLauncher() {
     Navigator.of(context).pop();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -100,30 +113,56 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
         }
 
         return ListView(padding: const EdgeInsets.all(18), children: [
-          FutureBuilder<Map<String, Object?>?>(future: _suggested, builder: (context, s) {
-            if (s.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-            final day = s.data;
-            if (day == null) {
-              return _tile('No active plan', 'Create a plan to see your next session.', 'CREATE PLAN', () async {
-                await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()));
-                if (mounted) {
-                  setState(_load);
+          FutureBuilder<List<Map<String, Object?>>>(future: _planDays, builder: (context, daysSnapshot) {
+            if (daysSnapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return FutureBuilder<Map<String, Object?>?>(
+              future: _suggested,
+              builder: (context, suggestedSnapshot) {
+                if (suggestedSnapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
                 }
-              });
-            }
-            if (day['no_days'] == true) {
-              return _tile(
-                'Active plan: ${day['plan_name']}',
-                'Add training days to this plan before starting a planned session.',
-                'MANAGE PLAN',
-                () async {
-                  await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()));
-                  if (mounted) setState(_load);
-                },
-              );
-            }
-            final rest = (day['is_rest_day'] as int? ?? 0) == 1;
-            return _tile('Active plan: ${day['plan_name']}', '${day['label']}', rest ? 'LOG REST DAY' : 'START', rest ? () => _logRestDay(day) : () => _start(day: day));
+                final days = daysSnapshot.data ?? [];
+                final suggested = suggestedSnapshot.data;
+                if (days.isEmpty) {
+                  return _tile(
+                    'No active workout plan',
+                    'Create a plan and add training days, or start a freestyle workout.',
+                    'MANAGE PLANS',
+                    () async {
+                      await Navigator.push(context, MaterialPageRoute<void>(
+                        builder: (_) => const WorkoutPlanScreen(),
+                      ));
+                      if (mounted) setState(_load);
+                    },
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('YOUR ACTIVE PLAN', style: GoogleFonts.inter(
+                      color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w800,
+                    )),
+                    const SizedBox(height: 5),
+                    Text('Choose any day in your plan. The suggested next workout is highlighted.',
+                      style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
+                    const SizedBox(height: 14),
+                    for (final day in days)
+                      _tile(
+                        '${day['label']}${day['id'] == suggested?['id'] ? '  •  SUGGESTED NEXT' : ''}',
+                        (day['is_rest_day'] as int? ?? 0) == 1
+                            ? 'Rest day • ${day['plan_name']}'
+                            : 'Planned workout • ${day['plan_name']}',
+                        (day['is_rest_day'] as int? ?? 0) == 1 ? 'LOG REST DAY' : 'START WORKOUT',
+                        (day['is_rest_day'] as int? ?? 0) == 1
+                            ? () => _logRestDay(day)
+                            : () => _start(day: day),
+                      ),
+                  ],
+                );
+              },
+            );
           }),
           _tile('Unscheduled workout', 'Start a session outside your plan.', 'START FREE WORKOUT', _startFree),
         ]);
