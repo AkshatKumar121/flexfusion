@@ -21,8 +21,8 @@ class TrainScreen extends StatefulWidget {
 
 class TrainScreenState extends State<TrainScreen> {
   final _weightController = TextEditingController();
-  late Future<_TrainData> _dataFuture;
-  _TrainData? _cachedTrainData;
+  _TrainData? _trainData;
+  int _loadGeneration = 0;
   late DateTime _selectedDay;
 
   DateTime get _today {
@@ -38,24 +38,24 @@ class TrainScreenState extends State<TrainScreen> {
     final latestWeight = await db.getLatestBodyWeight();
     final weekly = await db.getWeeklyProgressDetails();
     final activeWorkout = await db.getInProgressWorkout();
+    final nextWorkoutDay = await db.getManualStartWorkoutDay();
     return _TrainData(
       latestWeight: latestWeight,
       weekly: weekly,
       activeWorkout: activeWorkout,
+      nextWorkoutDay: nextWorkoutDay,
     );
   }
 
-  Future<_TrainData> _loadDataAndCache() async {
-    final data = await _loadData();
-    _cachedTrainData = data;
-    return data;
+  Future<void> _loadInitialData() async {
+    await refreshTrainScreen();
   }
 
   @override
   void initState() {
     super.initState();
     _selectedDay = _today;
-    _dataFuture = _loadDataAndCache();
+    _loadInitialData();
   }
 
   String _formatDate(DateTime date) =>
@@ -90,20 +90,19 @@ class TrainScreenState extends State<TrainScreen> {
 
   Future<void> refreshTrainScreen() async {
     if (!mounted) return;
-    final refreshedData = _loadDataAndCache();
-    setState(() {
-      _dataFuture = refreshedData;
-    });
-    await refreshedData;
+    final generation = ++_loadGeneration;
+    try {
+      final refreshedData = await _loadData();
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() => _trainData = refreshedData);
+    } catch (error) {
+      debugPrint('Could not refresh training data: $error');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_TrainData>(
-      future: _dataFuture,
-      initialData: _cachedTrainData,
-      builder: (context, snapshot) {
-        final data = snapshot.data ?? _cachedTrainData;
+    final data = _trainData;
         final latestWeight = (data?.latestWeight?['weight_value'] as num?)?.toDouble();
         final workoutCount = data?.weekly['workouts'] as int? ?? 0;
         final days = (data?.weekly['daily'] as List<dynamic>?) ?? const [];
@@ -244,8 +243,6 @@ class TrainScreenState extends State<TrainScreen> {
               ),
             ),
           ),
-        );
-      },
     );
   }
 
@@ -301,24 +298,18 @@ class TrainScreenState extends State<TrainScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          FutureBuilder<Map<String, Object?>?>(
-            future: AppDatabase.instance.getManualStartWorkoutDay(),
-            builder: (context, snapshot) {
-              final nextDay = snapshot.data;
-              final workoutName = hasActiveWorkout
-                  ? '${isWorkoutPaused ? 'Resume' : 'Ongoing'} ${activeWorkout['session_name']}'
-                  : nextDay == null || nextDay['no_days'] == true
-                      ? 'Your next workout'
-                      : 'Your next workout ${nextDay['label']}';
-              return Text(
-                workoutName,
-                style: GoogleFonts.inter(
-                  color: AppColors.white,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w800,
-                ),
-              );
-            },
+          Text(
+            hasActiveWorkout
+                ? '${isWorkoutPaused ? 'Resume' : 'Ongoing'} ${activeWorkout['session_name']}'
+                : trainData?.nextWorkoutDay == null ||
+                        trainData!.nextWorkoutDay!['no_days'] == true
+                    ? 'Your next workout'
+                    : 'Your next workout ${trainData.nextWorkoutDay!['label']}',
+            style: GoogleFonts.inter(
+              color: AppColors.white,
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 5),
           Text(
@@ -590,10 +581,12 @@ class _TrainData {
   final Map<String, Object?>? latestWeight;
   final Map<String, Object?> weekly;
   final Map<String, Object?>? activeWorkout;
+  final Map<String, Object?>? nextWorkoutDay;
 
   const _TrainData({
     required this.latestWeight,
     required this.weekly,
     required this.activeWorkout,
+    required this.nextWorkoutDay,
   });
 }
