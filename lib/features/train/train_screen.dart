@@ -21,6 +21,7 @@ class TrainScreen extends StatefulWidget {
 
 class TrainScreenState extends State<TrainScreen> {
   final _weightController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   _TrainData? _trainData;
   int _loadGeneration = 0;
   late DateTime _selectedDay;
@@ -85,6 +86,7 @@ class TrainScreenState extends State<TrainScreen> {
   @override
   void dispose() {
     _weightController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -115,6 +117,8 @@ class TrainScreenState extends State<TrainScreen> {
               backgroundColor: AppColors.card,
               onRefresh: refreshTrainScreen,
               child: SingleChildScrollView(
+                controller: _scrollController,
+                primary: false,
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
                 child: Column(
