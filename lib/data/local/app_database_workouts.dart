@@ -707,12 +707,21 @@ extension AppDatabaseWorkouts on AppDatabase {
         final pointerIndex = sequenceDays.indexWhere((day) => day['id'] == pointerId);
         if (pointerIndex >= 0) nextIndex = pointerIndex;
       } else {
-        final previous = await db.query(
-          'workouts',
-          where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
-          whereArgs: [plan['id']],
-          orderBy: 'completed_at DESC, id DESC',
-          limit: 1,
+        final previous = await db.rawQuery(
+          '''
+          SELECT w.* FROM workouts w
+          WHERE w.plan_id = ? AND w.status = 'completed'
+            AND w.plan_day_id IS NOT NULL
+            AND CAST((julianday(w.completed_at) - julianday(w.started_at)) * 86400 AS INTEGER)
+                  - COALESCE(w.paused_seconds, 0) >= 60
+            AND EXISTS (
+              SELECT 1 FROM workout_sets s
+              WHERE s.workout_id = w.id AND s.completed = 1
+            )
+          ORDER BY w.completed_at DESC, w.id DESC
+          LIMIT 1
+          ''',
+          [plan['id']],
         );
         if (previous.isNotEmpty) {
           final lastIndex = sequenceDays.indexWhere((day) => day['id'] == previous.first['plan_day_id']);
@@ -767,13 +776,22 @@ extension AppDatabaseWorkouts on AppDatabase {
       final pointerIndex = sequenceDays.indexWhere((day) => day['id'] == pointerId);
       if (pointerIndex >= 0) nextIndex = pointerIndex;
     } else {
-      final previous = await db.query(
-        'workouts',
-        where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
-        whereArgs: [plan['id']],
-        orderBy: 'completed_at DESC, id DESC',
-        limit: 1,
-      );
+      final previous = await db.rawQuery(
+          '''
+          SELECT w.* FROM workouts w
+          WHERE w.plan_id = ? AND w.status = 'completed'
+            AND w.plan_day_id IS NOT NULL
+            AND CAST((julianday(w.completed_at) - julianday(w.started_at)) * 86400 AS INTEGER)
+                  - COALESCE(w.paused_seconds, 0) >= 60
+            AND EXISTS (
+              SELECT 1 FROM workout_sets s
+              WHERE s.workout_id = w.id AND s.completed = 1
+            )
+          ORDER BY w.completed_at DESC, w.id DESC
+          LIMIT 1
+          ''',
+          [plan['id']],
+        );
       if (previous.isNotEmpty) {
         final lastIndex = sequenceDays.indexWhere((day) => day['id'] == previous.first['plan_day_id']);
         if (lastIndex >= 0) nextIndex = (lastIndex + 1) % sequenceDays.length;
