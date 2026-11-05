@@ -224,12 +224,23 @@ extension AppDatabaseWorkouts on AppDatabase {
     if (days.isEmpty) return;
 
     var nextIndex = 0;
-    final completed = await db.query(
-      'workouts',
-      where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
-      whereArgs: [planId],
-      orderBy: 'completed_at DESC, id DESC',
-      limit: 1,
+    final completed = await db.rawQuery(
+      '''
+      SELECT w.*
+      FROM workouts w
+      WHERE w.plan_id = ?
+        AND w.status = 'completed'
+        AND w.plan_day_id IS NOT NULL
+        AND CAST((julianday(w.completed_at) - julianday(w.started_at)) * 86400 AS INTEGER)
+              - COALESCE(w.paused_seconds, 0) >= 60
+        AND EXISTS (
+          SELECT 1 FROM workout_sets s
+          WHERE s.workout_id = w.id AND s.completed = 1
+        )
+      ORDER BY w.completed_at DESC, w.id DESC
+      LIMIT 1
+      ''',
+      [planId],
     );
     if (completed.isNotEmpty) {
       final lastIndex = days.indexWhere(
