@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   analyze-and-test:
-    name: Analyze, widget tests and Android compile
+    name: Analyze and widget tests
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -57,9 +57,6 @@ jobs:
       - name: Run unit, widget and quality workflow tests with coverage
         run: flutter test --no-pub --coverage --reporter expanded
 
-      - name: Build Android debug APK
-        run: flutter build apk --debug --no-pub
-
       - name: Upload LCOV coverage report
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,14 +64,6 @@ jobs:
           name: flexfusion-coverage-${{ github.run_number }}
           path: coverage/lcov.info
           if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Upload Android debug APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flexfusion-android-debug-${{ github.run_number }}
-          path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
 
   android-emulator:
@@ -86,6 +75,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Java
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
