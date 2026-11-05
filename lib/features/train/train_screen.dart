@@ -93,6 +93,7 @@ class TrainScreenState extends State<TrainScreen> {
   Future<void> refreshTrainScreen() async {
     if (!mounted) return;
     final generation = ++_loadGeneration;
+
     try {
       final refreshedData = await _loadData();
       if (!mounted || generation != _loadGeneration) return;
@@ -119,7 +120,9 @@ class TrainScreenState extends State<TrainScreen> {
               child: SingleChildScrollView(
                 controller: _scrollController,
                 primary: false,
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: const ClampingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

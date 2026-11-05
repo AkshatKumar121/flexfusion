@@ -143,7 +143,9 @@ class EatScreenState extends State<EatScreen> {
         backgroundColor: AppColors.card,
         onRefresh: () => _loadData(showLoading: false),
         child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const ClampingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _header(),
