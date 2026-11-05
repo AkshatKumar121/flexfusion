@@ -479,7 +479,10 @@ extension AppDatabaseWorkouts on AppDatabase {
     await db.transaction((txn) async {
       final rows = await txn.query(
         'workouts',
-        columns: ['status', 'plan_id', 'plan_day_id'],
+        columns: [
+          'status', 'plan_id', 'plan_day_id', 'started_at',
+          'paused_at', 'paused_seconds',
+        ],
         where: 'id = ?',
         whereArgs: [workoutId],
         limit: 1,
@@ -505,6 +508,28 @@ extension AppDatabaseWorkouts on AppDatabase {
         whereArgs: [workoutId],
       );
       if (updated == 0) return;
+
+      // A planned workout only moves the sequence after a meaningful
+      // session: at least 60 active seconds and one explicitly completed set.
+      // Freestyle sessions have no plan_day_id and never affect plan order.
+      final startedAt = DateTime.tryParse(rows.first['started_at'] as String? ?? '');
+      final pausedAtValue = rows.first['paused_at'] as String?;
+      final pauseSeconds = (rows.first['paused_seconds'] as int? ?? 0) +
+          (pausedAtValue == null
+              ? 0
+              : DateTime.now()
+                  .difference(DateTime.tryParse(pausedAtValue) ?? DateTime.now())
+                  .inSeconds);
+      final activeSeconds = startedAt == null
+          ? 0
+          : DateTime.now().difference(startedAt).inSeconds - pauseSeconds;
+      final completedSetRows = await txn.rawQuery(
+        'SELECT COUNT(*) AS completed_count FROM workout_sets WHERE workout_id = ? AND completed = 1',
+        [workoutId],
+      );
+      final completedSetCount =
+          (completedSetRows.first['completed_count'] as int?) ?? 0;
+      if (activeSeconds < 60 || completedSetCount < 1) return;
 
       final planId = rows.first['plan_id'] as int?;
       final dayId = rows.first['plan_day_id'] as int?;
