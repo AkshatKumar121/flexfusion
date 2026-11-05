@@ -103,20 +103,39 @@ class TrainScreenState extends State<TrainScreen> {
     }
   }
 
-  /// A pull-to-refresh starts at the top edge, so finish at that same edge.
-  /// Keep this separate from background refreshes (tab changes, saves, etc.)
-  /// so those refreshes never disturb a user's current reading position.
-  Future<void> _handlePullToRefresh() async {
-    await refreshTrainScreen();
-    if (!mounted) return;
+  /// Logs the scroll lifecycle around pull-to-refresh while diagnosing
+  /// the post-refresh movement. Returning false lets RefreshIndicator receive
+  /// the same notifications.
+  bool _handleTrainScrollNotification(ScrollNotification notification) {
+    if (!kDebugMode || notification.depth != 0) return false;
 
-    await WidgetsBinding.instance.endOfFrame;
-    if (!_scrollController.hasClients) return;
+    final metrics = notification.metrics;
+    final position =
+        'pixels=${metrics.pixels.toStringAsFixed(2)} '
+        'min=${metrics.minScrollExtent.toStringAsFixed(2)} '
+        'max=${metrics.maxScrollExtent.toStringAsFixed(2)}';
 
-    final position = _scrollController.position;
-    if ((position.pixels - position.minScrollExtent).abs() > 0.5) {
-      _scrollController.jumpTo(position.minScrollExtent);
+    if (notification is ScrollStartNotification) {
+      debugPrint('[TrainScroll] START $position '
+          'drag=${notification.dragDetails != null}');
+    } else if (notification is ScrollUpdateNotification) {
+      debugPrint('[TrainScroll] UPDATE delta=${notification.scrollDelta} $position');
+    } else if (notification is OverscrollNotification) {
+      debugPrint('[TrainScroll] OVERSCROLL '
+          'amount=${notification.overscroll.toStringAsFixed(2)} $position');
+    } else if (notification is UserScrollNotification) {
+      debugPrint('[TrainScroll] USER direction=${notification.direction} $position');
+    } else if (notification is ScrollEndNotification) {
+      debugPrint('[TrainScroll] END $position');
     }
+
+    return false;
+  }
+
+  Future<void> _handlePullToRefresh() async {
+    debugPrint('[TrainRefresh] callback started');
+    await refreshTrainScreen();
+    debugPrint('[TrainRefresh] callback completed');
   }
 
   @override
@@ -133,7 +152,9 @@ class TrainScreenState extends State<TrainScreen> {
               color: AppColors.green,
               backgroundColor: AppColors.card,
               onRefresh: _handlePullToRefresh,
-              child: SingleChildScrollView(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _handleTrainScrollNotification,
+                child: SingleChildScrollView(
                 controller: _scrollController,
                 primary: false,
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -260,6 +281,7 @@ class TrainScreenState extends State<TrainScreen> {
                     ),
                     const SizedBox(height: 12),
                   ],
+                ),
                 ),
               ),
             ),
