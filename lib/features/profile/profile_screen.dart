@@ -1,0 +1,572 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'widgets/profile_components.dart';
+
+import '../../app/theme/app_colors.dart';
+import '../../data/local/app_database.dart';
+import 'settings_screen.dart';
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String? _fitnessGoal;
+  Map<String, Object?>? _profile;
+  Map<String, Object?>? _targets;
+  double? _weight;
+  int _stepGoal = 10000;
+  String _weightUnit = 'kg';
+  String _heightUnit = 'cm';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final db = AppDatabase.instance;
+    final profile = await db.getUserProfile();
+    final targets = await db.getNutritionTargets();
+    final weight = await db.getLatestBodyWeight();
+    final savedGoal = await db.getAppSetting('fitness_goal', defaultValue: '');
+    final units = await Future.wait([
+      db.getAppSetting('weight_unit', defaultValue: 'kg'),
+      db.getAppSetting('height_unit', defaultValue: 'cm'),
+      db.getAppSetting('daily_step_goal', defaultValue: '10000'),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _profile = profile;
+      _targets = targets;
+      _weight = (weight?['weight_value'] as num?)?.toDouble();
+      _weightUnit = units[0];
+      _heightUnit = units[1];
+      _stepGoal = int.tryParse(units[2]) ?? 10000;
+      _fitnessGoal = (profile?['current_goal'] as String?) ?? (savedGoal.isEmpty ? null : savedGoal);
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _editPersonalDetails() async {
+    final name = TextEditingController(text: _profile?['display_name'] as String? ?? '');
+    final age = TextEditingController(text: (_profile?['age'] ?? '').toString() == 'null' ? '' : (_profile?['age'] ?? '').toString());
+    final heightCm = (_profile?['height_value'] as num?)?.toDouble();
+    final heightDisplay = heightCm == null ? null : (_heightUnit == 'cm' ? heightCm : heightCm / 30.48);
+    final weightDisplay = _weight == null ? null : (_weightUnit == 'kg' ? _weight! : _weight! * 2.2046226218);
+    final height = TextEditingController(text: heightDisplay?.toStringAsFixed(_heightUnit == 'cm' ? 1 : 2) ?? '');
+    final weight = TextEditingController(text: weightDisplay?.toStringAsFixed(1) ?? '');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text('Personal details', style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _editField(name, 'Display name'),
+            _editField(age, 'Age (years)', numeric: true),
+            _editField(height, 'Height (${_heightUnit == 'cm' ? 'cm' : 'decimal ft'})', numeric: true),
+            _editField(weight, 'Current weight ($_weightUnit)', numeric: true),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('CANCEL')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: Colors.black),
+            onPressed: () async {
+              final ageValue = double.tryParse(age.text.trim());
+              final heightInput = double.tryParse(height.text.trim());
+              final weightInput = double.tryParse(weight.text.trim());
+              final heightValue = heightInput == null ? null : (_heightUnit == 'cm' ? heightInput : heightInput * 30.48);
+              final weightValue = weightInput == null ? null : (_weightUnit == 'kg' ? weightInput : weightInput / 2.2046226218);
+              if (name.text.trim().isEmpty || ageValue == null || ageValue <= 0 || ageValue > 120 ||
+                  heightValue == null || heightValue <= 0 || heightValue > 250 ||
+                  weightValue == null || weightValue <= 0 || weightValue > 500) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid personal details.')));
+                return;
+              }
+              await AppDatabase.instance.savePersonalDetails(
+                displayName: name.text.trim(),
+                age: ageValue.round(),
+                heightCm: heightValue,
+                weightKg: weightValue,
+                goal: _fitnessGoal ?? 'Recomposition',
+              );
+              if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+    for (final controller in [name, age, height, weight]) {
+      controller.dispose();
+    }
+    if (saved == true) await _loadProfile();
+  }
+
+  Future<void> _editDailyTargets() async {
+    final calories = TextEditingController(text: (_targets?['calorie_target'] ?? 2200).toString());
+    final protein = TextEditingController(text: (_targets?['protein_target_g'] ?? 180).toString());
+    final carbs = TextEditingController(text: (_targets?['carbs_target_g'] ?? 190).toString());
+    final fat = TextEditingController(text: (_targets?['fat_target_g'] ?? 65).toString());
+    final stepGoal = TextEditingController(text: _stepGoal.toString());
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text('Daily targets', style: GoogleFonts.inter(color: AppColors.white, fontWeight: FontWeight.w800)),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _editField(calories, 'Daily calories (kcal)', numeric: true),
+            _editField(protein, 'Protein target (g)', numeric: true),
+            _editField(carbs, 'Carbs target (g)', numeric: true),
+            _editField(fat, 'Fat target (g)', numeric: true),
+            _editField(stepGoal, 'Daily step goal (steps)', numeric: true),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('CANCEL')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: Colors.black),
+            onPressed: () async {
+              final values = [calories, protein, carbs, fat].map((c) => double.tryParse(c.text.trim())).toList();
+              final parsedStepGoal = int.tryParse(stepGoal.text.trim());
+              if (values.any((v) => v == null || v <= 0) || parsedStepGoal == null || parsedStepGoal <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid nutrition targets.')));
+                return;
+              }
+              await AppDatabase.instance.saveAppSetting('daily_step_goal', parsedStepGoal.toString());
+              await AppDatabase.instance.saveNutritionTargets(
+                calories: values[0]!,
+                protein: values[1]!,
+                carbs: values[2]!,
+                fat: values[3]!,
+              );
+              if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+    for (final controller in [calories, protein, carbs, fat, stepGoal]) {
+      controller.dispose();
+    }
+    if (saved == true) await _loadProfile();
+  }
+
+  Widget _editField(TextEditingController controller, String label, {bool numeric = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextField(
+        controller: controller,
+        keyboardType: numeric ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+        style: GoogleFonts.inter(color: AppColors.white, fontSize: 13),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.inter(color: AppColors.grey, fontSize: 11),
+          enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.border)),
+          focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.green)),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.green))
+          : SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(context),
+              const SizedBox(height: 24),
+              _buildPageTabs(),
+              const SizedBox(height: 22),
+              _buildMemberCard(),
+              const SizedBox(height: 16),
+              _buildPersonalDetails(),
+              const SizedBox(height: 16),
+              _buildFitnessGoal(),
+              const SizedBox(height: 16),
+              _buildDailyTargets(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          tooltip: 'Back',
+        ),
+        const Spacer(),
+        SizedBox(
+          width: 112,
+          height: 42,
+          child: Image.asset(
+            'assets/images/fxf_logo.jpg',
+            fit: BoxFit.contain,
+          ),
+        ),
+        Container(
+          height: 30,
+          width: 1,
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          color: AppColors.border,
+        ),
+        Text(
+          'TRAINER',
+          style: GoogleFonts.inter(
+            color: AppColors.white,
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 3,
+          ),
+        ),
+        const Spacer(),
+        const SizedBox(width: 40),
+      ],
+    );
+  }
+
+  Widget _buildPageTabs() {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      'PROFILE',
+                      style: GoogleFonts.inter(
+                        color: AppColors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                Container(height: 2, color: AppColors.red),
+              ],
+            ),
+          ),
+          Expanded(
+            child: InkWell(
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
+                await _loadProfile();
+              },
+              child: Center(
+                child: Text(
+                  'SETTINGS',
+                  style: GoogleFonts.inter(
+                    color: AppColors.grey,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMemberCard() {
+    return ProfileCard(
+      child: Row(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 94,
+                height: 94,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.surface,
+                  border: Border.all(color: AppColors.border, width: 2),
+                ),
+                child: const Icon(
+                  Icons.person_outline_rounded,
+                  color: AppColors.grey,
+                  size: 48,
+                ),
+              ),
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.fromBorderSide(
+                      BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_outlined,
+                    color: AppColors.white,
+                    size: 17,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  (_profile?['display_name'] as String?)?.isNotEmpty == true ? _profile!['display_name'] as String : 'Your profile',
+                  style: GoogleFonts.inter(
+                    color: AppColors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'FlexFusion Member',
+                  style: GoogleFonts.inter(
+                    color: AppColors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.green.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'ACTIVE',
+                    style: GoogleFonts.inter(
+                      color: AppColors.green,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: _editPersonalDetails,
+            icon: const Icon(Icons.edit_outlined, color: AppColors.grey),
+            tooltip: 'Edit profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalDetails() {
+    return ProfileCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            icon: Icons.person_outline,
+            title: 'PERSONAL DETAILS',
+            onEdit: _editPersonalDetails,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: DetailTile(
+                  icon: Icons.cake_outlined,
+                  label: 'AGE',
+                  value: (_profile?['age'] ?? 'Not set').toString(),
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: DetailTile(
+                  icon: Icons.height,
+                  label: 'HEIGHT',
+                  value: _profile?['height_value'] == null ? 'Not set' : _heightUnit == 'cm' ? '${(_profile!['height_value'] as num).round()} cm' : _formatFeet((_profile!['height_value'] as num).toDouble()),
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: DetailTile(
+                  icon: Icons.monitor_weight_outlined,
+                  label: 'WEIGHT',
+                  value: _weight == null ? 'Not set' : '${(_weightUnit == 'kg' ? _weight! : _weight! * 2.2046226218).toStringAsFixed(1)} $_weightUnit',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFitnessGoal() {
+    return ProfileCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            icon: Icons.track_changes,
+            title: 'FITNESS GOAL',
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              GoalOption(
+                title: 'Fat Loss',
+                icon: Icons.local_fire_department_outlined,
+                selected: _fitnessGoal == 'Fat Loss',
+                onTap: () => _saveGoal('Fat Loss'),
+              ),
+              const SizedBox(width: 9),
+              GoalOption(
+                title: 'Muscle Gain',
+                icon: Icons.fitness_center,
+                selected: _fitnessGoal == 'Muscle Gain',
+                onTap: () => _saveGoal('Muscle Gain'),
+              ),
+              const SizedBox(width: 9),
+              GoalOption(
+                title: 'Recomposition',
+                icon: Icons.autorenew,
+                selected: _fitnessGoal == 'Recomposition',
+                onTap: () => _saveGoal('Recomposition'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyTargets() {
+    return ProfileCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeading(
+            icon: Icons.bar_chart_rounded,
+            title: 'DAILY TARGETS',
+            onEdit: _editDailyTargets,
+          ),
+          const SizedBox(height: 18),
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  (_targets?['calorie_target'] as num?) == null ? 'Not set' : '${(_targets!['calorie_target'] as num).round()} kcal',
+                  style: GoogleFonts.inter(
+                    color: AppColors.green,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  'DAILY CALORIES',
+                  style: GoogleFonts.inter(
+                    color: AppColors.grey,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '$_stepGoal steps',
+            style: GoogleFonts.inter(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          Text(
+            'DAILY STEP GOAL',
+            style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
+          ),
+          const SizedBox(height: 18),
+          Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: MacroTarget(
+                  color: AppColors.red,
+                  amount: (_targets?['protein_target_g'] as num?)?.round().toString() ?? '—',
+                  label: 'Protein',
+                ),
+              ),
+              Expanded(
+                child: MacroTarget(
+                  color: AppColors.green,
+                  amount: (_targets?['carbs_target_g'] as num?)?.round().toString() ?? '—',
+                  label: 'Carbs',
+                ),
+              ),
+              Expanded(
+                child: MacroTarget(
+                  color: Color(0xFFE8BD3D),
+                  amount: (_targets?['fat_target_g'] as num?)?.round().toString() ?? '—',
+                  label: 'Fats',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatFeet(double cm) {
+    final totalInches = cm / 2.54;
+    final feet = totalInches ~/ 12;
+    final inches = (totalInches - feet * 12).round();
+    return inches == 12 ? '${feet + 1} ft 0 in' : '$feet ft $inches in';
+  }
+
+  Future<void> _saveGoal(String goal) async {
+    setState(() => _fitnessGoal = goal);
+    await AppDatabase.instance.saveAppSetting('fitness_goal', goal);
+  }
+}

@@ -1,0 +1,536 @@
+[
+  {
+    "name": "Barbell Bench Press",
+    "muscle_group": "Chest",
+    "equipment": "Barbell",
+    "instructions": "Press the bar from chest level until arms are extended; keep shoulder blades retracted."
+  },
+  {
+    "name": "Dumbbell Bench Press",
+    "muscle_group": "Chest",
+    "equipment": "Dumbbell",
+    "instructions": "Lower dumbbells under control to chest level, then press up."
+  },
+  {
+    "name": "Incline Dumbbell Press",
+    "muscle_group": "Chest",
+    "equipment": "Dumbbell",
+    "instructions": "Press dumbbells on an incline bench, keeping wrists stacked over elbows."
+  },
+  {
+    "name": "Incline Barbell Bench Press",
+    "muscle_group": "Chest",
+    "equipment": "Barbell",
+    "instructions": "Lower the bar to upper chest and press up without bouncing."
+  },
+  {
+    "name": "Decline Bench Press",
+    "muscle_group": "Chest",
+    "equipment": "Barbell",
+    "instructions": "Lower the bar toward the lower chest and press smoothly."
+  },
+  {
+    "name": "Machine Chest Press",
+    "muscle_group": "Chest",
+    "equipment": "Machine",
+    "instructions": "Adjust handles to mid-chest height and press without locking elbows hard."
+  },
+  {
+    "name": "Push-Up",
+    "muscle_group": "Chest",
+    "equipment": "Bodyweight",
+    "instructions": "Keep a straight body line and lower chest close to the floor."
+  },
+  {
+    "name": "Incline Push-Up",
+    "muscle_group": "Chest",
+    "equipment": "Bodyweight",
+    "instructions": "Place hands on an elevated surface and perform controlled push-ups."
+  },
+  {
+    "name": "Decline Push-Up",
+    "muscle_group": "Chest",
+    "equipment": "Bodyweight",
+    "instructions": "Elevate feet and perform push-ups while keeping the core braced."
+  },
+  {
+    "name": "Dumbbell Fly",
+    "muscle_group": "Chest",
+    "equipment": "Dumbbell",
+    "instructions": "With a slight elbow bend, open arms wide and bring dumbbells together over chest."
+  },
+  {
+    "name": "Cable Chest Fly",
+    "muscle_group": "Chest",
+    "equipment": "Cable",
+    "instructions": "Bring handles together in a wide arc while keeping a soft elbow bend."
+  },
+  {
+    "name": "Pec Deck Fly",
+    "muscle_group": "Chest",
+    "equipment": "Machine",
+    "instructions": "Bring pads together slowly and control the return."
+  },
+  {
+    "name": "Dips",
+    "muscle_group": "Chest",
+    "equipment": "Bodyweight",
+    "instructions": "Lean slightly forward and lower until upper arms approach parallel, then press up."
+  },
+  {
+    "name": "Close-Grip Push-Up",
+    "muscle_group": "Chest",
+    "equipment": "Bodyweight",
+    "instructions": "Keep hands closer than shoulder width and lower with elbows near torso."
+  },
+  {
+    "name": "Lat Pulldown",
+    "muscle_group": "Back",
+    "equipment": "Cable",
+    "instructions": "Pull the bar toward upper chest while driving elbows down."
+  },
+  {
+    "name": "Wide-Grip Lat Pulldown",
+    "muscle_group": "Back",
+    "equipment": "Cable",
+    "instructions": "Use a wide grip and pull toward upper chest without swinging."
+  },
+  {
+    "name": "Close-Grip Lat Pulldown",
+    "muscle_group": "Back",
+    "equipment": "Cable",
+    "instructions": "Use a close handle and pull elbows toward your sides."
+  },
+  {
+    "name": "Pull-Up",
+    "muscle_group": "Back",
+    "equipment": "Bodyweight",
+    "instructions": "Pull chest toward the bar while avoiding swinging."
+  },
+  {
+    "name": "Chin-Up",
+    "muscle_group": "Back",
+    "equipment": "Bodyweight",
+    "instructions": "Use an underhand grip and pull until chin clears the bar."
+  },
+  {
+    "name": "Seated Cable Row",
+    "muscle_group": "Back",
+    "equipment": "Cable",
+    "instructions": "Pull handle toward lower ribs while keeping torso stable."
+  },
+  {
+    "name": "Chest-Supported Row",
+    "muscle_group": "Back",
+    "equipment": "Dumbbell",
+    "instructions": "Row dumbbells toward hips with chest supported on an incline bench."
+  },
+  {
+    "name": "Single-Arm Dumbbell Row",
+    "muscle_group": "Back",
+    "equipment": "Dumbbell",
+    "instructions": "Support yourself on a bench and row dumbbell toward hip."
+  },
+  {
+    "name": "Bent-Over Barbell Row",
+    "muscle_group": "Back",
+    "equipment": "Barbell",
+    "instructions": "Hinge at hips and row bar toward lower ribs with a neutral spine."
+  },
+  {
+    "name": "T-Bar Row",
+    "muscle_group": "Back",
+    "equipment": "Machine",
+    "instructions": "Pull the handle toward torso while keeping chest supported if available."
+  },
+  {
+    "name": "Machine Row",
+    "muscle_group": "Back",
+    "equipment": "Machine",
+    "instructions": "Pull handles back and squeeze shoulder blades without shrugging."
+  },
+  {
+    "name": "Straight-Arm Pulldown",
+    "muscle_group": "Back",
+    "equipment": "Cable",
+    "instructions": "With arms mostly straight, pull the bar down toward thighs."
+  },
+  {
+    "name": "Dumbbell Pullover",
+    "muscle_group": "Back",
+    "equipment": "Dumbbell",
+    "instructions": "Lower one dumbbell behind head with controlled shoulder movement, then bring it over chest."
+  },
+  {
+    "name": "Face Pull",
+    "muscle_group": "Back",
+    "equipment": "Cable",
+    "instructions": "Pull rope toward face with elbows high and rotate hands outward."
+  },
+  {
+    "name": "Back Extension",
+    "muscle_group": "Back",
+    "equipment": "Bodyweight",
+    "instructions": "Hinge at hips and raise torso until aligned with legs; avoid overextending."
+  },
+  {
+    "name": "Deadlift",
+    "muscle_group": "Back",
+    "equipment": "Barbell",
+    "instructions": "Hinge, brace, keep bar close and stand by extending hips and knees together."
+  },
+  {
+    "name": "Romanian Deadlift",
+    "muscle_group": "Hamstrings",
+    "equipment": "Barbell",
+    "instructions": "Push hips back with a soft knee bend and lower bar along legs."
+  },
+  {
+    "name": "Dumbbell Romanian Deadlift",
+    "muscle_group": "Hamstrings",
+    "equipment": "Dumbbell",
+    "instructions": "Hold dumbbells close to legs, hinge hips back and stand tall."
+  },
+  {
+    "name": "Barbell Squat",
+    "muscle_group": "Quadriceps",
+    "equipment": "Barbell",
+    "instructions": "Brace, sit between hips and knees, then drive through the whole foot."
+  },
+  {
+    "name": "Goblet Squat",
+    "muscle_group": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Hold a dumbbell at chest and squat with elbows inside knees."
+  },
+  {
+    "name": "Leg Press",
+    "muscle_group": "Quadriceps",
+    "equipment": "Machine",
+    "instructions": "Lower platform under control and press without locking knees."
+  },
+  {
+    "name": "Hack Squat",
+    "muscle_group": "Quadriceps",
+    "equipment": "Machine",
+    "instructions": "Lower into a comfortable squat depth and drive platform upward."
+  },
+  {
+    "name": "Leg Extension",
+    "muscle_group": "Quadriceps",
+    "equipment": "Machine",
+    "instructions": "Extend knees smoothly and lower the weight slowly."
+  },
+  {
+    "name": "Walking Lunge",
+    "muscle_group": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Step forward, lower both knees under control and alternate legs."
+  },
+  {
+    "name": "Reverse Lunge",
+    "muscle_group": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Step backward and lower into a lunge, keeping front knee stable."
+  },
+  {
+    "name": "Bulgarian Split Squat",
+    "muscle_group": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Place rear foot on a bench and lower into a controlled split squat."
+  },
+  {
+    "name": "Step-Up",
+    "muscle_group": "Quadriceps",
+    "equipment": "Dumbbell",
+    "instructions": "Step onto a stable platform and drive through the working leg."
+  },
+  {
+    "name": "Leg Curl",
+    "muscle_group": "Hamstrings",
+    "equipment": "Machine",
+    "instructions": "Curl heels toward glutes and return slowly."
+  },
+  {
+    "name": "Seated Leg Curl",
+    "muscle_group": "Hamstrings",
+    "equipment": "Machine",
+    "instructions": "Flex knees against the pad and control the eccentric phase."
+  },
+  {
+    "name": "Lying Leg Curl",
+    "muscle_group": "Hamstrings",
+    "equipment": "Machine",
+    "instructions": "Curl heels toward glutes while keeping hips on the pad."
+  },
+  {
+    "name": "Hip Thrust",
+    "muscle_group": "Glutes",
+    "equipment": "Barbell",
+    "instructions": "Drive hips upward until torso and thighs align, keeping ribs down."
+  },
+  {
+    "name": "Glute Bridge",
+    "muscle_group": "Glutes",
+    "equipment": "Bodyweight",
+    "instructions": "Lift hips by squeezing glutes and avoid arching the lower back."
+  },
+  {
+    "name": "Cable Glute Kickback",
+    "muscle_group": "Glutes",
+    "equipment": "Cable",
+    "instructions": "Extend hip backward without rotating pelvis."
+  },
+  {
+    "name": "Standing Calf Raise",
+    "muscle_group": "Calves",
+    "equipment": "Machine",
+    "instructions": "Rise onto balls of feet, pause, then lower through a full range."
+  },
+  {
+    "name": "Seated Calf Raise",
+    "muscle_group": "Calves",
+    "equipment": "Machine",
+    "instructions": "Raise heels while seated and lower slowly for a stretch."
+  },
+  {
+    "name": "Dumbbell Shoulder Press",
+    "muscle_group": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Press dumbbells overhead in a controlled path without excessive back arch."
+  },
+  {
+    "name": "Seated Machine Shoulder Press",
+    "muscle_group": "Shoulders",
+    "equipment": "Machine",
+    "instructions": "Press handles overhead while keeping back supported."
+  },
+  {
+    "name": "Arnold Press",
+    "muscle_group": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Rotate palms during the press while keeping movement controlled."
+  },
+  {
+    "name": "Dumbbell Lateral Raise",
+    "muscle_group": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Raise arms out to sides to shoulder height with soft elbows."
+  },
+  {
+    "name": "Cable Lateral Raise",
+    "muscle_group": "Shoulders",
+    "equipment": "Cable",
+    "instructions": "Raise cable arm out to side without leaning or shrugging."
+  },
+  {
+    "name": "Machine Lateral Raise",
+    "muscle_group": "Shoulders",
+    "equipment": "Machine",
+    "instructions": "Raise pads outward to shoulder height and lower slowly."
+  },
+  {
+    "name": "Front Raise",
+    "muscle_group": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Raise dumbbells forward to shoulder height without swinging."
+  },
+  {
+    "name": "Reverse Pec Deck",
+    "muscle_group": "Shoulders",
+    "equipment": "Machine",
+    "instructions": "Move arms outward and squeeze rear delts without shrugging."
+  },
+  {
+    "name": "Rear Delt Dumbbell Fly",
+    "muscle_group": "Shoulders",
+    "equipment": "Dumbbell",
+    "instructions": "Hinge forward and raise dumbbells out to sides with soft elbows."
+  },
+  {
+    "name": "Barbell Overhead Press",
+    "muscle_group": "Shoulders",
+    "equipment": "Barbell",
+    "instructions": "Brace core and press bar overhead while moving head out of the bar path."
+  },
+  {
+    "name": "Barbell Biceps Curl",
+    "muscle_group": "Biceps",
+    "equipment": "Barbell",
+    "instructions": "Curl bar without swinging elbows forward."
+  },
+  {
+    "name": "Dumbbell Biceps Curl",
+    "muscle_group": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Curl dumbbells while keeping upper arms close to torso."
+  },
+  {
+    "name": "Alternating Dumbbell Curl",
+    "muscle_group": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Curl one dumbbell at a time without rotating torso."
+  },
+  {
+    "name": "Hammer Curl",
+    "muscle_group": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Keep palms facing each other and curl without swinging."
+  },
+  {
+    "name": "Incline Dumbbell Curl",
+    "muscle_group": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Curl from a stretched position on an incline bench."
+  },
+  {
+    "name": "Preacher Curl",
+    "muscle_group": "Biceps",
+    "equipment": "Machine",
+    "instructions": "Curl over preacher pad and lower with control."
+  },
+  {
+    "name": "Cable Biceps Curl",
+    "muscle_group": "Biceps",
+    "equipment": "Cable",
+    "instructions": "Curl cable handle while keeping elbows close to sides."
+  },
+  {
+    "name": "Concentration Curl",
+    "muscle_group": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Brace upper arm against inner thigh and curl slowly."
+  },
+  {
+    "name": "Spider Curl",
+    "muscle_group": "Biceps",
+    "equipment": "Dumbbell",
+    "instructions": "Curl with chest supported on an incline bench, keeping upper arms still."
+  },
+  {
+    "name": "Triceps Pushdown",
+    "muscle_group": "Triceps",
+    "equipment": "Cable",
+    "instructions": "Extend elbows down while keeping upper arms pinned to sides."
+  },
+  {
+    "name": "Rope Triceps Pushdown",
+    "muscle_group": "Triceps",
+    "equipment": "Cable",
+    "instructions": "Push rope down and separate ends slightly at the bottom."
+  },
+  {
+    "name": "Overhead Cable Triceps Extension",
+    "muscle_group": "Triceps",
+    "equipment": "Cable",
+    "instructions": "Extend elbows overhead while keeping upper arms steady."
+  },
+  {
+    "name": "Dumbbell Overhead Triceps Extension",
+    "muscle_group": "Triceps",
+    "equipment": "Dumbbell",
+    "instructions": "Lower dumbbell behind head by bending elbows, then extend."
+  },
+  {
+    "name": "Lying Triceps Extension",
+    "muscle_group": "Triceps",
+    "equipment": "Dumbbell",
+    "instructions": "Bend elbows to lower dumbbells beside head, then extend."
+  },
+  {
+    "name": "Close-Grip Bench Press",
+    "muscle_group": "Triceps",
+    "equipment": "Barbell",
+    "instructions": "Use a moderate narrow grip and lower bar with elbows tucked."
+  },
+  {
+    "name": "Bench Dip",
+    "muscle_group": "Triceps",
+    "equipment": "Bodyweight",
+    "instructions": "Bend elbows to lower body and press up; use a comfortable shoulder range."
+  },
+  {
+    "name": "Cable Crunch",
+    "muscle_group": "Abs",
+    "equipment": "Cable",
+    "instructions": "Curl rib cage toward pelvis while keeping hips mostly still."
+  },
+  {
+    "name": "Crunch",
+    "muscle_group": "Abs",
+    "equipment": "Bodyweight",
+    "instructions": "Lift shoulder blades by contracting abs; avoid pulling neck."
+  },
+  {
+    "name": "Reverse Crunch",
+    "muscle_group": "Abs",
+    "equipment": "Bodyweight",
+    "instructions": "Curl pelvis toward ribs without swinging legs."
+  },
+  {
+    "name": "Plank",
+    "muscle_group": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Keep body in a straight line and brace abs and glutes."
+  },
+  {
+    "name": "Side Plank",
+    "muscle_group": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Hold a straight line on one forearm and the side of one foot."
+  },
+  {
+    "name": "Hanging Knee Raise",
+    "muscle_group": "Abs",
+    "equipment": "Bodyweight",
+    "instructions": "Raise knees toward chest without swinging."
+  },
+  {
+    "name": "Hanging Leg Raise",
+    "muscle_group": "Abs",
+    "equipment": "Bodyweight",
+    "instructions": "Raise straight legs with controlled movement and no swinging."
+  },
+  {
+    "name": "Dead Bug",
+    "muscle_group": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Extend opposite arm and leg while keeping lower back gently braced."
+  },
+  {
+    "name": "Russian Twist",
+    "muscle_group": "Abs",
+    "equipment": "Bodyweight",
+    "instructions": "Rotate torso side to side with controlled range."
+  },
+  {
+    "name": "Mountain Climber",
+    "muscle_group": "Core",
+    "equipment": "Bodyweight",
+    "instructions": "Alternate knee drives while maintaining a stable plank."
+  },
+  {
+    "name": "Farmer's Carry",
+    "muscle_group": "Forearms",
+    "equipment": "Dumbbell",
+    "instructions": "Walk with weights at sides, tall posture and steady steps."
+  },
+  {
+    "name": "Wrist Curl",
+    "muscle_group": "Forearms",
+    "equipment": "Dumbbell",
+    "instructions": "Curl wrists upward while forearms remain supported."
+  },
+  {
+    "name": "Reverse Wrist Curl",
+    "muscle_group": "Forearms",
+    "equipment": "Dumbbell",
+    "instructions": "Extend wrists upward with forearms supported."
+  },
+  {
+    "name": "Wrist Roller",
+    "muscle_group": "Forearms",
+    "equipment": "Other",
+    "instructions": "Wind and unwind a wrist roller slowly using controlled wrist motion."
+  }
+]

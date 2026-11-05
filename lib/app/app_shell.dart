@@ -1,8 +1,10 @@
-
 import 'package:flutter/material.dart';
 
 import 'theme/app_colors.dart';
 import '../features/home/home_screen.dart';
+import '../features/eat/eat_screen.dart';
+import '../features/train/train_screen.dart';
+import '../features/activity/activity_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -13,20 +15,22 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 1;
+  final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
+  final GlobalKey<EatScreenState> _eatScreenKey = GlobalKey<EatScreenState>();
+  final GlobalKey<TrainScreenState> _trainScreenKey = GlobalKey<TrainScreenState>();
 
-  final List<Widget> _screens = const [
-    _PlaceholderScreen(
-      title: 'Train',
-      subtitle: 'Your workouts will appear here.',
-      icon: Icons.fitness_center,
-    ),
-    HomeScreen(),
-    _PlaceholderScreen(
-      title: 'Eat',
-      subtitle: 'Your nutrition tracker will appear here.',
-      icon: Icons.restaurant,
-    ),
+  late final List<Widget> _screens = [
+    TrainScreen(key: _trainScreenKey),
+    HomeScreen(key: _homeScreenKey, onOpenEat: _openEatTab, onOpenActivity: _openActivity),
+    EatScreen(key: _eatScreenKey),
   ];
+
+  void _openActivity() { Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ActivityScreen())); }
+
+  void _openEatTab() {
+    setState(() => _selectedIndex = 2);
+    _eatScreenKey.currentState?.refreshEatScreen();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,10 +88,18 @@ class _AppShellState extends State<AppShell> {
 
     return Expanded(
       child: InkWell(
+        key: ValueKey('nav-$label'),
         onTap: () {
           setState(() {
             _selectedIndex = index;
           });
+          if (index == 0) {
+            _trainScreenKey.currentState?.refreshTrainScreen();
+          } else if (index == 1) {
+            _homeScreenKey.currentState?.refreshDashboard();
+          } else if (index == 2) {
+            _eatScreenKey.currentState?.refreshEatScreen();
+          }
         },
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -108,52 +120,6 @@ class _AppShellState extends State<AppShell> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _PlaceholderScreen({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: AppColors.red, size: 45),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.white,
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: AppColors.grey,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
