@@ -389,10 +389,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pop();
     try {
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: 'FlexFusion data export',
-        text: 'Your FlexFusion data export is ready. Keep this file somewhere safe.',
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: 'FlexFusion data export',
+          text: 'Your FlexFusion data export is ready. Keep this file somewhere safe.',
+        ),
       );
     } catch (error, stackTrace) {
       debugPrint('[DataExport] Could not open share sheet: $error\\n$stackTrace');
