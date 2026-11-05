@@ -156,7 +156,9 @@ class HomeScreenState extends State<HomeScreen> {
           backgroundColor: AppColors.card,
           onRefresh: refreshDashboard,
           child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const ClampingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
           padding: const EdgeInsets.symmetric(
             horizontal: 20,
             vertical: 18,
