@@ -460,4 +460,30 @@ void main() {
     expect((await database.getManualStartWorkoutDay())?['id'], firstDayId);
   });
 
+
+  test('freestyle and duplicate finish do not move the planned sequence twice', () async {
+    final planId = await database.createWorkoutPlan('Freestyle isolation');
+    await database.setActiveWorkoutPlan(planId);
+    final shoulderId = await database.addWorkoutPlanDay(
+      planId: planId, label: 'Shoulder', dayOrder: 1,
+    );
+    final backId = await database.addWorkoutPlanDay(
+      planId: planId, label: 'Back', dayOrder: 2,
+    );
+
+    final plannedId = await database.startWorkoutSession(
+      planId: planId, planDayId: shoulderId, sessionName: 'Shoulder',
+    );
+    await markWorkoutEligibleForSequence(plannedId);
+    await database.finishWorkoutSession(plannedId);
+    await database.finishWorkoutSession(plannedId);
+    expect((await database.getManualStartWorkoutDay())?['id'], backId);
+
+    final freeId = await database.startWorkoutSession(sessionName: 'Freestyle');
+    await markWorkoutEligibleForSequence(freeId);
+    await database.finishWorkoutSession(freeId);
+    expect((await database.getManualStartWorkoutDay())?['id'], backId);
+    expect((await database.getWorkoutHistory()).where((row) => row['id'] == plannedId), hasLength(1));
+  });
+
 }
