@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -104,41 +103,6 @@ class TrainScreenState extends State<TrainScreen> {
     }
   }
 
-  /// Logs the scroll lifecycle around pull-to-refresh while diagnosing
-  /// the post-refresh movement. Returning false lets RefreshIndicator receive
-  /// the same notifications.
-  bool _handleTrainScrollNotification(ScrollNotification notification) {
-    if (!kDebugMode || notification.depth != 0) return false;
-
-    final metrics = notification.metrics;
-    final position =
-        'pixels=${metrics.pixels.toStringAsFixed(2)} '
-        'min=${metrics.minScrollExtent.toStringAsFixed(2)} '
-        'max=${metrics.maxScrollExtent.toStringAsFixed(2)}';
-
-    if (notification is ScrollStartNotification) {
-      debugPrint('[TrainScroll] START $position '
-          'drag=${notification.dragDetails != null}');
-    } else if (notification is ScrollUpdateNotification) {
-      debugPrint('[TrainScroll] UPDATE delta=${notification.scrollDelta} $position');
-    } else if (notification is OverscrollNotification) {
-      debugPrint('[TrainScroll] OVERSCROLL '
-          'amount=${notification.overscroll.toStringAsFixed(2)} $position');
-    } else if (notification is UserScrollNotification) {
-      debugPrint('[TrainScroll] USER direction=${notification.direction} $position');
-    } else if (notification is ScrollEndNotification) {
-      debugPrint('[TrainScroll] END $position');
-    }
-
-    return false;
-  }
-
-  Future<void> _handlePullToRefresh() async {
-    debugPrint('[TrainRefresh] callback started');
-    await refreshTrainScreen();
-    debugPrint('[TrainRefresh] callback completed');
-  }
-
   @override
   Widget build(BuildContext context) {
     final data = _trainData;
@@ -152,10 +116,8 @@ class TrainScreenState extends State<TrainScreen> {
             child: RefreshIndicator(
               color: AppColors.green,
               backgroundColor: AppColors.card,
-              onRefresh: _handlePullToRefresh,
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _handleTrainScrollNotification,
-                child: SingleChildScrollView(
+              onRefresh: refreshTrainScreen,
+              child: SingleChildScrollView(
                 controller: _scrollController,
                 primary: false,
                 physics: const ClampingScrollPhysics(
@@ -284,7 +246,6 @@ class TrainScreenState extends State<TrainScreen> {
                     ),
                     const SizedBox(height: 12),
                   ],
-                ),
                 ),
               ),
             ),
