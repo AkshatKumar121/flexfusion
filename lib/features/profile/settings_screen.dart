@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
+
+import 'data_export_service.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
@@ -266,8 +271,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingsActionRow(
             icon: Icons.file_upload_outlined,
             title: 'Export Data',
-            subtitle: 'Download your data (CSV)',
-            onTap: () => _showNotReady('Data export'),
+            subtitle: 'Export workouts, nutrition, progress & photos',
+            onTap: _exportData,
           ),
           _SettingsActionRow(
             icon: Icons.cloud_download_outlined,
@@ -280,6 +285,126 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+
+  Future<void> _exportData() async {
+    final includePhotos = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        var selected = true;
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            backgroundColor: AppColors.card,
+            title: Text(
+              'Export your data',
+              style: GoogleFonts.inter(
+                color: AppColors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'FlexFusion will create a ZIP containing your database backup and CSV files.',
+                  style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: selected,
+                  activeColor: AppColors.green,
+                  checkColor: Colors.black,
+                  title: Text(
+                    'Include progress photos',
+                    style: GoogleFonts.inter(
+                      color: AppColors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Original photos, grouped by date and angle',
+                    style: GoogleFonts.inter(color: AppColors.grey, fontSize: 10),
+                  ),
+                  onChanged: (value) =>
+                      setDialogState(() => selected = value ?? false),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, null),
+                child: const Text('CANCEL'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.red,
+                  foregroundColor: AppColors.white,
+                ),
+                onPressed: () => Navigator.pop(dialogContext, selected),
+                child: const Text('CREATE EXPORT'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (includePhotos == null || !mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        backgroundColor: AppColors.card,
+        content: Row(
+          children: [
+            CircularProgressIndicator(color: AppColors.green),
+            SizedBox(width: 18),
+            Expanded(child: Text('Preparing your FlexFusion export...')),
+          ],
+        ),
+      ),
+    );
+
+    File file;
+    try {
+      file = await DataExportService().createExport(
+        includePhotos: includePhotos,
+      );
+    } catch (error, stackTrace) {
+      debugPrint('[DataExport] Export failed: $error\\n$stackTrace');
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not export your data. Please try again.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: 'FlexFusion data export',
+          text: 'Your FlexFusion data export is ready. Keep this file somewhere safe.',
+        ),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('[DataExport] Could not open share sheet: $error\\n$stackTrace');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Your export was created, but the share sheet could not be opened.'),
+        ),
+      );
+    }
   }
 
   void _showNotReady(String feature) {
