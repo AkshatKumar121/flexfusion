@@ -14,12 +14,14 @@ class WorkoutLauncherScreen extends StatefulWidget {
 class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
   late Future<Map<String, Object?>?> _suggested;
   late Future<Map<String, Object?>?> _active;
+  late Future<Map<String, Object?>?> _activePlan;
   late Future<List<Map<String, Object?>>> _planDays;
   @override
   void initState() { super.initState(); _load(); }
   void _load() {
     _suggested = AppDatabase.instance.getManualStartWorkoutDay();
     _active = AppDatabase.instance.getInProgressWorkout();
+    _activePlan = AppDatabase.instance.getActiveWorkoutPlan();
     _planDays = _loadPlanDays();
   }
   Future<List<Map<String, Object?>>> _loadPlanDays() async {
@@ -113,11 +115,24 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
         }
 
         return ListView(padding: const EdgeInsets.all(18), children: [
-          FutureBuilder<List<Map<String, Object?>>>(future: _planDays, builder: (context, daysSnapshot) {
-            if (daysSnapshot.connectionState != ConnectionState.done) {
+          FutureBuilder<Map<String, Object?>?>(future: _activePlan, builder: (context, planSnapshot) {
+            if (planSnapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
             }
-            return FutureBuilder<Map<String, Object?>?>(
+            final activePlan = planSnapshot.data;
+            if (activePlan == null) {
+              return _tile(
+                'No active plan found',
+                'Start a freestyle workout without a plan.',
+                'START FREESTYLE',
+                _startFree,
+              );
+            }
+            return FutureBuilder<List<Map<String, Object?>>>(future: _planDays, builder: (context, daysSnapshot) {
+              if (daysSnapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return FutureBuilder<Map<String, Object?>?>(
               future: _suggested,
               builder: (context, suggestedSnapshot) {
                 if (suggestedSnapshot.connectionState != ConnectionState.done) {
@@ -126,24 +141,18 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
                 final days = daysSnapshot.data ?? [];
                 final suggested = suggestedSnapshot.data;
                 if (days.isEmpty) {
-                  return _tile(
-                    'No active workout plan',
-                    'Create a plan and add training days, or start a freestyle workout.',
-                    'MANAGE PLANS',
-                    () async {
-                      await Navigator.push(context, MaterialPageRoute<void>(
-                        builder: (_) => const WorkoutPlanScreen(),
-                      ));
-                      if (mounted) setState(_load);
-                    },
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _activePlanHeading(activePlan['name'] as String? ?? ''),
+                      _tile('No workout days yet', 'Add training days to this plan, or start freestyle.', 'START FREESTYLE', _startFree),
+                    ],
                   );
                 }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('YOUR ACTIVE PLAN', style: GoogleFonts.inter(
-                      color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w800,
-                    )),
+                    _activePlanHeading(activePlan['name'] as String? ?? ''),
                     const SizedBox(height: 5),
                     Text('Choose any day in your plan. The suggested next workout is highlighted.',
                       style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
@@ -163,13 +172,28 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
                   ],
                 );
               },
-            );
+              );
+            });
           }),
-          _tile('Unscheduled workout', 'Start a session outside your plan.', 'START FREE WORKOUT', _startFree),
         ]);
       },
     ),
   );
+  Widget _activePlanHeading(String planName) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('YOUR ACTIVE PLAN', style: GoogleFonts.inter(
+        color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1,
+      )),
+      const SizedBox(height: 4),
+      Text(
+        planName,
+        softWrap: true,
+        style: GoogleFonts.inter(color: AppColors.green, fontSize: 20, fontWeight: FontWeight.w800),
+      ),
+    ],
+  );
+
   Widget _tile(String title, String subtitle, String button, VoidCallback? onTap, {bool highlighted = false}) => Container(
     margin: const EdgeInsets.only(bottom: 13), padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: highlighted ? AppColors.green : AppColors.border, width: highlighted ? 1.5 : 1)),
