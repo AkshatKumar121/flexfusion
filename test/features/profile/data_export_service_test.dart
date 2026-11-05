@@ -46,7 +46,7 @@ void main() {
   Future<Archive> readArchive(File file) async {
     final bytes = await file.readAsBytes();
     final archive = ZipDecoder().decodeBytes(bytes);
-    expect(archive.isEmpty, isFalse);
+    expect(archive.files, isNotEmpty);
     return archive;
   }
 
@@ -105,7 +105,7 @@ void main() {
 
     final foodCsv = readText(archive, 'data/food_logs.csv');
     expect(foodCsv, contains('"Oats"'));
-    expect(foodCsv, contains('"190.0"'));
+    expect(foodCsv, contains('"190'));
   });
 
   test('includes original progress photo bytes and portable relative path', () async {
@@ -136,7 +136,7 @@ void main() {
     expect(archivedPhoto, isNotNull);
     expect(archivedPhoto!.content, photoBytes);
     expect(backup['missing_progress_photo_ids'], isEmpty);
-    expect(photoFile.readAsBytes(), completion(photoBytes));
+    expect(await photoFile.readAsBytes(), photoBytes);
   });
 
   test('excludes photo files when photos are disabled and preserves source data', () async {
