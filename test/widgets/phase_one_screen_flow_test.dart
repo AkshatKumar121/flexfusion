@@ -30,7 +30,9 @@ void main() {
   setUpAll(() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
-    GoogleFonts.config.allowRuntimeFetching = false;
+    // Widget tests exercise the real Inter typography. Allow google_fonts to fetch
+    // its font files in CI rather than throwing when no local font asset exists.
+    GoogleFonts.config.allowRuntimeFetching = true;
     SharedPreferences.setMockInitialValues({});
     tempDirectory = await Directory.systemTemp.createTemp('flexfusion_widget_');
     database = AppDatabase.forTesting(p.join(tempDirectory.path, 'widget.db'));
@@ -135,6 +137,7 @@ void main() {
             onPressed: () => showModalBottomSheet<void>(
               context: context,
               isScrollControlled: true,
+              constraints: const BoxConstraints(maxHeight: 700),
               builder: (_) => ActivityForm(
                 types: const ['Walking'],
                 date: DateTime.now(),
@@ -162,9 +165,18 @@ void main() {
       (widget) => widget is TextField && widget.decoration?.labelText == 'Notes (optional)',
     ), 'Widget test walk');
     final saveButton = find.byKey(const ValueKey('activity-save-button'));
-    await tester.ensureVisible(saveButton);
-    await tester.pump();
+    final formScrollable = find.descendant(
+      of: find.byType(SingleChildScrollView),
+      matching: find.byType(Scrollable),
+    ).first;
+    await tester.scrollUntilVisible(
+      saveButton,
+      250,
+      scrollable: formScrollable,
+    );
+    await tester.pumpAndSettle();
     expect(saveButton, findsOneWidget);
+    expect(tester.getRect(saveButton).overlaps(tester.getRect(find.byType(Scaffold))), isTrue);
     await tester.tap(saveButton);
     await tester.pump(const Duration(milliseconds: 500));
 
