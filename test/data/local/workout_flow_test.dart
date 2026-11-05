@@ -31,6 +31,29 @@ void main() {
     }
   });
 
+  Future<void> markWorkoutEligibleForSequence(int workoutId) async {
+    final setId = await database.addExerciseToWorkout(
+      workoutId: workoutId,
+      exerciseName: 'Sequence eligibility test',
+      setCount: 1,
+      targetReps: 8,
+      targetWeight: 20,
+    );
+    await database.updateWorkoutSet(
+      id: setId,
+      reps: 8,
+      weight: 20,
+      completed: true,
+    );
+    final db = await database.database;
+    await db.update(
+      'workouts',
+      {'started_at': DateTime.now().subtract(const Duration(seconds: 65)).toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [workoutId],
+    );
+  }
+
   test('plan rest settings flow into session sets and completed workout summary', () async {
     final planId = await database.createWorkoutPlan('Push Day');
     await database.setActiveWorkoutPlan(planId);
@@ -291,6 +314,7 @@ void main() {
       planDayId: shoulderDayId,
       sessionName: 'Shoulder/Arms',
     );
+    await markWorkoutEligibleForSequence(workoutId);
     await database.finishWorkoutSession(workoutId);
 
     final chestDayId = await database.addWorkoutPlanDay(
@@ -329,6 +353,7 @@ void main() {
       planDayId: shoulderId,
       sessionName: 'Shoulder/Arms',
     );
+    await markWorkoutEligibleForSequence(workoutId);
     await database.finishWorkoutSession(workoutId);
 
     // New order: Back, Shoulder/Arms, Chest.
@@ -383,12 +408,56 @@ void main() {
       planDayId: shoulderId,
       sessionName: 'Shoulder/Arms',
     );
+    await markWorkoutEligibleForSequence(workoutId);
     await database.finishWorkoutSession(workoutId);
     await database.deleteWorkoutPlanDay(chestId);
 
     final nextDay = await database.getManualStartWorkoutDay();
     expect(nextDay?['id'], backId);
     expect(nextDay?['label'], 'Back');
+  });
+
+
+  test('sequence does not advance for short or set-free completed sessions', () async {
+    final planId = await database.createWorkoutPlan('Completion threshold');
+    await database.setActiveWorkoutPlan(planId);
+    final firstDayId = await database.addWorkoutPlanDay(
+      planId: planId, label: 'Shoulder', dayOrder: 1,
+    );
+    final secondDayId = await database.addWorkoutPlanDay(
+      planId: planId, label: 'Back', dayOrder: 2,
+    );
+
+    final shortWorkout = await database.startWorkoutSession(
+      planId: planId, planDayId: firstDayId, sessionName: 'Short session',
+    );
+    final shortSetId = await database.addExerciseToWorkout(
+      workoutId: shortWorkout, exerciseName: 'Short set', setCount: 1,
+    );
+    await database.updateWorkoutSet(
+      id: shortSetId, reps: 8, weight: 10, completed: true,
+    );
+    await database.finishWorkoutSession(shortWorkout);
+    expect((await database.getManualStartWorkoutDay())?['id'], firstDayId);
+
+    final noSetWorkout = await database.startWorkoutSession(
+      planId: planId, planDayId: firstDayId, sessionName: 'No completed set',
+    );
+    final db = await database.database;
+    await db.update(
+      'workouts',
+      {'started_at': DateTime.now().subtract(const Duration(seconds: 70)).toIso8601String()},
+      where: 'id = ?', whereArgs: [noSetWorkout],
+    );
+    await database.finishWorkoutSession(noSetWorkout);
+    expect((await database.getManualStartWorkoutDay())?['id'], firstDayId);
+
+    final validWorkout = await database.startWorkoutSession(
+      planId: planId, planDayId: secondDayId, sessionName: 'Valid session',
+    );
+    await markWorkoutEligibleForSequence(validWorkout);
+    await database.finishWorkoutSession(validWorkout);
+    expect((await database.getManualStartWorkoutDay())?['id'], firstDayId);
   });
 
 }
