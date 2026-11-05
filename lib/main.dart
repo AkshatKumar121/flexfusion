@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'data/local/app_database.dart';
 import 'app/theme/app_theme.dart';
 import 'app/app_shell.dart';
+import 'shared/widgets/keyboard_dismiss_on_tap.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +19,9 @@ class FlexFusionApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'FlexFusion',
       theme: AppTheme.darkTheme,
+      builder: (context, child) => KeyboardDismissOnTap(
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const AppShell(),
     );
   }
