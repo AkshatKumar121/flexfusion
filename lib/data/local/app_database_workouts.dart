@@ -164,7 +164,7 @@ extension AppDatabaseWorkouts on AppDatabase {
   }) async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
-    return db.insert('workout_plan_days', {
+    final id = await db.insert('workout_plan_days', {
       'plan_id': planId,
       'label': label.trim(),
       'day_order': dayOrder,
@@ -174,6 +174,8 @@ extension AppDatabaseWorkouts on AppDatabase {
       'created_at': now,
       'updated_at': now,
     });
+    await _synchronizeWorkoutPlanSequence(planId);
+    return id;
   }
 
   Future<void> updateWorkoutPlanDay({
@@ -193,11 +195,86 @@ extension AppDatabaseWorkouts on AppDatabase {
       'is_rest_day': isRestDay ? 1 : 0,
       'updated_at': DateTime.now().toIso8601String(),
     }, where: 'id = ?', whereArgs: [id]);
+    final rows = await db.query('workout_plan_days', columns: ['plan_id'], where: 'id = ?', whereArgs: [id], limit: 1);
+    if (rows.isNotEmpty) {
+      await _synchronizeWorkoutPlanSequence(rows.first['plan_id'] as int);
+    }
   }
 
   Future<void> deleteWorkoutPlanDay(int id) async {
     final db = await database;
+    final rows = await db.query('workout_plan_days', columns: ['plan_id'], where: 'id = ?', whereArgs: [id], limit: 1);
     await db.delete('workout_plan_days', where: 'id = ?', whereArgs: [id]);
+    if (rows.isNotEmpty) {
+      await _synchronizeWorkoutPlanSequence(rows.first['plan_id'] as int);
+    }
+  }
+
+  /// Reconciles the next sequence day against the plan's current ordering.
+  /// The most recently completed plan day is the anchor; the saved setting
+  /// is only a fallback when there is no usable completion history.
+  Future<void> _synchronizeWorkoutPlanSequence(int planId) async {
+    final db = await database;
+    final days = await db.query(
+      'workout_plan_days',
+      where: "plan_id = ? AND schedule_type != 'weekday'",
+      whereArgs: [planId],
+      orderBy: 'day_order, id',
+    );
+    if (days.isEmpty) return;
+
+    var nextIndex = 0;
+    final completed = await db.query(
+      'workouts',
+      where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
+      whereArgs: [planId],
+      orderBy: 'completed_at DESC, id DESC',
+      limit: 1,
+    );
+    if (completed.isNotEmpty) {
+      final lastIndex = days.indexWhere(
+        (day) => day['id'] == completed.first['plan_day_id'],
+      );
+      if (lastIndex >= 0) {
+        nextIndex = (lastIndex + 1) % days.length;
+      } else {
+        final pointer = await db.query(
+          'app_settings',
+          columns: ['value'],
+          where: 'key = ?',
+          whereArgs: ['workout_plan_sequence_$planId'],
+          limit: 1,
+        );
+        if (pointer.isNotEmpty) {
+          final pointerId = int.tryParse(pointer.first['value'] as String? ?? '');
+          final pointerIndex = days.indexWhere((day) => day['id'] == pointerId);
+          if (pointerIndex >= 0) nextIndex = pointerIndex;
+        }
+      }
+    } else {
+      final pointer = await db.query(
+        'app_settings',
+        columns: ['value'],
+        where: 'key = ?',
+        whereArgs: ['workout_plan_sequence_$planId'],
+        limit: 1,
+      );
+      if (pointer.isNotEmpty) {
+        final pointerId = int.tryParse(pointer.first['value'] as String? ?? '');
+        final pointerIndex = days.indexWhere((day) => day['id'] == pointerId);
+        if (pointerIndex >= 0) nextIndex = pointerIndex;
+      }
+    }
+
+    await db.insert(
+      'app_settings',
+      {
+        'key': 'workout_plan_sequence_$planId',
+        'value': (days[nextIndex]['id'] as int).toString(),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<int> addExerciseToPlanDay({
