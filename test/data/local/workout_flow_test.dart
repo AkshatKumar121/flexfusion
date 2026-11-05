@@ -101,6 +101,22 @@ void main() {
     expect(history.single['completed_sets'], 1);
   });
 
+  test('deactivating a workout plan clears the active plan without deleting it', () async {
+    final firstPlanId = await database.createWorkoutPlan('First plan');
+    final secondPlanId = await database.createWorkoutPlan('Second plan');
+    await database.setActiveWorkoutPlan(firstPlanId);
+
+    await database.deactivateWorkoutPlan(firstPlanId);
+
+    expect(await database.getActiveWorkoutPlan(), isNull);
+    final plans = await database.getWorkoutPlans();
+    expect(plans, hasLength(2));
+    expect(plans.singleWhere((plan) => plan['id'] == firstPlanId)['is_active'], 0);
+
+    await database.setActiveWorkoutPlan(secondPlanId);
+    expect((await database.getActiveWorkoutPlan())?['id'], secondPlanId);
+  });
+
   test('duplicating a plan preserves exercises, set targets and custom rest duration', () async {
     final sourcePlanId = await database.createWorkoutPlan('Original Plan');
     final dayId = await database.addWorkoutPlanDay(
