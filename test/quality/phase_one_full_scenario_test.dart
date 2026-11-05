@@ -570,6 +570,13 @@ void main() {
       final summary = await db.getWorkoutSessionSummary(workout);
       expect(summary['completed_sets'], 2);
       expect(summary['volume'], 380);
+      final sql = await db.database;
+      await sql.update(
+        'workouts',
+        {'started_at': DateTime.now().subtract(const Duration(seconds: 65)).toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [workout],
+      );
       await db.finishWorkoutSession(workout);
 
       final next = await db.getManualStartWorkoutDay();
