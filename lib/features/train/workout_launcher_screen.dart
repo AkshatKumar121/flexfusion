@@ -158,6 +158,7 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
                         (day['is_rest_day'] as int? ?? 0) == 1
                             ? () => _logRestDay(day)
                             : () => _start(day: day),
+                        highlighted: day['id'] == suggested?['id'],
                       ),
                   ],
                 );
@@ -169,11 +170,11 @@ class _WorkoutLauncherScreenState extends State<WorkoutLauncherScreen> {
       },
     ),
   );
-  Widget _tile(String title, String subtitle, String button, VoidCallback? onTap) => Container(
+  Widget _tile(String title, String subtitle, String button, VoidCallback? onTap, {bool highlighted = false}) => Container(
     margin: const EdgeInsets.only(bottom: 13), padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+    decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: highlighted ? AppColors.green : AppColors.border, width: highlighted ? 1.5 : 1)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title, style: GoogleFonts.inter(color: AppColors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+      Text(title, style: GoogleFonts.inter(color: highlighted ? AppColors.green : AppColors.white, fontSize: 15, fontWeight: FontWeight.w800)),
       const SizedBox(height: 6), Text(subtitle, style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
       const SizedBox(height: 12), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: onTap, child: Text(button))),
     ]),
