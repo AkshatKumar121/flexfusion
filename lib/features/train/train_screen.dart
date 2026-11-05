@@ -158,7 +158,9 @@ class TrainScreenState extends State<TrainScreen> {
                 child: SingleChildScrollView(
                 controller: _scrollController,
                 primary: false,
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics: const ClampingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
