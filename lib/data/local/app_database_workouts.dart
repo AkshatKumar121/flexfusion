@@ -93,6 +93,16 @@ extension AppDatabaseWorkouts on AppDatabase {
     });
   }
 
+  Future<void> deactivateWorkoutPlan(int id) async {
+    final db = await database;
+    await db.update(
+      'workout_plans',
+      {'is_active': 0, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> deleteWorkoutPlan(int id) async {
     final db = await database;
     await db.delete('workout_plans', where: 'id = ?', whereArgs: [id]);
