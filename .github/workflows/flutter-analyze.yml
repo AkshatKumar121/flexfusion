@@ -55,7 +55,7 @@ jobs:
         run: flutter analyze --no-pub
 
       - name: Run unit, widget and quality workflow tests with coverage
-        run: flutter test --no-pub --coverage --reporter expanded
+        run: flutter test --no-pub --coverage --reporter expanded --timeout 2m
 
       - name: Build Android debug APK
         run: flutter build apk --debug --no-pub

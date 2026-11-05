@@ -30,9 +30,9 @@ void main() {
   setUpAll(() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
-    // Widget tests exercise the real Inter typography. Allow google_fonts to fetch
-    // its font files in CI rather than throwing when no local font asset exists.
-    GoogleFonts.config.allowRuntimeFetching = true;
+    // Tests must never wait on Google Fonts network requests. Use the local
+    // fallback typography in tests; visual Inter rendering is checked on-device.
+    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({});
     tempDirectory = await Directory.systemTemp.createTemp('flexfusion_widget_');
     database = AppDatabase.forTesting(p.join(tempDirectory.path, 'widget.db'));
