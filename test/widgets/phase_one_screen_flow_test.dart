@@ -50,7 +50,13 @@ void main() {
 
   testWidgets('app shell exposes and switches between the three primary tabs', (tester) async {
     addTearDown(() async { await tester.pumpWidget(const SizedBox.shrink()); await tester.pump(); });
-    await tester.pumpWidget(const MaterialApp(home: AppShell()));
+    await tester.pumpWidget(const MaterialApp(
+      home: AppShell(testScreens: [
+        SizedBox.shrink(),
+        SizedBox.shrink(),
+        SizedBox.shrink(),
+      ]),
+    ));
     await pumpUntilFound(tester, find.byKey(const ValueKey('nav-HOME')));
 
     expect(find.byKey(const ValueKey('nav-TRAIN')), findsOneWidget);
@@ -154,7 +160,14 @@ void main() {
     await tester.enterText(find.byWidgetPredicate(
       (widget) => widget is TextField && widget.decoration?.labelText == 'Notes (optional)',
     ), 'Widget test walk');
-    await tester.ensureVisible(find.text('SAVE ACTIVITY'));
+    await tester.scrollUntilVisible(
+      find.text('SAVE ACTIVITY'),
+      300,
+      scrollable: find.descendant(
+        of: find.byType(ActivityForm),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
     await tester.tap(find.text('SAVE ACTIVITY'));
     await tester.pump(const Duration(milliseconds: 500));
 

@@ -237,6 +237,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
   ]);
 
   Widget _field(TextEditingController c, String hint, [bool text = false]) => TextField(
+    key: ValueKey('food-field-$hint'),
     controller: c, keyboardType: text ? TextInputType.text : const TextInputType.numberWithOptions(decimal: true),
     style: GoogleFonts.inter(color: AppColors.white, fontSize: 12), decoration: decoration(hint),
   );

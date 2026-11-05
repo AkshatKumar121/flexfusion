@@ -7,7 +7,9 @@ import '../features/train/train_screen.dart';
 import '../features/activity/activity_screen.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  final List<Widget>? testScreens;
+
+  const AppShell({super.key, this.testScreens});
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -19,7 +21,7 @@ class _AppShellState extends State<AppShell> {
   final GlobalKey<EatScreenState> _eatScreenKey = GlobalKey<EatScreenState>();
   final GlobalKey<TrainScreenState> _trainScreenKey = GlobalKey<TrainScreenState>();
 
-  late final List<Widget> _screens = [
+  late final List<Widget> _screens = widget.testScreens ?? [
     TrainScreen(key: _trainScreenKey),
     HomeScreen(key: _homeScreenKey, onOpenEat: _openEatTab, onOpenActivity: _openActivity),
     EatScreen(key: _eatScreenKey),
