@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
-import 'workout_plan_screen.dart';
 import 'workout_session_screen.dart';
 
 class WorkoutLauncherScreen extends StatefulWidget {
