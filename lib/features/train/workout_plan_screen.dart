@@ -367,14 +367,31 @@ class _WorkoutPlanDetailScreenState extends State<WorkoutPlanDetailScreen> {
                         ? Center(child: Text('No exercises match "$searchQuery".', style: GoogleFonts.inter(color: AppColors.grey)))
                         : ListView.builder(
                             itemCount: filteredExercises.length,
+                            findChildIndexCallback: (key) {
+                              if (key is! ValueKey<int>) return null;
+                              final index = filteredExercises.indexWhere(
+                                (exercise) => exercise['id'] == key.value,
+                              );
+                              return index == -1 ? null : index;
+                            },
                             itemBuilder: (_, i) {
                               final exercise = filteredExercises[i];
+                              final exerciseId = exercise['id'] as int;
                               return ListTile(
+                                key: ValueKey<int>(exerciseId),
                                 title: Text(exercise['name'] as String, style: GoogleFonts.inter(color: AppColors.white)),
                                 subtitle: Text('${exercise['muscle_group'] ?? 'Other'} • ${exercise['equipment'] ?? 'Equipment not set'}', style: GoogleFonts.inter(color: AppColors.grey, fontSize: 11)),
                                 onTap: () {
                                   FocusScope.of(context).unfocus();
-                                  Navigator.pop(context, exercise);
+                                  // Resolve the selected row by its stable database ID,
+                                  // never by its position in the filtered list.
+                                  final selectedExercise = exercises.firstWhere(
+                                    (candidate) => candidate['id'] == exerciseId,
+                                  );
+                                  Navigator.pop(
+                                    context,
+                                    Map<String, Object?>.from(selectedExercise),
+                                  );
                                 },
                               );
                             },
