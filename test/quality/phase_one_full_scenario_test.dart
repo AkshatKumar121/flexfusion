@@ -162,9 +162,9 @@ void main() {
       expect(targets?['fat_target_g'], 60);
     });
 
-    test('built-in and custom food catalogues remain separately queryable', () async {
-      final builtInBefore = await db.getBuiltInFoods();
-      expect(builtInBefore, isNotEmpty);
+    test('built-in catalogue is empty while custom foods remain queryable', () async {
+      expect(await db.getBuiltInFoods(), isEmpty);
+
       final id = await db.insertCustomFood(
         name: 'QA Custom Food',
         caloriesPer100g: 100,
@@ -172,8 +172,10 @@ void main() {
         carbsPer100g: 10,
         fatPer100g: 2,
       );
-      expect((await db.getCustomFoods()).any((food) => food['id'] == id), isTrue);
-      expect((await db.getBuiltInFoods()).any((food) => food['id'] == id), isFalse);
+
+      final customFoods = await db.getCustomFoods();
+      expect(customFoods.any((food) => food['id'] == id), isTrue);
+      expect(await db.getBuiltInFoods(), isEmpty);
     });
   });
 

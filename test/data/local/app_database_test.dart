@@ -175,6 +175,64 @@ void main() {
     );
   });
 
+  test('built-in catalogue cleanup preserves custom foods and historical meal logs', () async {
+    final db = await appDatabase.database;
+    final now = DateTime.now().toIso8601String();
+    final builtInId = await db.insert('foods', {
+      'name': 'Legacy Built-in Food',
+      'serving_basis_g': 100,
+      'calories_per_basis': 120,
+      'protein_per_basis_g': 5,
+      'carbs_per_basis_g': 20,
+      'fat_per_basis_g': 2,
+      'source': 'flexfusion_catalog_v1',
+      'is_custom': 0,
+      'created_at': now,
+      'updated_at': now,
+    });
+    final customId = await appDatabase.insertCustomFood(
+      name: 'My Custom Food',
+      caloriesPer100g: 210,
+      proteinPer100g: 12,
+      carbsPer100g: 18,
+      fatPer100g: 8,
+    );
+    await appDatabase.insertFoodLog(
+      date: '2026-11-06',
+      meal: 'LUNCH',
+      name: 'Legacy Built-in Food',
+      foodId: builtInId,
+      grams: 100,
+      calories: 120,
+      protein: 5,
+      carbs: 20,
+      fat: 2,
+    );
+
+    // Simulate an installation that already had the old catalogue seeded.
+    await db.delete(
+      'app_settings',
+      where: 'key = ?',
+      whereArgs: ['flexfusion_builtin_food_catalog_cleared_v1'],
+    );
+    await appDatabase.closeForTesting();
+    appDatabase = AppDatabase.forTesting(p.join(tempDirectory.path, 'test.db'));
+
+    final reopenedDb = await appDatabase.database;
+    expect(await appDatabase.getBuiltInFoods(), isEmpty);
+    final customFoods = await appDatabase.getCustomFoods();
+    expect(customFoods, hasLength(1));
+    expect(customFoods.single['id'], customId);
+    expect(customFoods.single['name'], 'My Custom Food');
+
+    final logs = await appDatabase.getFoodLogsForDate('2026-11-06');
+    expect(logs, hasLength(1));
+    expect(logs.single['food_id'], isNull);
+    expect(logs.single['food_name_snapshot'], 'Legacy Built-in Food');
+    expect(logs.single['calories'], 120);
+    expect(await reopenedDb.query('foods', where: 'is_custom = 0'), isEmpty);
+  });
+
   test('custom foods are saved, retrieved and updated without duplicates', () async {
     final firstId = await appDatabase.insertCustomFood(
       name: 'Test Paneer',
@@ -676,7 +734,7 @@ void main() {
       where: 'source = ?',
       whereArgs: ['flexfusion_catalog_v1'],
     );
-    expect(builtInFoods, hasLength(1014));
+    expect(builtInFoods, isEmpty);
 
     final logs = await upgradedDb.query('food_logs');
     expect(logs, hasLength(1));
