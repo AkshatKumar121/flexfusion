@@ -34,6 +34,10 @@
 	<string>FlexFusion lets you choose progress photos from your photo library.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>FlexFusion saves your progress photos on this device.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
