@@ -886,6 +886,217 @@ void main() {
     expect(workout['rest_ends_at'], isNull);
   });
 
+  test('version 6 migration preserves all existing user data and database integrity', () async {
+    final db = await appDatabase.database;
+    const now = '2026-11-06T07:00:00.000';
+    const workoutDate = '2026-11-05';
+
+    final exerciseId = await db.insert('exercises', {
+      'name': 'Migration Dumbbell Press',
+      'muscle_group': 'Chest',
+      'equipment': 'Dumbbell',
+      'is_custom': 1,
+      'created_at': now,
+      'updated_at': now,
+    });
+    final planId = await db.insert('workout_plans', {
+      'name': 'Migration Test Plan',
+      'description': 'Must survive schema upgrade',
+      'is_active': 1,
+      'created_at': now,
+      'updated_at': now,
+    });
+    final planDayId = await db.insert('workout_plan_days', {
+      'plan_id': planId,
+      'day_order': 1,
+      'label': 'Push',
+      'schedule_type': 'sequence',
+      'is_rest_day': 0,
+      'created_at': now,
+      'updated_at': now,
+    });
+    final planExerciseId = await db.insert('workout_plan_exercises', {
+      'plan_day_id': planDayId,
+      'exercise_id': exerciseId,
+      'exercise_name_snapshot': 'Migration Dumbbell Press',
+      'exercise_order': 1,
+      'notes': 'Preserve plan exercise',
+      'created_at': now,
+      'updated_at': now,
+    });
+    await db.insert('workout_plan_sets', {
+      'plan_exercise_id': planExerciseId,
+      'set_order': 1,
+      'target_reps': 10,
+      'target_weight': 20,
+      'target_weight_unit': 'kg',
+      'rest_seconds': 90,
+      'created_at': now,
+      'updated_at': now,
+    });
+    final workoutId = await db.insert('workouts', {
+      'plan_id': planId,
+      'plan_day_id': planDayId,
+      'started_at': '${workoutDate}T07:00:00.000',
+      'completed_at': '${workoutDate}T08:00:00.000',
+      'session_name': 'Migration Push Workout',
+      'status': 'completed',
+      'notes': 'Preserve completed session',
+      'paused_seconds': 15,
+    });
+    await db.insert('workout_sets', {
+      'workout_id': workoutId,
+      'exercise_id': exerciseId,
+      'exercise_name_snapshot': 'Migration Dumbbell Press',
+      'set_order': 1,
+      'actual_reps': 10,
+      'actual_weight': 20,
+      'weight_unit': 'kg',
+      'completed': 1,
+      'rest_seconds': 90,
+      'created_at': now,
+    });
+
+    await db.insert('activity_logs', {
+      'activity_type': 'Walking',
+      'activity_date': workoutDate,
+      'started_at': '${workoutDate}T06:00:00.000',
+      'duration_minutes': 35,
+      'distance_km': 2.8,
+      'steps': 4200,
+      'active_calories': 180,
+      'notes': 'Migration activity log',
+      'source': 'manual',
+      'created_at': now,
+      'updated_at': now,
+    });
+    await db.insert('activity_health_daily', {
+      'activity_date': workoutDate,
+      'steps': 9200,
+      'distance_km': 6.4,
+      'active_calories': 420,
+      'exercise_minutes': 45,
+      'synced_at': now,
+    });
+    await db.insert('body_weights', {
+      'log_date': workoutDate,
+      'weight_value': 88.4,
+      'weight_unit': 'kg',
+      'created_at': now,
+      'updated_at': now,
+    });
+    await db.insert('body_measurements', {
+      'log_date': workoutDate,
+      'measurement_type': 'waist',
+      'value': 86,
+      'unit': 'cm',
+      'created_at': now,
+      'updated_at': now,
+    });
+    await db.insert('progress_photos', {
+      'photo_date': workoutDate,
+      'angle': 'front',
+      'local_file_path': '/tmp/migration-front.jpg',
+      'created_at': now,
+    });
+
+    // Version 7 only adds workouts.rest_ends_at over version 6.
+    // Downgrade this isolated fixture to the exact v6 shape before reopening.
+    await db.execute('ALTER TABLE workouts DROP COLUMN rest_ends_at');
+    await db.execute('PRAGMA user_version = 6');
+    await appDatabase.closeForTesting();
+
+    final upgradedDb = await appDatabase.database;
+    final version = await upgradedDb.rawQuery('PRAGMA user_version');
+    expect(version.single['user_version'], 7);
+
+    final workout = (await upgradedDb.query(
+      'workouts',
+      where: 'id = ?',
+      whereArgs: [workoutId],
+    )).single;
+    expect(workout['session_name'], 'Migration Push Workout');
+    expect(workout['status'], 'completed');
+    expect(workout['notes'], 'Preserve completed session');
+    expect(workout['rest_ends_at'], isNull);
+
+    final plan = (await upgradedDb.query(
+      'workout_plans',
+      where: 'id = ?',
+      whereArgs: [planId],
+    )).single;
+    expect(plan['name'], 'Migration Test Plan');
+    final planExercise = (await upgradedDb.query(
+      'workout_plan_exercises',
+      where: 'id = ?',
+      whereArgs: [planExerciseId],
+    )).single;
+    expect(planExercise['exercise_name_snapshot'], 'Migration Dumbbell Press');
+    expect(await upgradedDb.query(
+      'workout_plan_sets',
+      where: 'plan_exercise_id = ?',
+      whereArgs: [planExerciseId],
+    ), hasLength(1));
+
+    final workoutSet = (await upgradedDb.query(
+      'workout_sets',
+      where: 'workout_id = ?',
+      whereArgs: [workoutId],
+    )).single;
+    expect(workoutSet['actual_reps'], 10);
+    expect(workoutSet['actual_weight'], 20);
+    expect(workoutSet['completed'], 1);
+
+    final activity = (await upgradedDb.query(
+      'activity_logs',
+      where: 'activity_date = ?',
+      whereArgs: [workoutDate],
+    )).single;
+    expect(activity['steps'], 4200);
+    expect(activity['distance_km'], 2.8);
+    final healthSummary = (await upgradedDb.query(
+      'activity_health_daily',
+      where: 'activity_date = ?',
+      whereArgs: [workoutDate],
+    )).single;
+    expect(healthSummary['steps'], 9200);
+    expect(healthSummary['active_calories'], 420);
+
+    final weight = (await upgradedDb.query(
+      'body_weights',
+      where: 'log_date = ?',
+      whereArgs: [workoutDate],
+    )).single;
+    expect(weight['weight_value'], 88.4);
+    final measurement = (await upgradedDb.query(
+      'body_measurements',
+      where: 'log_date = ?',
+      whereArgs: [workoutDate],
+    )).single;
+    expect(measurement['value'], 86);
+    final photo = (await upgradedDb.query(
+      'progress_photos',
+      where: 'photo_date = ?',
+      whereArgs: [workoutDate],
+    )).single;
+    expect(photo['local_file_path'], '/tmp/migration-front.jpg');
+    expect(photo['angle'], 'front');
+
+    final indexes = await upgradedDb.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'index'",
+    );
+    final indexNames = indexes.map((row) => row['name'] as String).toSet();
+    expect(indexNames, containsAll([
+      'idx_workouts_started_at',
+      'idx_activity_logs_date',
+      'idx_food_logs_date',
+      'idx_food_logs_date_meal',
+    ]));
+
+    final foreignKeyViolations = await upgradedDb.rawQuery('PRAGMA foreign_key_check');
+    expect(foreignKeyViolations, isEmpty);
+  });
+
   test('rest timer end timestamp persists on the active workout', () async {
     final workoutId = await appDatabase.startWorkoutSession(sessionName: 'Rest timer test');
     final end = DateTime.now().add(const Duration(seconds: 90));
