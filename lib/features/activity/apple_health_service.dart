@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,6 +15,25 @@ class AppleHealthReadResult {
 
 class AppleHealthService {
   final Health _health = Health();
+
+  static const MethodChannel _syncChannel =
+      MethodChannel('com.flexfusion/apple_health_sync');
+  static const EventChannel _eventChannel =
+      EventChannel('com.flexfusion/apple_health_events');
+
+  Stream<String> get healthDataChanges =>
+      _eventChannel.receiveBroadcastStream().map((event) => event.toString());
+
+  Future<void> startObserving() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
+    try {
+      await _syncChannel.invokeMethod<void>('startObservers');
+    } on PlatformException catch (error) {
+      debugPrint('[AppleHealth] Could not start HealthKit observers: $error');
+    } on MissingPluginException {
+      debugPrint('[AppleHealth] Native HealthKit observer bridge is unavailable.');
+    }
+  }
 
   static const _authorizationRequestedKey =
       'apple_health_authorization_requested';
@@ -53,6 +73,10 @@ class AppleHealthService {
           );
         }
       }
+
+      // Register native observer queries after the initial authorization flow.
+      // iOS may also deliver background updates when HealthKit permits it.
+      await startObserving();
 
       // HealthKit intentionally does not reveal read-denial state to apps.
       // Continue reading after the first authorization attempt; an empty
