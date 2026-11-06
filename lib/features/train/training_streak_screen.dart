@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
@@ -12,7 +13,15 @@ class TrainingStreakScreen extends StatefulWidget {
   State<TrainingStreakScreen> createState() => _TrainingStreakScreenState();
 }
 
-class _TrainingStreakScreenState extends State<TrainingStreakScreen> {
+class _TrainingStreakScreenState extends State<TrainingStreakScreen> with AutoRefreshOnReturn<TrainingStreakScreen> {
+  @override
+  Future<void> refreshAfterReturn() async {
+    if (!mounted) return;
+    final future = AppDatabase.instance.getTrainingStreakData();
+    setState(() => _dataFuture = future);
+    await future;
+  }
+
   late Future<Map<String, Object?>> _dataFuture;
 
   DateTime get _today {
