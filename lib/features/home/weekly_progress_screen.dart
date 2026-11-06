@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
@@ -11,7 +12,15 @@ class WeeklyProgressScreen extends StatefulWidget {
   State<WeeklyProgressScreen> createState() => _WeeklyProgressScreenState();
 }
 
-class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
+class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> with AutoRefreshOnReturn<WeeklyProgressScreen> {
+  @override
+  Future<void> refreshAfterReturn() async {
+    if (!mounted) return;
+    setState(() => _summaryFuture = AppDatabase.instance.getWeeklyProgressDetails());
+    await _loadWeightUnit();
+    await _summaryFuture;
+  }
+
   late Future<Map<String, Object?>> _summaryFuture;
   String _weightUnit = 'kg';
 
