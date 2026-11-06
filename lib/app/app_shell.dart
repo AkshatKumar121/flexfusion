@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'theme/app_colors.dart';
+import 'auto_refresh_on_return.dart';
 import '../features/home/home_screen.dart';
 import '../features/eat/eat_screen.dart';
 import '../features/train/train_screen.dart';
@@ -13,7 +14,7 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with AutoRefreshOnReturn<AppShell> {
   int _selectedIndex = 1;
   final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
   final GlobalKey<EatScreenState> _eatScreenKey = GlobalKey<EatScreenState>();
@@ -26,6 +27,18 @@ class _AppShellState extends State<AppShell> {
   ];
 
   void _openActivity() { Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ActivityScreen())); }
+
+  @override
+  Future<void> refreshAfterReturn() async {
+    if (!mounted) return;
+    if (_selectedIndex == 0) {
+      await _trainScreenKey.currentState?.refreshTrainScreen();
+    } else if (_selectedIndex == 1) {
+      await _homeScreenKey.currentState?.refreshDashboard();
+    } else {
+      await _eatScreenKey.currentState?.refreshEatScreen();
+    }
+  }
 
   void _openEatTab() {
     setState(() => _selectedIndex = 2);
