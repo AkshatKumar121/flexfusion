@@ -93,6 +93,16 @@ extension AppDatabaseWorkouts on AppDatabase {
     });
   }
 
+  Future<void> deactivateWorkoutPlan(int id) async {
+    final db = await database;
+    await db.update(
+      'workout_plans',
+      {'is_active': 0, 'updated_at': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> deleteWorkoutPlan(int id) async {
     final db = await database;
     await db.delete('workout_plans', where: 'id = ?', whereArgs: [id]);
@@ -164,7 +174,7 @@ extension AppDatabaseWorkouts on AppDatabase {
   }) async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
-    return db.insert('workout_plan_days', {
+    final id = await db.insert('workout_plan_days', {
       'plan_id': planId,
       'label': label.trim(),
       'day_order': dayOrder,
@@ -174,6 +184,8 @@ extension AppDatabaseWorkouts on AppDatabase {
       'created_at': now,
       'updated_at': now,
     });
+    await _synchronizeWorkoutPlanSequence(planId);
+    return id;
   }
 
   Future<void> updateWorkoutPlanDay({
@@ -193,11 +205,97 @@ extension AppDatabaseWorkouts on AppDatabase {
       'is_rest_day': isRestDay ? 1 : 0,
       'updated_at': DateTime.now().toIso8601String(),
     }, where: 'id = ?', whereArgs: [id]);
+    final rows = await db.query('workout_plan_days', columns: ['plan_id'], where: 'id = ?', whereArgs: [id], limit: 1);
+    if (rows.isNotEmpty) {
+      await _synchronizeWorkoutPlanSequence(rows.first['plan_id'] as int);
+    }
   }
 
   Future<void> deleteWorkoutPlanDay(int id) async {
     final db = await database;
+    final rows = await db.query('workout_plan_days', columns: ['plan_id'], where: 'id = ?', whereArgs: [id], limit: 1);
     await db.delete('workout_plan_days', where: 'id = ?', whereArgs: [id]);
+    if (rows.isNotEmpty) {
+      await _synchronizeWorkoutPlanSequence(rows.first['plan_id'] as int);
+    }
+  }
+
+  /// Reconciles the next sequence day against the plan's current ordering.
+  /// The most recently completed plan day is the anchor; the saved setting
+  /// is only a fallback when there is no usable completion history.
+  Future<void> _synchronizeWorkoutPlanSequence(int planId) async {
+    final db = await database;
+    final days = await db.query(
+      'workout_plan_days',
+      where: "plan_id = ? AND schedule_type != 'weekday'",
+      whereArgs: [planId],
+      orderBy: 'day_order, id',
+    );
+    if (days.isEmpty) return;
+
+    var nextIndex = 0;
+    final completed = await db.rawQuery(
+      '''
+      SELECT w.*
+      FROM workouts w
+      WHERE w.plan_id = ?
+        AND w.status = 'completed'
+        AND w.plan_day_id IS NOT NULL
+        AND CAST((julianday(w.completed_at) - julianday(w.started_at)) * 86400 AS INTEGER)
+              - COALESCE(w.paused_seconds, 0) >= 60
+        AND EXISTS (
+          SELECT 1 FROM workout_sets s
+          WHERE s.workout_id = w.id AND s.completed = 1
+        )
+      ORDER BY w.completed_at DESC, w.id DESC
+      LIMIT 1
+      ''',
+      [planId],
+    );
+    if (completed.isNotEmpty) {
+      final lastIndex = days.indexWhere(
+        (day) => day['id'] == completed.first['plan_day_id'],
+      );
+      if (lastIndex >= 0) {
+        nextIndex = (lastIndex + 1) % days.length;
+      } else {
+        final pointer = await db.query(
+          'app_settings',
+          columns: ['value'],
+          where: 'key = ?',
+          whereArgs: ['workout_plan_sequence_$planId'],
+          limit: 1,
+        );
+        if (pointer.isNotEmpty) {
+          final pointerId = int.tryParse(pointer.first['value'] as String? ?? '');
+          final pointerIndex = days.indexWhere((day) => day['id'] == pointerId);
+          if (pointerIndex >= 0) nextIndex = pointerIndex;
+        }
+      }
+    } else {
+      final pointer = await db.query(
+        'app_settings',
+        columns: ['value'],
+        where: 'key = ?',
+        whereArgs: ['workout_plan_sequence_$planId'],
+        limit: 1,
+      );
+      if (pointer.isNotEmpty) {
+        final pointerId = int.tryParse(pointer.first['value'] as String? ?? '');
+        final pointerIndex = days.indexWhere((day) => day['id'] == pointerId);
+        if (pointerIndex >= 0) nextIndex = pointerIndex;
+      }
+    }
+
+    await db.insert(
+      'app_settings',
+      {
+        'key': 'workout_plan_sequence_$planId',
+        'value': (days[nextIndex]['id'] as int).toString(),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<int> addExerciseToPlanDay({
@@ -402,7 +500,10 @@ extension AppDatabaseWorkouts on AppDatabase {
     await db.transaction((txn) async {
       final rows = await txn.query(
         'workouts',
-        columns: ['status', 'plan_id', 'plan_day_id'],
+        columns: [
+          'status', 'plan_id', 'plan_day_id', 'started_at',
+          'paused_at', 'paused_seconds',
+        ],
         where: 'id = ?',
         whereArgs: [workoutId],
         limit: 1,
@@ -428,6 +529,28 @@ extension AppDatabaseWorkouts on AppDatabase {
         whereArgs: [workoutId],
       );
       if (updated == 0) return;
+
+      // A planned workout only moves the sequence after a meaningful
+      // session: at least 60 active seconds and one explicitly completed set.
+      // Freestyle sessions have no plan_day_id and never affect plan order.
+      final startedAt = DateTime.tryParse(rows.first['started_at'] as String? ?? '');
+      final pausedAtValue = rows.first['paused_at'] as String?;
+      final pauseSeconds = (rows.first['paused_seconds'] as int? ?? 0) +
+          (pausedAtValue == null
+              ? 0
+              : DateTime.now()
+                  .difference(DateTime.tryParse(pausedAtValue) ?? DateTime.now())
+                  .inSeconds);
+      final activeSeconds = startedAt == null
+          ? 0
+          : DateTime.now().difference(startedAt).inSeconds - pauseSeconds;
+      final completedSetRows = await txn.rawQuery(
+        'SELECT COUNT(*) AS completed_count FROM workout_sets WHERE workout_id = ? AND completed = 1',
+        [workoutId],
+      );
+      final completedSetCount =
+          (completedSetRows.first['completed_count'] as int?) ?? 0;
+      if (activeSeconds < 60 || completedSetCount < 1) return;
 
       final planId = rows.first['plan_id'] as int?;
       final dayId = rows.first['plan_day_id'] as int?;
@@ -594,12 +717,21 @@ extension AppDatabaseWorkouts on AppDatabase {
         final pointerIndex = sequenceDays.indexWhere((day) => day['id'] == pointerId);
         if (pointerIndex >= 0) nextIndex = pointerIndex;
       } else {
-        final previous = await db.query(
-          'workouts',
-          where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
-          whereArgs: [plan['id']],
-          orderBy: 'completed_at DESC, id DESC',
-          limit: 1,
+        final previous = await db.rawQuery(
+          '''
+          SELECT w.* FROM workouts w
+          WHERE w.plan_id = ? AND w.status = 'completed'
+            AND w.plan_day_id IS NOT NULL
+            AND CAST((julianday(w.completed_at) - julianday(w.started_at)) * 86400 AS INTEGER)
+                  - COALESCE(w.paused_seconds, 0) >= 60
+            AND EXISTS (
+              SELECT 1 FROM workout_sets s
+              WHERE s.workout_id = w.id AND s.completed = 1
+            )
+          ORDER BY w.completed_at DESC, w.id DESC
+          LIMIT 1
+          ''',
+          [plan['id']],
         );
         if (previous.isNotEmpty) {
           final lastIndex = sequenceDays.indexWhere((day) => day['id'] == previous.first['plan_day_id']);
@@ -654,13 +786,22 @@ extension AppDatabaseWorkouts on AppDatabase {
       final pointerIndex = sequenceDays.indexWhere((day) => day['id'] == pointerId);
       if (pointerIndex >= 0) nextIndex = pointerIndex;
     } else {
-      final previous = await db.query(
-        'workouts',
-        where: "plan_id = ? AND status = 'completed' AND plan_day_id IS NOT NULL",
-        whereArgs: [plan['id']],
-        orderBy: 'completed_at DESC, id DESC',
-        limit: 1,
-      );
+      final previous = await db.rawQuery(
+          '''
+          SELECT w.* FROM workouts w
+          WHERE w.plan_id = ? AND w.status = 'completed'
+            AND w.plan_day_id IS NOT NULL
+            AND CAST((julianday(w.completed_at) - julianday(w.started_at)) * 86400 AS INTEGER)
+                  - COALESCE(w.paused_seconds, 0) >= 60
+            AND EXISTS (
+              SELECT 1 FROM workout_sets s
+              WHERE s.workout_id = w.id AND s.completed = 1
+            )
+          ORDER BY w.completed_at DESC, w.id DESC
+          LIMIT 1
+          ''',
+          [plan['id']],
+        );
       if (previous.isNotEmpty) {
         final lastIndex = sequenceDays.indexWhere((day) => day['id'] == previous.first['plan_day_id']);
         if (lastIndex >= 0) nextIndex = (lastIndex + 1) % sequenceDays.length;

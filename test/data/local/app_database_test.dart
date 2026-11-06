@@ -865,11 +865,33 @@ void main() {
       label: 'Day 2',
       dayOrder: 2,
     );
+    await appDatabase.addExerciseToPlanDay(
+      dayId: firstDayId,
+      exerciseName: 'Sequence test press',
+      exerciseOrder: 1,
+      setCount: 1,
+      targetReps: 10,
+      targetWeight: 20,
+    );
 
     final workoutId = await appDatabase.startWorkoutSession(
       planId: planId,
       planDayId: firstDayId,
       sessionName: 'Day 1',
+    );
+    final sets = await appDatabase.getWorkoutSessionSets(workoutId);
+    await appDatabase.updateWorkoutSet(
+      id: sets.single['id'] as int,
+      reps: 10,
+      weight: 20,
+      completed: true,
+    );
+    final db = await appDatabase.database;
+    await db.update(
+      'workouts',
+      {'started_at': DateTime.now().subtract(const Duration(seconds: 65)).toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [workoutId],
     );
     await appDatabase.finishWorkoutSession(workoutId);
     await appDatabase.finishWorkoutSession(workoutId);
@@ -878,8 +900,13 @@ void main() {
     expect(suggestedToday, isNull);
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
     final yesterdayIso = DateTime(yesterday.year, yesterday.month, yesterday.day, 12).toIso8601String();
-    final db = await appDatabase.database;
-    await db.update('workouts', {'completed_at': yesterdayIso}, where: 'id = ?', whereArgs: [workoutId]);
+    final yesterdayStartIso = DateTime(yesterday.year, yesterday.month, yesterday.day, 11).toIso8601String();
+    await db.update(
+      'workouts',
+      {'started_at': yesterdayStartIso, 'completed_at': yesterdayIso},
+      where: 'id = ?',
+      whereArgs: [workoutId],
+    );
     final suggestedNextEligibleDay = await appDatabase.getSuggestedWorkoutDay();
     expect(suggestedNextEligibleDay?['id'], secondDayId);
   });

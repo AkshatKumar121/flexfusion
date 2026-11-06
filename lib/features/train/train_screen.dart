@@ -225,7 +225,12 @@ class TrainScreenState extends State<TrainScreen> {
                       Icons.calendar_month_outlined,
                       'My Plan',
                       'Create and manage your training split',
-                      () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen())),
+                      () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute<void>(builder: (_) => const WorkoutPlanScreen()),
+                        );
+                        if (mounted) await refreshTrainScreen();
+                      },
                     ),
                     _buildToolTile(
                       Icons.fitness_center,

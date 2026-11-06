@@ -31,6 +31,29 @@ void main() {
     }
   });
 
+  Future<void> markWorkoutEligibleForSequence(int workoutId) async {
+    final setId = await database.addExerciseToWorkout(
+      workoutId: workoutId,
+      exerciseName: 'Sequence eligibility test',
+      setCount: 1,
+      targetReps: 8,
+      targetWeight: 20,
+    );
+    await database.updateWorkoutSet(
+      id: setId,
+      reps: 8,
+      weight: 20,
+      completed: true,
+    );
+    final db = await database.database;
+    await db.update(
+      'workouts',
+      {'started_at': DateTime.now().subtract(const Duration(seconds: 65)).toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [workoutId],
+    );
+  }
+
   test('plan rest settings flow into session sets and completed workout summary', () async {
     final planId = await database.createWorkoutPlan('Push Day');
     await database.setActiveWorkoutPlan(planId);
@@ -76,6 +99,22 @@ void main() {
     expect(history, hasLength(1));
     expect(history.single['id'], workoutId);
     expect(history.single['completed_sets'], 1);
+  });
+
+  test('deactivating a workout plan clears the active plan without deleting it', () async {
+    final firstPlanId = await database.createWorkoutPlan('First plan');
+    final secondPlanId = await database.createWorkoutPlan('Second plan');
+    await database.setActiveWorkoutPlan(firstPlanId);
+
+    await database.deactivateWorkoutPlan(firstPlanId);
+
+    expect(await database.getActiveWorkoutPlan(), isNull);
+    final plans = await database.getWorkoutPlans();
+    expect(plans, hasLength(2));
+    expect(plans.singleWhere((plan) => plan['id'] == firstPlanId)['is_active'], 0);
+
+    await database.setActiveWorkoutPlan(secondPlanId);
+    expect((await database.getActiveWorkoutPlan())?['id'], secondPlanId);
   });
 
   test('duplicating a plan preserves exercises, set targets and custom rest duration', () async {
@@ -276,4 +315,191 @@ void main() {
     expect(rows.single['session_name'], 'Finish cleanup');
     expect(await database.getWorkoutRestEnd(workoutId), isNull);
   });
+
+  test('adding a plan day recalculates the next workout after a completed one-day plan', () async {
+    final planId = await database.createWorkoutPlan('PPSA');
+    await database.setActiveWorkoutPlan(planId);
+    final shoulderDayId = await database.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Shoulder/Arms',
+      dayOrder: 1,
+    );
+
+    final workoutId = await database.startWorkoutSession(
+      planId: planId,
+      planDayId: shoulderDayId,
+      sessionName: 'Shoulder/Arms',
+    );
+    await markWorkoutEligibleForSequence(workoutId);
+    await database.finishWorkoutSession(workoutId);
+
+    final chestDayId = await database.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Chest',
+      dayOrder: 2,
+    );
+
+    final nextDay = await database.getManualStartWorkoutDay();
+    expect(nextDay?['id'], chestDayId);
+    expect(nextDay?['label'], 'Chest');
+    expect((await database.getWorkoutHistory()).single['session_name'], 'Shoulder/Arms');
+  });
+
+  test('reordering plan days recalculates next workout from the completed day position', () async {
+    final planId = await database.createWorkoutPlan('Reordered plan');
+    await database.setActiveWorkoutPlan(planId);
+    final shoulderId = await database.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Shoulder/Arms',
+      dayOrder: 1,
+    );
+    final chestId = await database.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Chest',
+      dayOrder: 2,
+    );
+    final backId = await database.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Back',
+      dayOrder: 3,
+    );
+
+    final workoutId = await database.startWorkoutSession(
+      planId: planId,
+      planDayId: shoulderId,
+      sessionName: 'Shoulder/Arms',
+    );
+    await markWorkoutEligibleForSequence(workoutId);
+    await database.finishWorkoutSession(workoutId);
+
+    // New order: Back, Shoulder/Arms, Chest.
+    await database.updateWorkoutPlanDay(
+      id: backId,
+      label: 'Back',
+      dayOrder: 1,
+      scheduleType: 'sequence',
+      isRestDay: false,
+    );
+    await database.updateWorkoutPlanDay(
+      id: shoulderId,
+      label: 'Shoulder/Arms',
+      dayOrder: 2,
+      scheduleType: 'sequence',
+      isRestDay: false,
+    );
+    await database.updateWorkoutPlanDay(
+      id: chestId,
+      label: 'Chest',
+      dayOrder: 3,
+      scheduleType: 'sequence',
+      isRestDay: false,
+    );
+
+    final nextDay = await database.getManualStartWorkoutDay();
+    expect(nextDay?['id'], chestId);
+    expect(nextDay?['label'], 'Chest');
+  });
+
+  test('deleting the selected next day recalculates to the next remaining day', () async {
+    final planId = await database.createWorkoutPlan('Deleted next day');
+    await database.setActiveWorkoutPlan(planId);
+    final shoulderId = await database.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Shoulder/Arms',
+      dayOrder: 1,
+    );
+    final chestId = await database.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Chest',
+      dayOrder: 2,
+    );
+    final backId = await database.addWorkoutPlanDay(
+      planId: planId,
+      label: 'Back',
+      dayOrder: 3,
+    );
+
+    final workoutId = await database.startWorkoutSession(
+      planId: planId,
+      planDayId: shoulderId,
+      sessionName: 'Shoulder/Arms',
+    );
+    await markWorkoutEligibleForSequence(workoutId);
+    await database.finishWorkoutSession(workoutId);
+    await database.deleteWorkoutPlanDay(chestId);
+
+    final nextDay = await database.getManualStartWorkoutDay();
+    expect(nextDay?['id'], backId);
+    expect(nextDay?['label'], 'Back');
+  });
+
+
+  test('sequence does not advance for short or set-free completed sessions', () async {
+    final planId = await database.createWorkoutPlan('Completion threshold');
+    await database.setActiveWorkoutPlan(planId);
+    final firstDayId = await database.addWorkoutPlanDay(
+      planId: planId, label: 'Shoulder', dayOrder: 1,
+    );
+    final secondDayId = await database.addWorkoutPlanDay(
+      planId: planId, label: 'Back', dayOrder: 2,
+    );
+
+    final shortWorkout = await database.startWorkoutSession(
+      planId: planId, planDayId: firstDayId, sessionName: 'Short session',
+    );
+    final shortSetId = await database.addExerciseToWorkout(
+      workoutId: shortWorkout, exerciseName: 'Short set', setCount: 1,
+    );
+    await database.updateWorkoutSet(
+      id: shortSetId, reps: 8, weight: 10, completed: true,
+    );
+    await database.finishWorkoutSession(shortWorkout);
+    expect((await database.getManualStartWorkoutDay())?['id'], firstDayId);
+
+    final noSetWorkout = await database.startWorkoutSession(
+      planId: planId, planDayId: firstDayId, sessionName: 'No completed set',
+    );
+    final db = await database.database;
+    await db.update(
+      'workouts',
+      {'started_at': DateTime.now().subtract(const Duration(seconds: 70)).toIso8601String()},
+      where: 'id = ?', whereArgs: [noSetWorkout],
+    );
+    await database.finishWorkoutSession(noSetWorkout);
+    expect((await database.getManualStartWorkoutDay())?['id'], firstDayId);
+
+    final validWorkout = await database.startWorkoutSession(
+      planId: planId, planDayId: secondDayId, sessionName: 'Valid session',
+    );
+    await markWorkoutEligibleForSequence(validWorkout);
+    await database.finishWorkoutSession(validWorkout);
+    expect((await database.getManualStartWorkoutDay())?['id'], firstDayId);
+  });
+
+
+  test('freestyle and duplicate finish do not move the planned sequence twice', () async {
+    final planId = await database.createWorkoutPlan('Freestyle isolation');
+    await database.setActiveWorkoutPlan(planId);
+    final shoulderId = await database.addWorkoutPlanDay(
+      planId: planId, label: 'Shoulder', dayOrder: 1,
+    );
+    final backId = await database.addWorkoutPlanDay(
+      planId: planId, label: 'Back', dayOrder: 2,
+    );
+
+    final plannedId = await database.startWorkoutSession(
+      planId: planId, planDayId: shoulderId, sessionName: 'Shoulder',
+    );
+    await markWorkoutEligibleForSequence(plannedId);
+    await database.finishWorkoutSession(plannedId);
+    await database.finishWorkoutSession(plannedId);
+    expect((await database.getManualStartWorkoutDay())?['id'], backId);
+
+    final freeId = await database.startWorkoutSession(sessionName: 'Freestyle');
+    await markWorkoutEligibleForSequence(freeId);
+    await database.finishWorkoutSession(freeId);
+    expect((await database.getManualStartWorkoutDay())?['id'], backId);
+    expect((await database.getWorkoutHistory()).where((row) => row['id'] == plannedId), hasLength(1));
+  });
+
 }
