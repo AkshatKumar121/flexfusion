@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,7 +10,7 @@ class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
   @override State<ActivityScreen> createState() => _ActivityScreenState();
 }
-class _ActivityScreenState extends State<ActivityScreen> with AutoRefreshOnReturn<ActivityScreen> {
+class _ActivityScreenState extends State<ActivityScreen> with AutoRefreshOnReturn<ActivityScreen>, WidgetsBindingObserver {
   @override
   Future<void> refreshAfterReturn() => _refresh();
 
@@ -22,8 +23,35 @@ class _ActivityScreenState extends State<ActivityScreen> with AutoRefreshOnRetur
   String _healthStatus='Checking Apple Health…';
   int _refreshGeneration=0;
   int _syncGeneration=0;
+  StreamSubscription<String>? _healthSubscription;
   String _key(DateTime d)=>'${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
-  @override void initState(){super.initState();_refresh();}
+  @override void initState(){
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _healthSubscription = _health.healthDataChanges.listen((_) {
+      if (mounted && _key(_date) == _key(DateTime.now())) {
+        _syncHealth();
+      }
+    }, onError: (Object error) {
+      debugPrint('[AppleHealth] Observer stream error: $error');
+    });
+    _refresh();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        _key(_date) == _key(DateTime.now())) {
+      _syncHealth();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _healthSubscription?.cancel();
+    super.dispose();
+  }
   Future<void> _refresh() async {
     final refreshGeneration = ++_refreshGeneration;
     final requestedDate = DateTime(_date.year, _date.month, _date.day);
