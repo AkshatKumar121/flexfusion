@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
@@ -10,7 +11,14 @@ class ExerciseLibraryScreen extends StatefulWidget {
   State<ExerciseLibraryScreen> createState() => _ExerciseLibraryScreenState();
 }
 
-class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
+class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> with AutoRefreshOnReturn<ExerciseLibraryScreen> {
+  @override
+  Future<void> refreshAfterReturn() async {
+    if (!mounted) return;
+    setState(_reload);
+    await _future;
+  }
+
   late Future<List<Map<String, Object?>>> _future;
   String _searchQuery = '';
   @override
