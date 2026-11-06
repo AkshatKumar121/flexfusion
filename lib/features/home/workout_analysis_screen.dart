@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
@@ -13,7 +14,15 @@ class WorkoutAnalysisScreen extends StatefulWidget {
   State<WorkoutAnalysisScreen> createState() => _WorkoutAnalysisScreenState();
 }
 
-class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> {
+class _WorkoutAnalysisScreenState extends State<WorkoutAnalysisScreen> with AutoRefreshOnReturn<WorkoutAnalysisScreen> {
+  @override
+  Future<void> refreshAfterReturn() async {
+    if (!mounted) return;
+    final future = _load();
+    setState(() => _future = future);
+    await future;
+  }
+
   late Future<_AnalysisData> _future;
 
   DateTime get _today {
