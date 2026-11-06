@@ -222,30 +222,52 @@ extension AppDatabaseProgress on AppDatabase {
   }
 
 
+  Future<Map<String, Object?>?> getBodyWeightForDate(String date) async {
+    final db = await database;
+    final rows = await db.query(
+      'body_weights',
+      where: 'log_date = ?',
+      whereArgs: [date],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
+
   Future<void> saveBodyWeight({
     required String date,
     required double weightKg,
   }) async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
-    final existing = await db.query(
-      'body_weights',
-      columns: ['id', 'created_at'],
-      where: 'log_date = ?',
-      whereArgs: [date],
-      limit: 1,
-    );
-    await db.insert(
-      'body_weights',
-      {
-        'log_date': date,
-        'weight_value': weightKg,
-        'weight_unit': 'kg',
-        'created_at': existing.isEmpty ? now : existing.first['created_at'],
-        'updated_at': now,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.transaction((txn) async {
+      final existing = await txn.query(
+        'body_weights',
+        columns: ['id'],
+        where: 'log_date = ?',
+        whereArgs: [date],
+        limit: 1,
+      );
+      if (existing.isNotEmpty) {
+        await txn.update(
+          'body_weights',
+          {
+            'weight_value': weightKg,
+            'weight_unit': 'kg',
+            'updated_at': now,
+          },
+          where: 'log_date = ?',
+          whereArgs: [date],
+        );
+      } else {
+        await txn.insert('body_weights', {
+          'log_date': date,
+          'weight_value': weightKg,
+          'weight_unit': 'kg',
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+    });
   }
 
   Future<List<Map<String, Object?>>> getProgressPhotos({int limit = 12}) async {

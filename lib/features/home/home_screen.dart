@@ -27,6 +27,148 @@ class HomeScreenState extends State<HomeScreen> {
   String _dateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
+  String _formatWeightDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+  Future<void> _showWeightLogger() async {
+    final database = AppDatabase.instance;
+    var selectedDate = DateTime.now();
+    final dateKey = _dateKey(selectedDate);
+    final existing = await database.getBodyWeightForDate(dateKey);
+    final controller = TextEditingController(
+      text: existing == null
+          ? ''
+          : (existing['weight_value'] as num).toString(),
+    );
+    var hasExistingEntry = existing != null;
+    var isSaving = false;
+    String? errorMessage;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.card,
+          title: Text(
+            hasExistingEntry ? 'Edit weight' : 'Log weight',
+            style: GoogleFonts.inter(
+              color: AppColors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'One entry per day. You can update it anytime.',
+                style: GoogleFonts.inter(color: AppColors.grey, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: dialogContext,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked == null) return;
+                  final date = DateTime(picked.year, picked.month, picked.day);
+                  final record = await database.getBodyWeightForDate(_dateKey(date));
+                  setDialogState(() {
+                    selectedDate = date;
+                    hasExistingEntry = record != null;
+                    controller.text = record == null
+                        ? ''
+                        : (record['weight_value'] as num).toString();
+                    errorMessage = null;
+                  });
+                },
+                icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                label: Text(_formatWeightDate(selectedDate)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.green,
+                  side: BorderSide(color: AppColors.border),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                autofocus: !hasExistingEntry,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: GoogleFonts.inter(color: AppColors.white),
+                decoration: InputDecoration(
+                  labelText: 'Weight',
+                  suffixText: 'kg',
+                  labelStyle: GoogleFonts.inter(color: AppColors.grey),
+                  suffixStyle: GoogleFonts.inter(color: AppColors.green),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.green),
+                  ),
+                ),
+              ),
+              if (errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  errorMessage!,
+                  style: GoogleFonts.inter(color: AppColors.red, fontSize: 11),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.of(dialogContext).pop(false),
+              child: Text('CANCEL', style: GoogleFonts.inter(color: AppColors.grey)),
+            ),
+            TextButton(
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      final value = double.tryParse(controller.text.trim());
+                      if (value == null || !value.isFinite || value <= 0 || value > 500) {
+                        setDialogState(() => errorMessage = 'Enter a valid weight in kg.');
+                        return;
+                      }
+                      setDialogState(() {
+                        isSaving = true;
+                        errorMessage = null;
+                      });
+                      try {
+                        await database.saveBodyWeight(
+                          date: _dateKey(selectedDate),
+                          weightKg: value,
+                        );
+                        if (dialogContext.mounted) {
+                          Navigator.of(dialogContext).pop(true);
+                        }
+                      } catch (_) {
+                        setDialogState(() {
+                          isSaving = false;
+                          errorMessage = 'Could not save weight. Please try again.';
+                        });
+                      }
+                    },
+              child: Text(
+                hasExistingEntry ? 'UPDATE WEIGHT' : 'SAVE WEIGHT',
+                style: GoogleFonts.inter(
+                  color: AppColors.green,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    if (saved == true) await refreshDashboard();
+  }
+
   Future<_DashboardData> _loadDashboard() async {
     final db = AppDatabase.instance;
     final results = await Future.wait<Object?>([
@@ -424,13 +566,17 @@ class HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                   Expanded(
-                    child: _MetricCard(
-                      title: 'WEIGHT',
-                      value: currentWeight?.toStringAsFixed(1) ?? '—',
-                      unit: currentWeight == null ? '' : 'kg',
-                      subtitle: currentWeight == null ? 'Log your weight' : 'Latest entry',
-                      icon: Icons.monitor_weight_outlined,
-                      accentColor: AppColors.red,
+                    child: InkWell(
+                      onTap: _showWeightLogger,
+                      borderRadius: BorderRadius.circular(12),
+                      child: _MetricCard(
+                        title: 'WEIGHT',
+                        value: currentWeight?.toStringAsFixed(1) ?? '—',
+                        unit: currentWeight == null ? '' : 'kg',
+                        subtitle: currentWeight == null ? 'Tap to log weight' : 'Tap to edit entry',
+                        icon: Icons.monitor_weight_outlined,
+                        accentColor: AppColors.red,
+                      ),
                     ),
                   ),
 

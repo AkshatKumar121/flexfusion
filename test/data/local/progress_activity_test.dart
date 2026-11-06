@@ -36,19 +36,40 @@ void main() {
     }
   });
 
-  test('daily weight upsert keeps one record per date and updates latest value', () async {
+  test('daily weight edit updates the existing date without creating a duplicate', () async {
     final date = todayKey();
     await database.saveBodyWeight(date: date, weightKg: 91.5);
+
+    final db = await database.database;
+    final before = (await db.query(
+      'body_weights',
+      where: 'log_date = ?',
+      whereArgs: [date],
+    )).single;
+
     await database.saveBodyWeight(date: date, weightKg: 90.8);
 
     final latest = await database.getLatestBodyWeight();
-    final db = await database.database;
-    final rows = await db.query('body_weights', where: 'log_date = ?', whereArgs: [date]);
+    final rows = await db.query(
+      'body_weights',
+      where: 'log_date = ?',
+      whereArgs: [date],
+    );
+    final after = rows.single;
 
     expect(rows, hasLength(1));
-    expect(rows.single['weight_value'], 90.8);
+    expect(after['id'], before['id']);
+    expect(after['created_at'], before['created_at']);
+    expect(after['updated_at'], isNot(before['updated_at']));
+    expect(after['weight_value'], 90.8);
     expect(latest?['weight_value'], 90.8);
     expect(latest?['weight_unit'], 'kg');
+
+    final weekly = await database.getWeeklyProgressDetails();
+    final daily = (weekly['daily'] as List).cast<Map<String, Object?>>();
+    final today = daily.singleWhere((row) => row['date'] == date);
+    expect(today['weight'], 90.8);
+    expect(weekly['average_weight'], 90.8);
   });
 
   test('progress photos support front, side and back and replace only matching date-angle', () async {
