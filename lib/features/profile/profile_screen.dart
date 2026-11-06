@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'widgets/profile_components.dart';
 
@@ -13,7 +14,10 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with AutoRefreshOnReturn<ProfileScreen> {
+  @override
+  Future<void> refreshAfterReturn() => _loadProfile();
+
   String? _fitnessGoal;
   Map<String, Object?>? _profile;
   Map<String, Object?>? _targets;
