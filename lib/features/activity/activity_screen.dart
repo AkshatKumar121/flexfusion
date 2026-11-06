@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
@@ -8,7 +9,10 @@ class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
   @override State<ActivityScreen> createState() => _ActivityScreenState();
 }
-class _ActivityScreenState extends State<ActivityScreen> {
+class _ActivityScreenState extends State<ActivityScreen> with AutoRefreshOnReturn<ActivityScreen> {
+  @override
+  Future<void> refreshAfterReturn() => _refresh();
+
   final _health=AppleHealthService();
   static const _types=['Walking','Running','Cycling','Swimming','Hiking','Yoga & Mobility','Badminton','Football','Cricket','Basketball','Other'];
   DateTime _date=DateTime.now();

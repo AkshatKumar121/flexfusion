@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
@@ -14,7 +15,10 @@ class ExercisePerformanceScreen extends StatefulWidget {
   State<ExercisePerformanceScreen> createState() => _ExercisePerformanceScreenState();
 }
 
-class _ExercisePerformanceScreenState extends State<ExercisePerformanceScreen> {
+class _ExercisePerformanceScreenState extends State<ExercisePerformanceScreen> with AutoRefreshOnReturn<ExercisePerformanceScreen> {
+  @override
+  Future<void> refreshAfterReturn() => _refresh();
+
   late Future<List<Map<String, Object?>>> _history;
 
   @override

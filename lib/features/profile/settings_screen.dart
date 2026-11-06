@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -16,7 +17,10 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with AutoRefreshOnReturn<SettingsScreen> {
+  @override
+  Future<void> refreshAfterReturn() => _loadSettings();
+
   String _weightUnit = 'kg';
   String _heightUnit = 'cm';
   bool _isLoading = true;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../data/local/app_database.dart';
@@ -8,7 +9,15 @@ class WorkoutHistoryScreen extends StatefulWidget {
   @override
   State<WorkoutHistoryScreen> createState() => _WorkoutHistoryScreenState();
 }
-class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> {
+class _WorkoutHistoryScreenState extends State<WorkoutHistoryScreen> with AutoRefreshOnReturn<WorkoutHistoryScreen> {
+  @override
+  Future<void> refreshAfterReturn() async {
+    if (!mounted) return;
+    final future = AppDatabase.instance.getWorkoutHistory();
+    setState(() => _history = future);
+    await future;
+  }
+
   late Future<List<Map<String, Object?>>> _history;
   @override
   void initState() { super.initState(); _history = AppDatabase.instance.getWorkoutHistory(); }
