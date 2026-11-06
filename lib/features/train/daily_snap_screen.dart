@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../app/auto_refresh_on_return.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,7 +17,10 @@ class DailySnapScreen extends StatefulWidget {
   State<DailySnapScreen> createState() => _DailySnapScreenState();
 }
 
-class _DailySnapScreenState extends State<DailySnapScreen> {
+class _DailySnapScreenState extends State<DailySnapScreen> with AutoRefreshOnReturn<DailySnapScreen> {
+  @override
+  Future<void> refreshAfterReturn() => _refresh();
+
   final ImagePicker _picker = ImagePicker();
   late Future<List<Map<String, Object?>>> _photosFuture;
   DateTime _selectedDay = DateTime.now();
