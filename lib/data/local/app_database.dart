@@ -59,7 +59,7 @@ class AppDatabase {
       onUpgrade: AppDatabaseSchema.upgradeSchema,
     );
     await _migrateLegacyMealLogs(_database!);
-    await _seedBuiltInFoodCatalog(_database!);
+    await _clearBuiltInFoodCatalog(_database!);
     await _seedBuiltInExerciseCatalog(_database!);
     return _database!;
   }
@@ -110,73 +110,31 @@ class AppDatabase {
     });
   }
 
-  Future<void> _seedBuiltInFoodCatalog(Database db) async {
-    const seedKey = 'flexfusion_food_catalog_v1_seeded';
+  /// Removes the imported built-in catalogue once while preserving user data.
+  ///
+  /// Food logs keep their nutrition/name snapshots; the FK sets food_id to null.
+  /// User-created foods remain available in the Custom Food flow.
+  Future<void> _clearBuiltInFoodCatalog(Database db) async {
+    const cleanupKey = 'flexfusion_builtin_food_catalog_cleared_v1';
     final marker = await db.query(
       'app_settings',
       columns: ['value'],
       where: 'key = ?',
-      whereArgs: [seedKey],
+      whereArgs: [cleanupKey],
       limit: 1,
     );
-    if (marker.isNotEmpty && marker.first['value'] == 'true') return;
+    if (marker.isNotEmpty && marker.first['value'] == '1') return;
 
-    try {
-      final raw = await rootBundle.loadString(
-        'assets/data/flexfusion_food_catalog_v1.json',
+    final now = DateTime.now().toIso8601String();
+    await db.transaction((txn) async {
+      await txn.delete('foods', where: 'is_custom = 0');
+      await txn.insert(
+        'app_settings',
+        {'key': cleanupKey, 'value': '1', 'updated_at': now},
+        conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      final decoded = jsonDecode(raw) as List<dynamic>;
-      final now = DateTime.now().toIso8601String();
-
-      await db.transaction((txn) async {
-        for (final value in decoded) {
-          final item = value as Map<String, dynamic>;
-          final sourceId = item['food_id'] as String?;
-          final existing = sourceId == null
-              ? <Map<String, Object?>>[]
-              : await txn.query(
-                  'foods',
-                  columns: ['id'],
-                  where: 'source = ? AND source_id = ?',
-                  whereArgs: ['flexfusion_catalog_v1', sourceId],
-                  limit: 1,
-                );
-          if (existing.isNotEmpty) continue;
-
-          await txn.insert('foods', {
-            'name': (item['name'] as String).trim(),
-            'serving_basis_g': 100,
-            'calories_per_basis': (item['calories_kcal'] as num).toDouble(),
-            'protein_per_basis_g': (item['protein_g'] as num).toDouble(),
-            'carbs_per_basis_g': (item['carbs_g'] as num).toDouble(),
-            'fat_per_basis_g': (item['fats_g'] as num).toDouble(),
-            'base_unit': 'g',
-            'source': 'flexfusion_catalog_v1',
-            'source_id': sourceId,
-            'preparation_state': 'unspecified',
-            'verification_status':
-                item['verification_status'] as String? ?? 'source_imported',
-            'is_active': 1,
-            'is_custom': 0,
-            'created_at': now,
-            'updated_at': now,
-          });
-        }
-
-        await txn.insert(
-          'app_settings',
-          {
-            'key': seedKey,
-            'value': 'true',
-            'updated_at': now,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      });
-      debugPrint('FlexFusion food catalogue seeded: ${decoded.length} records.');
-    } catch (error) {
-      debugPrint('Food catalogue seed skipped; existing app data is safe: $error');
-    }
+    });
+    debugPrint('FlexFusion built-in food catalogue cleared.');
   }
 
   Future<void> _migrateLegacyMealLogs(Database db) async {

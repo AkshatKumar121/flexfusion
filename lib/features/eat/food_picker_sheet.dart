@@ -135,7 +135,7 @@ class _FoodPickerSheetState extends State<FoodPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final allFoods = [
-      ...(_catalogueFoods.isNotEmpty ? _catalogueFoods : fallbackFoods),
+      ..._catalogueFoods,
       ..._customFoods,
     ];
     final list = allFoods.where((f) => f.name.toLowerCase().contains(search.text.toLowerCase().trim())).toList();
