@@ -35,6 +35,8 @@ class HomeScreenState extends State<HomeScreen> {
     var selectedDate = DateTime.now();
     final dateKey = _dateKey(selectedDate);
     final existing = await database.getBodyWeightForDate(dateKey);
+
+    if (!mounted) return;
     final controller = TextEditingController(
       text: existing == null
           ? ''
